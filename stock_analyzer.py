@@ -96,10 +96,74 @@ def fetch_common_market_data(period: str = '4y'):
         'fg_data': fg_data
     }
 
-# 나머지 함수들은 당신이 원래 가진 코드를 그대로 사용하세요.
-# (calculate_rsi, process_stock_data 등 모든 함수를 stock_analyzer.py에 넣어야 합니다)
+def fetch_stock_data(ticker: str, period: str):
+    time.sleep(2)
+    stock = yf.Ticker(ticker)
+    data = stock.history(period=period).reset_index()
+    if not data.empty:
+        data['Date'] = pd.to_datetime(data['Date'].dt.date)
+    return data
 
-# ... (여기에 당신이 원래 가진 stock_analyzer.py의 나머지 모든 함수를 붙여넣으세요)
+def calculate_rsi(data: pd.DataFrame, window: int = 14):
+    if len(data) < window:
+        return pd.Series([np.nan] * len(data), index=data.index)
+    delta = data['Close'].diff()
+    gain = delta.where(delta > 0, 0).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    return (100 - (100 / (1 + rs))).round(2)
+
+def calculate_moving_averages(data: pd.DataFrame):
+    for window in [20, 60, 120, 200]:
+        if len(data) >= window:
+            data[f'MA{window}'] = data['Close'].rolling(window=window).mean().round(2)
+    return data
+
+def generate_fg_rsi_signals(data: pd.DataFrame):
+    def apply_rules(row):
+        if pd.isna(row.get('RSI')):
+            return '1x BUY'
+        rsi = row['RSI']
+        fg_idx = row.get('FG index', -1)
+        if rsi >= 60 or (not pd.isna(fg_idx) and 51 <= fg_idx <= 100):
+            return 'BUY STOP'
+        elif rsi <= 30 or (not pd.isna(fg_idx) and 26 <= fg_idx <= 50):
+            return '2x BUY'
+        elif rsi <= 20 or (not pd.isna(fg_idx) and 0 <= fg_idx <= 25):
+            return '3x BUY'
+        return '1x BUY'
+    
+    data['FG/RSI signal'] = data.apply(apply_rules, axis=1)
+    return data
+
+def process_stock_data(ticker: str, name: str, common_data: dict, period: str = '4y', delta: int = 600):
+    data = fetch_stock_data(ticker, period)
+    if data.empty:
+        return pd.DataFrame()
+    
+    data = data[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']].copy()
+    data[['Open', 'High', 'Low', 'Close']] = data[['Open', 'High', 'Low', 'Close']].round(2)
+    data['Change(%)'] = (data['Close'].pct_change() * 100).round(2)
+    
+    data = calculate_moving_averages(data)
+    data['RSI'] = calculate_rsi(data)
+    
+    # 공통 데이터 병합
+    if common_data.get('fg_data') is not None:
+        data = pd.merge(data, common_data['fg_data'], on='Date', how='left')
+    if not common_data.get('vix').empty:
+        data = pd.merge(data, common_data['vix'], on='Date', how='left')
+    if not common_data.get('vix1d').empty:
+        data = pd.merge(data, common_data['vix1d'], on='Date', how='left')
+    
+    data = generate_fg_rsi_signals(data)
+    data['Tick'] = ticker
+    
+    # 최근 데이터만
+    cutoff = datetime.now() - timedelta(days=delta)
+    data = data[data['Date'] >= cutoff]
+    
+    return data
 
 def get_ticker_configs():
     return {
