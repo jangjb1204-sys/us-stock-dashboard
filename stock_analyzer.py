@@ -26,23 +26,27 @@ def fetch_fear_and_greed_index(start_date: str) -> pd.DataFrame | None:
             }
             for item in data_list
         ])
-        df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None).dt.normalize()
+        # 시간 제거 및 문자열 변환
+        df['Date'] = pd.to_datetime(df['Date']).dt.strftime(DATE_FORMAT)
         return df.sort_values('Date').drop_duplicates('Date')
     except:
         return None
 
 def fetch_common_market_data(period: str):
     results = {}
+    # ^TNX: 10Y Treasury, ^VIX: VIX
     tickers = {'^TNX': 'Treasury', '^VIX': 'VIX', '^VIX1D': 'VIX1D', '^SKEW': 'SKEW'}
     
     for tk, name in tickers.items():
         try:
             df = yf.Ticker(tk).history(period=period)[['Close']].rename(columns={'Close': name})
-            if tk == '^TNX': df[name] = df[name] / 10.0
+            if tk == '^TNX': 
+                df[name] = df[name] / 10.0 # 43.0 -> 4.3 단위 보정
             df = df.reset_index()
-            df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None).dt.normalize()
+            # 시간대 정보 제거 및 날짜만 남기기
+            df['Date'] = pd.to_datetime(df['Date']).dt.strftime(DATE_FORMAT)
             results[name.lower()] = df
-            time.sleep(0.2)
+            time.sleep(0.1)
         except:
             results[name.lower()] = pd.DataFrame()
 
@@ -53,14 +57,15 @@ def fetch_common_market_data(period: str):
 def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
     try:
         data = yf.Ticker(ticker).history(period=period).reset_index()
-        data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None).dt.normalize()
+        # 시간 제거하고 YYYY-MM-DD 형식으로 통일
+        data['Date'] = pd.to_datetime(data['Date']).dt.strftime(DATE_FORMAT)
         return data
     except:
         return pd.DataFrame()
 
 def calculate_rsi(data: pd.DataFrame, window: int = 14):
     delta = data['Close'].diff()
-    gain = delta.where(delta > 0, 0).rolling(window=window).mean()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
     rs = gain / loss
     return (100 - (100 / (1 + rs))).round(2)
@@ -71,20 +76,18 @@ def calculate_moving_averages(data: pd.DataFrame):
     return data
 
 def generate_signals(data: pd.DataFrame):
-    # 숫자 비교를 위해 모든 대상 컬럼을 강제로 숫자형 변환
-    numeric_cols = ['Close', 'MA20', 'MA60', 'MA120', 'MA200', 'RSI', 'FG index', 'VIX', 'VIX1D']
+    numeric_cols = ['Close', 'MA20', 'MA60', 'MA120', 'MA200', 'RSI', 'FG index', 'Treasury']
     for col in numeric_cols:
         if col in data.columns:
             data[col] = pd.to_numeric(data[col], errors='coerce')
 
     def fg_rsi_rule(row):
         try:
-            rsi = row['RSI']
-            fg = row['FG index']
+            rsi, fg = row['RSI'], row['FG index']
             if pd.isna(rsi) or pd.isna(fg): return ''
-            if rsi >= 60 or (51 <= fg <= 100): return 'BUY STOP'
+            if rsi >= 60 or fg >= 51: return 'BUY STOP'
             if rsi <= 30 or (26 <= fg <= 50): return '2x BUY'
-            if rsi <= 20 or (0 <= fg <= 25): return '3x BUY'
+            if rsi <= 20 or fg <= 25: return '3x BUY'
             return '1x BUY'
         except: return ''
     
@@ -95,8 +98,7 @@ def generate_signals(data: pd.DataFrame):
         row, prev = data.iloc[i], data.iloc[i-1]
         sig = ''
         try:
-            # 모든 피연산자가 유효한 숫자인지 체크 후 비교
-            if pd.notna(row['Close']) and pd.notna(row['MA20']) and pd.notna(prev['Close']):
+            if pd.notna(row['Close']) and pd.notna(row['MA20']):
                 if row['Close'] < row['MA20'] and prev['Close'] >= prev['MA20']: sig = '1st: MA20'
                 elif row['Close'] < row['MA60'] and prev['Close'] >= prev['MA60']: sig = '2nd: MA60'
                 elif row['Close'] < row['MA120'] and prev['Close'] >= prev['MA120']: sig = '3rd: MA120'
@@ -104,10 +106,6 @@ def generate_signals(data: pd.DataFrame):
         except: pass
         alerts.append(sig)
     data['Puddle'] = alerts
-
-    if 'VIX' in data.columns and 'VIX1D' in data.columns:
-        data['VIX1D>VIX'] = np.where((data['VIX'] >= 25) & (data['VIX1D'] > data['VIX']), 'BUY', '')
-    
     return data
 
 def get_full_analysis(ticker: str, name: str, common_data: dict, period: str = '4y') -> pd.DataFrame:
@@ -117,9 +115,11 @@ def get_full_analysis(ticker: str, name: str, common_data: dict, period: str = '
     data = calculate_moving_averages(data)
     data['RSI'] = calculate_rsi(data)
 
-    for key in ['fg_data', 'treasury', 'vix', 'vix1d', 'skew']:
+    # 모든 병합 대상 데이터의 날짜 포맷 강제 통일 (YYYY-MM-DD 문자열 병합)
+    for key in ['fg_data', 'treasury', 'vix', 'vix1d']:
         if key in common_data and not common_data[key].empty:
             data = pd.merge(data, common_data[key], on='Date', how='left')
 
-    data = data.ffill() # 숫자형 유지를 위해 ffill만 수행
+    # 국채 등 주말 데이터가 없는 경우를 위해 ffill (앞의 데이터로 채움)
+    data = data.ffill()
     return generate_signals(data)
