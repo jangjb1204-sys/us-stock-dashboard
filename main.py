@@ -810,13 +810,21 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
         fig.add_trace(go.Scatter(
-            x=df['Date'], y=df['VIX'], name='VIX',
+            x=df['Date'], y=df['VIX'], name='VIX 시장 변동성',
             line=dict(color='#79c0ff', width=1.5),
             fill='tozeroy', fillcolor='rgba(121,192,255,0.07)',
+            hovertemplate='%{x|%Y-%m-%d}<br>VIX 시장 변동성 %{y:.1f}<extra></extra>',
         ), row=3, col=1)
-        fig.add_hline(y=25, line=dict(color='#64a8ff', width=1, dash='dot'), row=3, col=1)
+        fig.add_hline(
+            y=25,
+            line=dict(color='#64a8ff', width=1, dash='dot'),
+            annotation_text='경계 25',
+            annotation_position='top left',
+            annotation_font=dict(size=10, color='#9cccff'),
+            row=3, col=1,
+        )
         fig.update_yaxes(
-            title_text='VIX', row=3, col=1,
+            title_text='VIX<br>시장 변동성', row=3, col=1,
             tickfont=dict(color='#8e8e93', size=10),
             title=dict(font=dict(color='#8e8e93', size=11)),
         )
@@ -1252,7 +1260,6 @@ st.markdown(
       <div class="hero-row">
         <div>
           <h1>미국주식 Dashboard</h1>
-          <p>시장 전체를 먼저 훑고, 관심 종목을 깊게 확인합니다.</p>
           <div class="creator-mark">30s_tech_j</div>
         </div>
         <div class="viewer-pill">
