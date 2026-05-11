@@ -572,25 +572,55 @@ st.markdown("""
     div[data-testid="stTextInput"] input::placeholder {
         color: rgba(207,228,255,0.42) !important;
     }
+    div[data-testid="InputInstructions"] {
+        min-height: 16px !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 1 !important;
+        margin-top: 4px !important;
+    }
+    div[data-testid="InputInstructions"] span,
+    div[data-testid="InputInstructions"] p {
+        color: transparent !important;
+        font-size: 0 !important;
+    }
+    div[data-testid="InputInstructions"]::before {
+        content: "Enter";
+        display: inline-flex;
+        align-items: center;
+        height: 16px;
+        padding: 2px 7px;
+        border: 1px solid rgba(190,220,255,0.16);
+        border-radius: 7px;
+        background:
+            linear-gradient(145deg, rgba(226,240,255,0.10), rgba(255,255,255,0.025)),
+            rgba(9,29,52,0.34);
+        color: rgba(207,228,255,0.58);
+        font-family: 'DM Mono', monospace;
+        font-size: 0.58rem;
+        font-weight: 500;
+        letter-spacing: 0;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+    }
     .clear-recent-btn div[data-testid="stButton"] {
         margin-top: 1.47rem;
     }
     .clear-recent-btn .stButton > button {
-        width: 48px;
-        min-width: 48px;
-        max-width: 48px;
-        height: 48px;
-        min-height: 48px;
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+        height: 44px;
+        min-height: 44px;
         padding: 0 !important;
-        border-radius: 18px;
-        font-size: 1.18rem;
+        border-radius: 16px;
+        font-size: 0.92rem;
         line-height: 1;
         color: rgba(226,240,255,0.82);
     }
     .clear-recent-btn .stButton > button p {
-        font-size: 1.25rem !important;
+        font-size: 0.88rem !important;
         line-height: 1 !important;
-        font-weight: 520 !important;
+        font-weight: 650 !important;
         color: rgba(226,240,255,0.82) !important;
     }
     .clear-recent-btn .stButton > button:hover p {
@@ -1817,7 +1847,7 @@ with focus_custom:
     with clear_col:
         if recent_tickers:
             st.markdown('<div class="clear-recent-btn">', unsafe_allow_html=True)
-            st.button("×", use_container_width=True, on_click=clear_recent_tickers, help="최근 티커 비우기")
+            st.button("✕", use_container_width=True, on_click=clear_recent_tickers, help="최근 티커 비우기")
             st.markdown('</div>', unsafe_allow_html=True)
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
