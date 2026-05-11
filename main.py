@@ -588,17 +588,13 @@ st.markdown("""
         color: rgba(226,240,255,0.82);
     }
     .clear-recent-btn .stButton > button p {
-        font-size: 0 !important;
+        font-size: 1.25rem !important;
+        line-height: 1 !important;
+        font-weight: 520 !important;
+        color: rgba(226,240,255,0.82) !important;
     }
-    .clear-recent-btn .stButton > button p::before {
-        content: "×";
-        font-size: 1.25rem;
-        line-height: 1;
-        font-weight: 520;
-        color: rgba(226,240,255,0.82);
-    }
-    .clear-recent-btn .stButton > button:hover p::before {
-        color: #071323;
+    .clear-recent-btn .stButton > button:hover p {
+        color: #071323 !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] {
         display: flex;
@@ -1821,7 +1817,7 @@ with focus_custom:
     with clear_col:
         if recent_tickers:
             st.markdown('<div class="clear-recent-btn">', unsafe_allow_html=True)
-            st.button("최근 티커 비우기", use_container_width=True, on_click=clear_recent_tickers)
+            st.button("×", use_container_width=True, on_click=clear_recent_tickers, help="최근 티커 비우기")
             st.markdown('</div>', unsafe_allow_html=True)
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
