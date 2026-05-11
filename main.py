@@ -181,6 +181,15 @@ st.markdown("""
         font-size: 0.76rem;
         font-weight: 500;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+        text-decoration: none;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .creator-mark:hover {
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.055)),
+            rgba(10,132,255,0.16);
+        border-color: rgba(207,228,255,0.42);
+        transform: translateY(-1px);
     }
     .creator-mark::before {
         content: "by";
@@ -553,10 +562,17 @@ st.markdown("""
         transition: color 0.15s ease, background 0.15s ease;
     }
     .stTabs [data-baseweb="tab"]:hover { color: #f5f5f7; background: rgba(255,255,255,0.05); }
+    .stTabs [data-baseweb="tab"] p {
+        color: inherit !important;
+        font-weight: 600 !important;
+    }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(145deg, rgba(232,246,255,0.96), rgba(156,204,255,0.74)) !important;
         color: #071323 !important;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), 0 10px 28px rgba(55,144,255,0.18);
+    }
+    .stTabs [aria-selected="true"] p {
+        color: #071323 !important;
     }
 
     /* 헤딩 */
@@ -1401,35 +1417,26 @@ st.markdown(
       <div class="hero-row">
         <div>
           <h1>미국주식 Dashboard</h1>
-          <div class="creator-mark">30s_tech_j</div>
+          <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
         </div>
         <div class="viewer-pill">
           <span class="viewer-dot"></span>
-          <span>현재 세션 <strong>{active_viewers:,}</strong></span>
+          <span><strong>{active_viewers:,}</strong>명 보는 중</span>
           <span>·</span>
-          <span>누적 세션 <strong>{total_views:,}</strong></span>
+          <span>누적 <strong>{total_views:,}</strong>명</span>
         </div>
       </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
-ctrl_delta, ctrl_action = st.columns([3.2, 0.8])
-
-with ctrl_delta:
-    delta_label = st.radio(
-        "표시 범위",
-        options=list(DELTA_OPTIONS.keys()),
-        index=list(DELTA_OPTIONS.keys()).index("180일"),
-        horizontal=True,
-    )
-    delta = DELTA_OPTIONS[delta_label]
-
-with ctrl_action:
-    st.markdown("<div style='height: 1.7rem'></div>", unsafe_allow_html=True)
-    if st.button("↻ 새로고침", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
+delta_label = st.radio(
+    "표시 범위",
+    options=list(DELTA_OPTIONS.keys()),
+    index=list(DELTA_OPTIONS.keys()).index("180일"),
+    horizontal=True,
+)
+delta = DELTA_OPTIONS[delta_label]
 
 
 # ── 메인 영역 ──────────────────────────────────────────────────────────────────
@@ -1440,7 +1447,7 @@ st.markdown("<div class='section-label'>포커스 종목</div>", unsafe_allow_ht
 focus_preset, focus_custom = st.columns([1, 1])
 with focus_preset:
     preset_ticker = st.selectbox(
-        "기본/최근 티커",
+        "기본/내 최근 티커",
         ticker_options,
         format_func=lambda ticker: f"{ticker_name(ticker)} · {ticker}",
     )
@@ -1499,10 +1506,6 @@ if table_df.empty:
     table_df = df
 
 latest = df.iloc[-1]
-
-# ── 최근 신호 ──────────────────────────────────────────────────────────────────
-st.markdown("### 최근 신호")
-render_signal_cards(df)
 
 # ── 메트릭 카드 ────────────────────────────────────────────────────────────────
 close_val    = safe_float(latest.get('Close'))
@@ -1565,6 +1568,10 @@ render_risk_metrics([
         'level': treasury_level,
     },
 ])
+
+# ── 최근 신호 ──────────────────────────────────────────────────────────────────
+st.markdown("### 최근 신호")
+render_signal_cards(df)
 
 st.markdown("")
 
