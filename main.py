@@ -82,7 +82,7 @@ st.markdown("""
         position: relative;
         z-index: 1;
         margin: 0;
-        font-size: 2.05rem;
+        font-size: 1.88rem;
         line-height: 1.08;
         font-weight: 750;
         letter-spacing: 0;
@@ -92,11 +92,11 @@ st.markdown("""
         z-index: 1;
         margin: 0.45rem 0 0;
         color: #8e8e93;
-        font-size: 0.92rem;
+        font-size: 0.88rem;
     }
     .section-label {
         color: #8e8e93;
-        font-size: 0.78rem;
+        font-size: 0.74rem;
         font-weight: 700;
         margin: 1.2rem 0 0.45rem;
     }
@@ -109,13 +109,13 @@ st.markdown("""
     }
     .focus-title .eyebrow {
         color: #8e8e93;
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 700;
         margin-bottom: 0.25rem;
     }
     .focus-title .name {
         color: #f5f5f7;
-        font-size: 1.95rem;
+        font-size: 1.72rem;
         line-height: 1.05;
         font-weight: 750;
     }
@@ -129,7 +129,7 @@ st.markdown("""
             linear-gradient(135deg, rgba(255,255,255,0.18), rgba(10,132,255,0.12)),
             rgba(10,132,255,0.10);
         color: #b9dcff;
-        font-size: 1.25rem;
+        font-size: 1.06rem;
         font-family: 'DM Mono', monospace;
         font-weight: 500;
         vertical-align: 0.12rem;
@@ -175,7 +175,7 @@ st.markdown("""
         align-items: center;
         gap: 8px;
         color: #f5f5f7;
-        font-size: 0.92rem;
+        font-size: 0.88rem;
         font-weight: 700;
         margin-bottom: 11px;
     }
@@ -195,21 +195,21 @@ st.markdown("""
         padding: 7px 0;
         border-top: 1px solid rgba(255,255,255,0.08);
         color: #d8d8dc;
-        font-size: 0.84rem;
+        font-size: 0.8rem;
     }
     .signal-item:first-of-type { border-top: none; }
     .signal-date {
         color: #8e8e93;
         white-space: nowrap;
         font-family: 'DM Mono', monospace;
-        font-size: 0.78rem;
+        font-size: 0.74rem;
     }
     .signal-empty {
         position: relative;
         z-index: 1;
         padding-top: 14px;
         color: #8e8e93;
-        font-size: 0.84rem;
+        font-size: 0.8rem;
     }
 
     /* 사이드바 */
@@ -235,7 +235,7 @@ st.markdown("""
     div[data-testid="stSelectbox"] label,
     div[data-testid="stRadio"] label {
         color: #8e8e93 !important;
-        font-size: 0.78rem !important;
+        font-size: 0.74rem !important;
         font-weight: 600 !important;
         letter-spacing: 0 !important;
     }
@@ -283,7 +283,7 @@ st.markdown("""
     div[data-testid="stRadio"] div[role="radiogroup"] label p {
         color: #f5f5f7 !important;
         font-weight: 600 !important;
-        font-size: 0.83rem !important;
+        font-size: 0.8rem !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p {
         color: #050506 !important;
@@ -313,20 +313,20 @@ st.markdown("""
         transform: translateY(-1px);
     }
     div[data-testid="metric-container"] label {
-        font-size: 0.74rem !important;
+        font-size: 0.7rem !important;
         font-weight: 600 !important;
         letter-spacing: 0 !important;
         color: #8e8e93 !important;
     }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] {
         font-family: 'DM Mono', monospace !important;
-        font-size: 1.42rem !important;
+        font-size: 1.26rem !important;
         font-weight: 500 !important;
         color: #f5f5f7 !important;
         letter-spacing: 0;
     }
     div[data-testid="metric-container"] [data-testid="stMetricDelta"] {
-        font-size: 0.78rem !important;
+        font-size: 0.74rem !important;
         font-weight: 500 !important;
         letter-spacing: 0.02em;
     }
@@ -344,7 +344,7 @@ st.markdown("""
         border-radius: 0;
         color: #8e8e93;
         font-weight: 600;
-        font-size: 0.87rem;
+        font-size: 0.82rem;
         letter-spacing: 0;
         padding: 8px 2px 12px;
         border-bottom: 2px solid transparent;
@@ -361,7 +361,7 @@ st.markdown("""
     /* 헤딩 */
     h1 {
         color: #f5f5f7 !important;
-        font-size: 1.75rem !important;
+        font-size: 1.55rem !important;
         font-weight: 700 !important;
         letter-spacing: 0;
     }
@@ -369,10 +369,10 @@ st.markdown("""
     h3 {
         color: #f5f5f7 !important;
         font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.9rem !important;
         letter-spacing: 0;
     }
-    p, li { color: #9b9ba1; font-size: 0.88rem; }
+    p, li { color: #9b9ba1; font-size: 0.84rem; }
 
     /* 버튼 */
     .stButton > button {
@@ -383,7 +383,7 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.18);
         border-radius: 999px;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         letter-spacing: 0;
         padding: 9px 16px;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.26), 0 18px 46px rgba(10,132,255,0.25);
@@ -404,7 +404,7 @@ st.markdown("""
         border: 1px solid rgba(10,132,255,0.35);
         border-radius: 999px;
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         transition: background 0.15s ease, border-color 0.15s ease;
     }
     .stDownloadButton > button p { color: #0a84ff !important; }
@@ -434,7 +434,7 @@ st.markdown("""
     details summary {
         color: #f5f5f7 !important;
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 0.84rem;
         padding: 10px 4px;
     }
 
@@ -443,7 +443,7 @@ st.markdown("""
         background: rgba(10,132,255,0.14) !important;
         color: #8ec5ff !important;
         font-family: 'DM Mono', monospace !important;
-        font-size: 0.83em !important;
+        font-size: 0.78em !important;
         border-radius: 8px !important;
         padding: 2px 8px !important;
         border: 1px solid rgba(10,132,255,0.28) !important;
@@ -469,7 +469,7 @@ st.markdown("""
             padding-top: 0.9rem !important;
         }
         h1 {
-            font-size: 1.22rem !important;
+            font-size: 1.1rem !important;
             line-height: 1.25 !important;
         }
         .stTabs [data-baseweb="tab-list"] {
@@ -479,20 +479,20 @@ st.markdown("""
         .stTabs [data-baseweb="tab"] {
             min-width: max-content;
             padding: 6px 12px;
-            font-size: 0.8rem;
+            font-size: 0.76rem;
         }
         div[data-testid="metric-container"] {
             padding: 12px 13px;
         }
         div[data-testid="metric-container"] [data-testid="stMetricValue"] {
-            font-size: 1.05rem !important;
+            font-size: 1rem !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label {
             flex: 1 1 calc(50% - 8px);
             justify-content: center;
         }
         .app-hero h1 {
-            font-size: 1.42rem;
+            font-size: 1.28rem;
         }
         .signal-grid {
             grid-template-columns: 1fr;
@@ -502,10 +502,10 @@ st.markdown("""
             padding-top: 0.55rem;
         }
         .focus-title .name {
-            font-size: 1.55rem;
+            font-size: 1.34rem;
         }
         .focus-title .ticker {
-            font-size: 1rem;
+            font-size: 0.92rem;
         }
     }
 </style>
@@ -569,11 +569,11 @@ CHART_THEME = dict(
     paper_bgcolor='#050506',
     font=dict(family='DM Sans, sans-serif', color='#8e8e93', size=12),
     legend=dict(
-        orientation='h', yanchor='bottom', y=1.01, xanchor='left', x=0,
+        orientation='h', yanchor='bottom', y=1.04, xanchor='right', x=1,
         font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.10)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=60, r=20, t=65, b=40),
+    margin=dict(l=60, r=24, t=78, b=40),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
 
@@ -643,7 +643,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     fig.update_layout(
         **CHART_THEME,
         title=dict(text=f'<b>{name}</b>  캔들스틱', x=0.01,
-                   font=dict(size=17, color='#f5f5f7', family='DM Sans')),
+                   font=dict(size=15, color='#f5f5f7', family='DM Sans')),
         height=660,
     )
     for r in [1, 2, 3]:
@@ -732,7 +732,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     fig.update_layout(
         **CHART_THEME,
         title=dict(text=f'<b>{name}</b>  라인 + 신호', x=0.01,
-                   font=dict(size=17, color='#f5f5f7', family='DM Sans')),
+                   font=dict(size=15, color='#f5f5f7', family='DM Sans')),
         height=590,
     )
     for r in [1, 2]:
