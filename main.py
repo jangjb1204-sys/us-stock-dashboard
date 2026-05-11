@@ -574,34 +574,12 @@ st.markdown("""
         color: rgba(207,228,255,0.42) !important;
     }
     div[data-testid="InputInstructions"] {
-        min-height: 16px !important;
+        display: none !important;
+        min-height: 0 !important;
         color: transparent !important;
         font-size: 0 !important;
         line-height: 1 !important;
-        margin-top: 4px !important;
-    }
-    div[data-testid="InputInstructions"] span,
-    div[data-testid="InputInstructions"] p {
-        color: transparent !important;
-        font-size: 0 !important;
-    }
-    div[data-testid="InputInstructions"]::before {
-        content: "Enter";
-        display: inline-flex;
-        align-items: center;
-        height: 16px;
-        padding: 2px 7px;
-        border: 1px solid rgba(190,220,255,0.16);
-        border-radius: 7px;
-        background:
-            linear-gradient(145deg, rgba(226,240,255,0.10), rgba(255,255,255,0.025)),
-            rgba(9,29,52,0.34);
-        color: rgba(207,228,255,0.58);
-        font-family: 'DM Mono', monospace;
-        font-size: 0.58rem;
-        font-weight: 500;
-        letter-spacing: 0;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+        margin: 0 !important;
     }
     .clear-recent-btn div[data-testid="stButton"] {
         margin-top: 1.47rem;
