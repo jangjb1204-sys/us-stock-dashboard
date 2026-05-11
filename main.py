@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
+from html import escape
 import time
 
 from stock_analyzer import (
@@ -27,13 +28,119 @@ st.markdown("""
 
     html, body, [class*="css"], .stApp {
         font-family: 'DM Sans', sans-serif !important;
-        background: #050506 !important;
+        background: linear-gradient(180deg, #09090b 0%, #050506 42%, #030304 100%) !important;
         color: #f5f5f7 !important;
     }
     .block-container {
         padding-top: 1.25rem !important;
         padding-bottom: 2.5rem !important;
         max-width: 1360px;
+    }
+    .app-hero {
+        margin: 0.25rem 0 1.25rem;
+    }
+    .app-hero h1 {
+        margin: 0;
+        font-size: 2.05rem;
+        line-height: 1.08;
+        font-weight: 750;
+        letter-spacing: 0;
+    }
+    .app-hero p {
+        margin: 0.45rem 0 0;
+        color: #8e8e93;
+        font-size: 0.92rem;
+    }
+    .section-label {
+        color: #8e8e93;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 1.2rem 0 0.45rem;
+    }
+    .focus-title {
+        min-height: 76px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 0 0 0.2rem;
+    }
+    .focus-title .eyebrow {
+        color: #8e8e93;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    .focus-title .name {
+        color: #f5f5f7;
+        font-size: 1.95rem;
+        line-height: 1.05;
+        font-weight: 750;
+    }
+    .focus-title .ticker {
+        display: inline-block;
+        margin-left: 0.55rem;
+        padding: 0.16rem 0.52rem;
+        border: 1px solid rgba(10,132,255,0.34);
+        border-radius: 9px;
+        background: rgba(10,132,255,0.12);
+        color: #8ec5ff;
+        font-size: 1.25rem;
+        font-family: 'DM Mono', monospace;
+        font-weight: 500;
+        vertical-align: 0.12rem;
+    }
+    .signal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin: 0.7rem 0 1.1rem;
+    }
+    .signal-card {
+        min-height: 118px;
+        padding: 15px 16px;
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 18px;
+        background: rgba(255,255,255,0.065);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 44px rgba(0,0,0,0.24);
+        backdrop-filter: blur(22px) saturate(1.35);
+        -webkit-backdrop-filter: blur(22px) saturate(1.35);
+    }
+    .signal-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #f5f5f7;
+        font-size: 0.92rem;
+        font-weight: 700;
+        margin-bottom: 11px;
+    }
+    .signal-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+    }
+    .signal-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 7px 0;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        color: #d8d8dc;
+        font-size: 0.84rem;
+    }
+    .signal-item:first-of-type { border-top: none; }
+    .signal-date {
+        color: #8e8e93;
+        white-space: nowrap;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.78rem;
+    }
+    .signal-empty {
+        padding-top: 14px;
+        color: #8e8e93;
+        font-size: 0.84rem;
     }
 
     /* 사이드바 */
@@ -219,8 +326,11 @@ st.markdown("""
     details {
         border: 1px solid rgba(255,255,255,0.10) !important;
         border-radius: 16px !important;
-        background: #111113 !important;
+        background: rgba(255,255,255,0.055) !important;
         padding: 4px 6px !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), 0 20px 60px rgba(0,0,0,0.22);
+        backdrop-filter: blur(20px) saturate(1.28);
+        -webkit-backdrop-filter: blur(20px) saturate(1.28);
     }
     details summary {
         color: #f5f5f7 !important;
@@ -280,6 +390,22 @@ st.markdown("""
         div[data-testid="stRadio"] div[role="radiogroup"] label {
             flex: 1 1 calc(50% - 8px);
             justify-content: center;
+        }
+        .app-hero h1 {
+            font-size: 1.42rem;
+        }
+        .signal-grid {
+            grid-template-columns: 1fr;
+        }
+        .focus-title {
+            min-height: auto;
+            padding-top: 0.55rem;
+        }
+        .focus-title .name {
+            font-size: 1.55rem;
+        }
+        .focus-title .ticker {
+            font-size: 1rem;
         }
     }
 </style>
@@ -693,6 +819,52 @@ def render_market_summary(period: str, delta: int, cache_key: str):
             st.info("전체 종목 데이터를 아직 가져오지 못했습니다.")
 
 
+def render_signal_cards(df: pd.DataFrame):
+    def make_items(rows, value_col=None):
+        items = []
+        for _, row in rows.iterrows():
+            date = pd.to_datetime(row['Date']).strftime('%m.%d')
+            value = row.get(value_col, '') if value_col else ''
+            items.append((date, str(value) if pd.notna(value) and value else 'Signal'))
+        return items
+
+    puddle_items = make_items(
+        df[df['Puddle'].str.contains(r'[a-zA-Z]', na=False)].tail(3),
+        'Puddle',
+    ) if 'Puddle' in df.columns else []
+
+    vix_items = make_items(
+        df[df['VIX1D>VIX'] == 'BUY'].tail(3),
+    ) if 'VIX1D>VIX' in df.columns else []
+
+    stochastic_items = make_items(
+        df[df['SS Signal'].isin(['Buy', 'Sell'])].tail(3),
+        'SS Signal',
+    ) if 'SS Signal' in df.columns else []
+
+    cards = [
+        ('Puddle', puddle_items, '#bf5af2'),
+        ('VIX1D > VIX', vix_items, '#0a84ff'),
+        ('Stochastic', stochastic_items, '#30d158'),
+    ]
+    html_cards = []
+    for title, items, accent in cards:
+        body = ''.join(
+            f"<div class='signal-item'><span class='signal-date'>{escape(date)}</span>"
+            f"<span>{escape(value)}</span></div>"
+            for date, value in items
+        )
+        if not body:
+            body = "<div class='signal-empty'>최근 신호 없음</div>"
+        html_cards.append(
+            f"<div class='signal-card' style='--accent:{accent}'>"
+            f"<div class='signal-title'><span class='signal-dot'></span>{escape(title)}</div>"
+            f"{body}</div>"
+        )
+
+    st.markdown(f"<div class='signal-grid'>{''.join(html_cards)}</div>", unsafe_allow_html=True)
+
+
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## US Stock Dashboard")
@@ -704,17 +876,16 @@ with st.sidebar:
 
 ticker_options = list(TICKER_CONFIGS.keys())
 
-st.markdown("# US Stock Dashboard")
-ctrl_ticker, ctrl_delta, ctrl_action = st.columns([1.6, 1.6, 0.8])
-
-with ctrl_ticker:
-    selected_ticker = st.selectbox(
-        "종목",
-        ticker_options,
-        format_func=lambda ticker: f"{TICKER_CONFIGS[ticker]} · {ticker}",
-        label_visibility="visible",
-    )
-    selected_name = TICKER_CONFIGS[selected_ticker]
+st.markdown(
+    """
+    <div class="app-hero">
+      <h1>US Stock Dashboard</h1>
+      <p>시장 전체를 먼저 훑고, 관심 종목을 깊게 확인합니다.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+ctrl_delta, ctrl_action = st.columns([3.2, 0.8])
 
 with ctrl_delta:
     delta_label = st.radio(
@@ -738,7 +909,28 @@ cache_key = f"{period}_{delta}"
 
 render_market_summary(period, delta, cache_key)
 st.markdown("---")
-st.markdown(f"## {selected_name} &nbsp; `{selected_ticker}`", unsafe_allow_html=True)
+
+st.markdown("<div class='section-label'>포커스 종목</div>", unsafe_allow_html=True)
+focus_selector, focus_title = st.columns([1.15, 2.85])
+with focus_selector:
+    selected_ticker = st.selectbox(
+        "종목",
+        ticker_options,
+        format_func=lambda ticker: f"{TICKER_CONFIGS[ticker]} · {ticker}",
+        label_visibility="collapsed",
+    )
+    selected_name = TICKER_CONFIGS[selected_ticker]
+
+with focus_title:
+    st.markdown(
+        f"""
+        <div class="focus-title">
+          <div class="eyebrow">Selected</div>
+          <div class="name">{escape(selected_name)} <span class="ticker">{escape(selected_ticker)}</span></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
     df = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
@@ -812,37 +1004,7 @@ with tab1:
     st.plotly_chart(build_candlestick_chart(df, selected_name), use_container_width=True)
 
     st.markdown("### 최근 신호")
-    sc1, sc2, sc3 = st.columns(3)
-
-    with sc1:
-        st.markdown("**Puddle**")
-        if 'Puddle' in df.columns:
-            rp = df[df['Puddle'].str.contains(r'[a-zA-Z]', na=False)].tail(3)
-            if not rp.empty:
-                for _, r in rp.iterrows():
-                    st.markdown(f"- {pd.to_datetime(r['Date']).strftime('%Y-%m-%d')} · {r['Puddle']}")
-            else:
-                st.markdown("최근 없음")
-
-    with sc2:
-        st.markdown("**VIX1D > VIX**")
-        if 'VIX1D>VIX' in df.columns:
-            rv = df[df['VIX1D>VIX'] == 'BUY'].tail(3)
-            if not rv.empty:
-                for _, r in rv.iterrows():
-                    st.markdown(f"- {pd.to_datetime(r['Date']).strftime('%Y-%m-%d')}")
-            else:
-                st.markdown("최근 없음")
-
-    with sc3:
-        st.markdown("**Stochastic**")
-        if 'SS Signal' in df.columns:
-            rs = df[df['SS Signal'].isin(['Buy', 'Sell'])].tail(3)
-            if not rs.empty:
-                for _, r in rs.iterrows():
-                    st.markdown(f"- {pd.to_datetime(r['Date']).strftime('%Y-%m-%d')} · {r['SS Signal']}")
-            else:
-                st.markdown("최근 없음")
+    render_signal_cards(df)
 
 with tab2:
     st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
