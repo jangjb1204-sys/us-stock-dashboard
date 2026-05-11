@@ -93,9 +93,15 @@ if process_btn:
                         text=puddle_buys['Puddle']
                     ))
 
+                    
             # (5) RSI 과매도 구간 (파란색 점 마커)
             if 'RSI' in df.columns:
-                oversold = df[df['RSI'] <= 30]
+                # 중요: RSI 컬럼을 숫자형으로 변환 (빈 문자열 등은 NaN 처리)
+                temp_rsi = pd.to_numeric(df['RSI'], errors='coerce')
+                
+                # 숫자인 값들 중에서만 30 이하인 데이터 필터링
+                oversold = df[temp_rsi <= 30]
+                
                 if not oversold.empty:
                     fig.add_trace(go.Scatter(
                         x=oversold['Date'], y=oversold['Close'],
