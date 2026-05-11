@@ -211,6 +211,86 @@ st.markdown("""
         color: #8e8e93;
         font-size: 0.8rem;
     }
+    .risk-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin: 0.95rem 0 1.2rem;
+    }
+    .risk-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 92px;
+        padding: 14px 15px;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 20px;
+        background:
+            linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035) 54%, rgba(255,255,255,0.02)),
+            rgba(12,12,14,0.48);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.18),
+            inset 0 -1px 0 rgba(255,255,255,0.05),
+            0 18px 54px rgba(0,0,0,0.22);
+        backdrop-filter: blur(24px) saturate(1.42);
+        -webkit-backdrop-filter: blur(24px) saturate(1.42);
+    }
+    .risk-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+            linear-gradient(120deg, rgba(255,255,255,0.15), transparent 38%),
+            radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 46%);
+        opacity: 0.7;
+    }
+    .risk-top, .risk-main, .risk-caption {
+        position: relative;
+        z-index: 1;
+    }
+    .risk-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #8e8e93;
+        font-size: 0.7rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    .risk-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        border: 1px solid color-mix(in srgb, var(--accent) 44%, rgba(255,255,255,0.15));
+        border-radius: 999px;
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 13%, transparent);
+        font-size: 0.68rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .risk-badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 70%, transparent);
+    }
+    .risk-main {
+        color: #f5f5f7;
+        font-family: 'DM Mono', monospace;
+        font-size: 1.24rem;
+        font-weight: 500;
+        line-height: 1.1;
+    }
+    .risk-caption {
+        margin-top: 7px;
+        color: #9b9ba1;
+        font-size: 0.74rem;
+    }
 
     /* 사이드바 */
     section[data-testid="stSidebar"] {
@@ -495,6 +575,9 @@ st.markdown("""
             font-size: 1.28rem;
         }
         .signal-grid {
+            grid-template-columns: 1fr;
+        }
+        .risk-grid {
             grid-template-columns: 1fr;
         }
         .focus-title {
@@ -980,6 +1063,87 @@ def render_signal_cards(df: pd.DataFrame):
     st.markdown(f"<div class='signal-grid'>{''.join(html_cards)}</div>", unsafe_allow_html=True)
 
 
+def status_color(level: str) -> str:
+    return {
+        'opportunity': '#30d158',
+        'safe': '#64d2ff',
+        'neutral': '#a1a1aa',
+        'caution': '#ffcc00',
+        'risk': '#ff453a',
+    }.get(level, '#a1a1aa')
+
+
+def render_risk_metrics(metrics):
+    cards = []
+    for metric in metrics:
+        accent = status_color(metric['level'])
+        cards.append(
+            f"<div class='risk-card' style='--accent:{accent}'>"
+            f"<div class='risk-top'><span>{escape(metric['label'])}</span>"
+            f"<span class='risk-badge'>{escape(metric['status'])}</span></div>"
+            f"<div class='risk-main'>{escape(metric['value'])}</div>"
+            f"<div class='risk-caption'>{escape(metric['caption'])}</div>"
+            f"</div>"
+        )
+    st.markdown(f"<div class='risk-grid'>{''.join(cards)}</div>", unsafe_allow_html=True)
+
+
+def rsi_status(value):
+    if value is None:
+        return ('neutral', 'N/A', '데이터 없음')
+    if value <= 30:
+        return ('opportunity', '과매도', '반등 후보 구간')
+    if value >= 70:
+        return ('risk', '과매수', '단기 과열 주의')
+    return ('neutral', '중립', '추세 확인 구간')
+
+
+def vix_status(value):
+    if value is None:
+        return ('neutral', 'N/A', '데이터 없음')
+    if value > 25:
+        return ('opportunity', '변동성 급등', '공포성 매수 기회')
+    if value < 15:
+        return ('safe', '안정', '낮은 변동성')
+    return ('neutral', '보통', '평균 변동성')
+
+
+def fg_status(value):
+    if value is None:
+        return ('neutral', 'N/A', '데이터 없음')
+    if value >= 75:
+        return ('risk', '극도 탐욕', '과열 리스크')
+    if value >= 55:
+        return ('caution', '탐욕', '추격 매수 주의')
+    if value <= 25:
+        return ('opportunity', '극도 공포', '역발상 관심')
+    if value <= 45:
+        return ('safe', '공포', '분할 접근 구간')
+    return ('neutral', '중립', '방향성 대기')
+
+
+def skew_status(value):
+    if value is None:
+        return ('neutral', 'N/A', '데이터 없음')
+    if value >= 155:
+        return ('risk', '고위험', '꼬리 리스크 확대')
+    if value <= 127:
+        return ('safe', '저위험', '왜도 부담 완화')
+    return ('neutral', '보통', '평균 리스크')
+
+
+def treasury_status(value):
+    if value is None:
+        return ('neutral', 'N/A', '데이터 없음')
+    if value >= 5:
+        return ('risk', '고금리', '밸류에이션 압박')
+    if value >= 4.5:
+        return ('caution', '금리 부담', '성장주 할인율 주의')
+    if value <= 3.5:
+        return ('safe', '완화', '금리 부담 낮음')
+    return ('neutral', '보통', '중립 금리 구간')
+
+
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## US Stock Dashboard")
@@ -1075,40 +1239,58 @@ fg_val       = safe_float(latest.get('FG index'))
 skew_val     = safe_float(latest.get('SKEW'))
 treasury_val = safe_float(latest.get('10Y Treasury'))
 
-col1, col2, col3 = st.columns(3)
+change_level = 'safe' if change_val is not None and change_val > 0 else \
+               'caution' if change_val is not None and change_val < 0 else 'neutral'
+rsi_level, rsi_state, rsi_caption = rsi_status(rsi_val)
+vix_level, vix_state, vix_caption = vix_status(vix_val)
+fg_level, fg_state, fg_caption = fg_status(fg_val)
+skew_level, skew_state, skew_caption = skew_status(skew_val)
+treasury_level, treasury_state, treasury_caption = treasury_status(treasury_val)
 
-with col1:
-    st.metric("종가", fmt_price(close_val),
-              fmt_pct(change_val, sign=True) if change_val is not None else None)
-
-with col2:
-    rsi_label = ("과매도" if rsi_val and rsi_val <= 30 else
-                 "과매수" if rsi_val and rsi_val >= 70 else
-                 "중립"   if rsi_val else "")
-    st.metric("RSI", fmt_1f(rsi_val) if rsi_val else "N/A", rsi_label)
-
-with col3:
-    vix_label = "급등구간" if vix_val and vix_val > 25 else ""
-    st.metric("VIX", fmt_1f(vix_val) if vix_val else "N/A", vix_label)
-
-col4, col5, col6 = st.columns(3)
-
-with col4:
-    fg_label = ""
-    if fg_val is not None:
-        fg_label = ("극도 탐욕" if fg_val >= 75 else "탐욕"    if fg_val >= 55
-               else "중립"     if fg_val >= 45 else "공포"    if fg_val >= 25
-               else "극도 공포")
-    st.metric("F&G", fmt_int(fg_val) if fg_val is not None else "N/A", fg_label)
-
-with col5:
-    skew_label = ("고위험" if skew_val and skew_val >= 155 else
-                  "저위험" if skew_val and skew_val <= 127 else "")
-    st.metric("SKEW", fmt_1f(skew_val) if skew_val else "N/A", skew_label)
-
-with col6:
-    st.metric("10Y Treasury",
-              f"{treasury_val:.2f}%" if treasury_val else "N/A")
+render_risk_metrics([
+    {
+        'label': '종가',
+        'value': fmt_price(close_val),
+        'status': fmt_pct(change_val, sign=True) if change_val is not None else 'N/A',
+        'caption': '전일 대비 변화',
+        'level': change_level,
+    },
+    {
+        'label': 'RSI',
+        'value': fmt_1f(rsi_val) if rsi_val is not None else 'N/A',
+        'status': rsi_state,
+        'caption': rsi_caption,
+        'level': rsi_level,
+    },
+    {
+        'label': 'VIX',
+        'value': fmt_1f(vix_val) if vix_val is not None else 'N/A',
+        'status': vix_state,
+        'caption': vix_caption,
+        'level': vix_level,
+    },
+    {
+        'label': 'F&G',
+        'value': fmt_int(fg_val) if fg_val is not None else 'N/A',
+        'status': fg_state,
+        'caption': fg_caption,
+        'level': fg_level,
+    },
+    {
+        'label': 'SKEW',
+        'value': fmt_1f(skew_val) if skew_val is not None else 'N/A',
+        'status': skew_state,
+        'caption': skew_caption,
+        'level': skew_level,
+    },
+    {
+        'label': '10Y Treasury',
+        'value': f"{treasury_val:.2f}%" if treasury_val is not None else 'N/A',
+        'status': treasury_state,
+        'caption': treasury_caption,
+        'level': treasury_level,
+    },
+])
 
 st.markdown("")
 
@@ -1116,16 +1298,14 @@ st.markdown("")
 tab1, tab2, tab3 = st.tabs(["캔들스틱", "라인 + 신호", "데이터"])
 
 with tab1:
+    st.markdown("### 최근 신호")
+    render_signal_cards(df)
     st.plotly_chart(build_candlestick_chart(df, selected_name), use_container_width=True)
 
-    st.markdown("### 최근 신호")
-    render_signal_cards(df)
-
 with tab2:
-    st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
-
     st.markdown("### 최근 신호")
     render_signal_cards(df)
+    st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
 
 with tab3:
     st.markdown("### 전체 데이터")
