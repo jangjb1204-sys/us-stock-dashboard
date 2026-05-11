@@ -1003,8 +1003,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        title=dict(text=f'<b>{name}</b>  캔들스틱', x=0.01,
-                   font=dict(size=15, color='#f5f5f7', family='DM Sans')),
+        title=None,
         height=660,
     )
     for r in [1, 2, 3]:
@@ -1106,8 +1105,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        title=dict(text=f'<b>{name}</b>  라인 + 신호', x=0.01,
-                   font=dict(size=15, color='#f5f5f7', family='DM Sans')),
+        title=None,
         height=590,
     )
     for r in [1, 2]:
@@ -1608,7 +1606,7 @@ render_signal_cards(df)
 st.markdown("")
 
 # ── 탭 ────────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["캔들스틱", "라인 + 신호", "데이터"])
+tab1, tab2, tab3 = st.tabs(["Chart", "Signals", "Metrics"])
 
 with tab1:
     st.plotly_chart(build_candlestick_chart(df, selected_name), use_container_width=True)
@@ -1617,7 +1615,6 @@ with tab2:
     st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
 
 with tab3:
-    st.markdown("### 전체 데이터")
     st.dataframe(style_table(table_df), use_container_width=True, height=500)
 
     csv = table_df.copy()
