@@ -1421,6 +1421,23 @@ st.markdown("""
     div[data-testid="stDownloadButton"] button:hover p {
         color: rgba(255,255,255,0.82) !important;
     }
+    .product-signature {
+        margin: 3.2rem 0 0.2rem;
+        padding-top: 1.2rem;
+        border-top: 1px solid rgba(255,255,255,0.045);
+        color: rgba(255,255,255,0.34);
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0;
+    }
+    .product-signature a {
+        color: rgba(255,255,255,0.48);
+        text-decoration: none !important;
+        transition: color 0.15s ease, opacity 0.15s ease;
+    }
+    .product-signature a:hover {
+        color: rgba(255,255,255,0.72);
+    }
     details summary,
     details[open] summary,
     div[data-testid="stExpander"] details summary,
@@ -1639,6 +1656,11 @@ st.markdown("""
         }
         div[data-testid="stDownloadButton"] {
             margin-top: 24px !important;
+        }
+        .product-signature {
+            margin-top: 2.7rem;
+            padding-top: 1rem;
+            font-size: 0.76rem;
         }
     }
 </style>
@@ -2647,3 +2669,12 @@ with tab3:
         file_name=f"{selected_name}_{datetime.now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
     )
+
+st.markdown(
+    """
+    <div class="product-signature">
+      by <a href="https://www.threads.net/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
