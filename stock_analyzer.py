@@ -63,8 +63,39 @@ def fetch_common_market_data(period: str = '2y') -> dict:
         ('skew',    '^SKEW', 'SKEW'),
     ]
 
+    try:
+        symbols = [ticker_sym for _, ticker_sym, _ in market_specs]
+        raw = yf.download(
+            tickers=symbols,
+            period=period,
+            group_by='ticker',
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+    except Exception:
+        raw = pd.DataFrame()
+
+    def normalize_market_frame(ticker_sym: str, col_name: str) -> pd.DataFrame:
+        try:
+            if isinstance(raw.columns, pd.MultiIndex):
+                df = raw[ticker_sym][['Close']].dropna(how='all').rename(columns={'Close': col_name})
+            else:
+                df = raw[['Close']].dropna(how='all').rename(columns={'Close': col_name})
+            df = df.reset_index()
+            if 'Date' not in df.columns:
+                df = df.rename(columns={df.columns[0]: 'Date'})
+            df['Date'] = pd.to_datetime(df['Date']).dt.tz_localize(None).dt.normalize()
+            df[col_name] = df[col_name].round(2)
+            return df
+        except Exception:
+            return pd.DataFrame()
+
     def fetch_market_series(spec):
         key, ticker_sym, col_name = spec
+        df = normalize_market_frame(ticker_sym, col_name)
+        if not df.empty:
+            return key, df
         try:
             df = yf.Ticker(ticker_sym).history(period=period)[['Close']].rename(columns={'Close': col_name})
             df = df.reset_index()

@@ -8,13 +8,14 @@ from html import escape
 import time
 import uuid
 from zoneinfo import ZoneInfo
+from concurrent.futures import ThreadPoolExecutor
 
 from stock_analyzer import (
     TICKER_CONFIGS,
     fetch_batch_stock_data,
     fetch_common_market_data,
+    fetch_stock_data,
     process_stock_frame,
-    process_stock_data,
     fetch_ticker_display_name,
 )
 
@@ -1172,9 +1173,19 @@ def load_common_data(period: str) -> dict:
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key: str) -> tuple[pd.DataFrame, str]:
-    common_payload = load_common_data(period)
-    data = process_stock_data(ticker, name, common_payload['data'], period=period, delta=delta)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        common_future = executor.submit(fetch_common_market_data, period)
+        stock_future = executor.submit(fetch_stock_data, ticker, period)
+        common_data = common_future.result()
+        stock_data = stock_future.result()
+    data = process_stock_frame(stock_data, ticker, name, common_data, delta=DELTA_OPTIONS["4년"])
     return data, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def filter_by_delta(df: pd.DataFrame, delta: int) -> pd.DataFrame:
+    if df.empty or len(df) <= delta:
+        return df
+    cutoff = datetime.now() - timedelta(days=delta)
+    return df[df['Date'] >= cutoff].reset_index(drop=True)
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tickers: tuple[str, ...] = ()) -> pd.DataFrame:
@@ -1882,7 +1893,14 @@ st.markdown(
 )
 
 with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
-    df, updated_at = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
+    table_df, updated_at = load_ticker_data(
+        selected_ticker,
+        selected_name,
+        period,
+        DELTA_OPTIONS["4년"],
+        f"{period}_{DELTA_OPTIONS['4년']}",
+    )
+    df = filter_by_delta(table_df, delta)
 
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at)
 
@@ -1892,16 +1910,6 @@ if df.empty:
 
 if selected_ticker not in TICKER_CONFIGS:
     save_recent_ticker(selected_ticker)
-
-table_df, _table_updated_at = load_ticker_data(
-    selected_ticker,
-    selected_name,
-    period,
-    DELTA_OPTIONS["4년"],
-    f"{period}_{DELTA_OPTIONS['4년']}",
-)
-if table_df.empty:
-    table_df = df
 
 latest = df.iloc[-1]
 
