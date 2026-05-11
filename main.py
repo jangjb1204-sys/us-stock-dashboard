@@ -1134,6 +1134,8 @@ st.markdown("""
     }
     div[data-testid="stRadio"] div[role="radiogroup"] {
         width: fit-content;
+        max-width: 100%;
+        flex-wrap: wrap;
         padding: 4px;
         gap: 2px !important;
         border-radius: 999px;
@@ -1730,8 +1732,8 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
             lat = d.iloc[-1]
             rows.append({
                 '_order':        order,
-                '종목':          name,
-                '종가':          safe_float(lat.get('Close')),
+                'Name':          name,
+                'Close':         safe_float(lat.get('Close')),
                 'Change(%)':     safe_float(lat.get('Change(%)')),
                 '2sigma(%)':     safe_float(lat.get('2sigma(%)')),
                 'RSI':           safe_float(lat.get('RSI')),
@@ -1926,11 +1928,11 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     if 'FG index' in df.columns and df['FG index'].notna().any():
         fg_df = df[df['FG index'].notna()]
         fg_zones = [
-            (0, 25,  '극도 공포', 'rgba(255,255,255,0.025)'),
-            (25, 45, '공포',     'rgba(255,255,255,0.018)'),
-            (45, 55, '중립',     'rgba(47,128,255,0.045)'),
-            (55, 75, '탐욕',     'rgba(255,255,255,0.018)'),
-            (75, 100, '극도 탐욕', 'rgba(255,255,255,0.025)'),
+            (0, 25,  'Extreme Fear', 'rgba(255,255,255,0.025)'),
+            (25, 45, 'Fear',         'rgba(255,255,255,0.018)'),
+            (45, 55, 'Neutral',      'rgba(47,128,255,0.045)'),
+            (55, 75, 'Greed',        'rgba(255,255,255,0.018)'),
+            (75, 100, 'Extreme Greed', 'rgba(255,255,255,0.025)'),
         ]
         for y0, y1, label, color in fg_zones:
             fig.add_hrect(
@@ -2083,7 +2085,7 @@ def format_table_value(col: str, value):
     if pd.isna(value) or value == '':
         return '—'
     try:
-        if col in ['Close', '종가']:
+        if col == 'Close':
             return f"${float(value):,.2f}"
         if col == 'Change(%)':
             return f"{float(value):+.2f}%"
@@ -2101,7 +2103,7 @@ def format_table_value(col: str, value):
 
 def table_cell_class(col: str, value) -> str:
     classes = []
-    if col in ['Close', '종가', 'Change(%)', '2sigma(%)', 'RSI', 'FG index', 'VIX', 'VIX1D', 'SKEW', '10Y Treasury']:
+    if col in ['Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG index', 'VIX', 'VIX1D', 'SKEW', '10Y Treasury']:
         classes.append('num')
     try:
         num = float(value)
@@ -2161,21 +2163,21 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 52
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
     with st.expander("Market Overview (Saved Tickers)", expanded=False):
         if not st.session_state.get("market_overview_loaded", False):
-            if st.button("Market Overview 불러오기", use_container_width=True):
+            if st.button("Load Market Overview", use_container_width=True):
                 st.session_state.market_overview_loaded = True
                 st.rerun()
         else:
-            with st.spinner("Market Overview를 불러오는 중..."):
+            with st.spinner("Loading Market Overview..."):
                 summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
             if not summary_df.empty:
                 render_glass_table(
                     summary_df,
-                    ['종목', '종가', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal', 'Puddle'],
+                    ['Name', 'Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal', 'Puddle'],
                     height_px=420,
                 )
             else:
-                st.info("전체 종목 데이터를 아직 가져오지 못했습니다.")
+                st.info("Market overview data is not available yet.")
 
 
 def render_signal_cards(df: pd.DataFrame):
@@ -2295,58 +2297,58 @@ def render_risk_metrics(metrics):
 
 def rsi_status(value):
     if value is None:
-        return ('neutral', 'N/A', '데이터 없음')
+        return ('neutral', 'N/A', 'No data')
     if value <= 30:
-        return ('opportunity', '과매도', '반등 후보 구간')
+        return ('opportunity', 'Oversold', 'Potential rebound zone')
     if value >= 70:
-        return ('risk', '과매수', '단기 과열 주의')
-    return ('neutral', '중립', '추세 확인 구간')
+        return ('risk', 'Overbought', 'Short-term heat')
+    return ('neutral', 'Neutral', 'Trend confirmation')
 
 
 def vix_status(value):
     if value is None:
-        return ('neutral', 'N/A', '데이터 없음')
+        return ('neutral', 'N/A', 'No data')
     if value > 25:
-        return ('opportunity', '변동성 급등', '공포성 매수 기회')
+        return ('opportunity', 'Volatility Spike', 'Fear-driven opportunity')
     if value < 15:
-        return ('safe', '안정', '낮은 변동성')
-    return ('neutral', '보통', '평균 변동성')
+        return ('safe', 'Calm', 'Low volatility')
+    return ('neutral', 'Normal', 'Average volatility')
 
 
 def fg_status(value):
     if value is None:
-        return ('neutral', 'N/A', '데이터 없음')
+        return ('neutral', 'N/A', 'No data')
     if value >= 75:
-        return ('risk', '극도 탐욕', '과열 리스크')
+        return ('risk', 'Extreme Greed', 'Overheat risk')
     if value >= 55:
-        return ('caution', '탐욕', '추격 매수 주의')
+        return ('caution', 'Greed', 'Chasing risk')
     if value <= 25:
-        return ('opportunity', '극도 공포', '역발상 관심')
+        return ('opportunity', 'Extreme Fear', 'Contrarian watch')
     if value <= 45:
-        return ('safe', '공포', '분할 접근 구간')
-    return ('neutral', '중립', '방향성 대기')
+        return ('safe', 'Fear', 'Scale-in zone')
+    return ('neutral', 'Neutral', 'Direction pending')
 
 
 def skew_status(value):
     if value is None:
-        return ('neutral', 'N/A', '데이터 없음')
+        return ('neutral', 'N/A', 'No data')
     if value >= 155:
-        return ('risk', '고위험', '꼬리 리스크 확대')
+        return ('risk', 'High Risk', 'Tail risk elevated')
     if value <= 127:
-        return ('safe', '저위험', '왜도 부담 완화')
-    return ('neutral', '보통', '평균 리스크')
+        return ('safe', 'Low Risk', 'Skew pressure eased')
+    return ('neutral', 'Normal', 'Average risk')
 
 
 def treasury_status(value):
     if value is None:
-        return ('neutral', 'N/A', '데이터 없음')
+        return ('neutral', 'N/A', 'No data')
     if value >= 5:
-        return ('risk', '고금리', '밸류에이션 압박')
+        return ('risk', 'High Yield', 'Valuation pressure')
     if value >= 4.5:
-        return ('caution', '금리 부담', '성장주 할인율 주의')
+        return ('caution', 'Rate Pressure', 'Growth discount risk')
     if value <= 3.5:
-        return ('safe', '완화', '금리 부담 낮음')
-    return ('neutral', '보통', '중립 금리 구간')
+        return ('safe', 'Easing', 'Lower rate pressure')
+    return ('neutral', 'Normal', 'Neutral rate zone')
 
 
 def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str):
@@ -2387,7 +2389,7 @@ market_dot_class = "open" if market_open else "closed"
 hero_slot = st.empty()
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")
 delta_label = st.radio(
-    "표시 범위",
+    "Range",
     options=list(DELTA_OPTIONS.keys()),
     index=list(DELTA_OPTIONS.keys()).index("180D"),
     horizontal=True,
@@ -2399,26 +2401,30 @@ delta = DELTA_OPTIONS[delta_label]
 period = DATA_PERIOD
 cache_key = f"{period}_{delta}"
 
-st.markdown("<div class='section-label'>Watchlist</div>", unsafe_allow_html=True)
 focus_preset, focus_custom = st.columns([1, 1])
 with focus_preset:
-    preset_ticker = st.selectbox(
+    saved_default = st.session_state.get("saved_ticker_radio") or st.session_state.get("saved_ticker_select")
+    if saved_default not in ticker_options:
+        saved_default = ticker_options[0]
+    preset_ticker = st.radio(
         "Saved Tickers",
         ticker_options,
+        index=ticker_options.index(saved_default),
         format_func=ticker_name,
-        key="saved_ticker_select",
+        horizontal=True,
+        key="saved_ticker_radio",
         on_change=clear_direct_ticker_input,
     )
 with focus_custom:
     raw_custom_ticker = st.text_input(
-        "직접 조회",
-        placeholder="미국 주식/ETF 티커 예: AAPL, NVDA, VOO",
+        "Search",
+        placeholder="US stock / ETF ticker, e.g. AAPL, NVDA, VOO",
         key="direct_ticker_query",
     )
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
 if raw_custom_ticker.strip() and not custom_ticker:
-    st.caption("한국 상장 종목/ETF는 현재 조회 대상에서 제외했습니다.")
+    st.caption("Korean-listed stocks and ETFs are excluded from this dashboard.")
 
 if custom_ticker:
     selected_ticker = custom_ticker
@@ -2441,7 +2447,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
+with st.spinner(f"Loading {selected_name} data..."):
     table_df, updated_at = load_ticker_data(
         selected_ticker,
         selected_name,
@@ -2454,7 +2460,7 @@ with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at)
 
 if df.empty:
-    st.error(f"{selected_ticker} 데이터를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.")
+    st.error(f"{selected_ticker} data is not available right now. Please try again shortly.")
     st.stop()
 
 if selected_ticker not in TICKER_CONFIGS:
@@ -2484,7 +2490,7 @@ render_risk_metrics([
         'label': 'Price',
         'value': fmt_price(close_val),
         'status': fmt_pct(change_val, sign=True) if change_val is not None else 'N/A',
-        'caption': '전일 대비 변화',
+        'caption': 'Daily change',
         'level': change_level,
     },
     {
@@ -2563,7 +2569,7 @@ with tab3:
     if 'Date' in csv.columns:
         csv['Date'] = pd.to_datetime(csv['Date']).dt.strftime('%Y-%m-%d')
     st.download_button(
-        label="CSV 다운로드",
+        label="Download CSV",
         data=csv.to_csv(index=False, encoding='utf-8-sig'),
         file_name=f"{selected_name}_{datetime.now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
