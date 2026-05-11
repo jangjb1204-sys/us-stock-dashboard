@@ -16,7 +16,7 @@ from stock_analyzer import (
 
 # ── 페이지 설정 ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="US Stock Dashboard",
+    page_title="미국주식 Dashboard",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -30,9 +30,9 @@ st.markdown("""
     html, body, [class*="css"], .stApp {
         font-family: 'DM Sans', sans-serif !important;
         background:
-            linear-gradient(135deg, rgba(190,255,235,0.08) 0%, rgba(190,255,235,0) 24%),
-            linear-gradient(205deg, rgba(86,255,219,0.13) 0%, rgba(86,255,219,0) 36%),
-            linear-gradient(180deg, #061817 0%, #03100f 42%, #020807 100%) !important;
+            linear-gradient(135deg, rgba(140,197,255,0.08) 0%, rgba(140,197,255,0) 24%),
+            linear-gradient(205deg, rgba(47,123,255,0.13) 0%, rgba(47,123,255,0) 36%),
+            linear-gradient(180deg, #07111f 0%, #040b16 42%, #02050d 100%) !important;
         color: #f5f5f7 !important;
     }
     .stApp::before {
@@ -42,8 +42,8 @@ st.markdown("""
         pointer-events: none;
         z-index: 0;
         background:
-            linear-gradient(115deg, transparent 0%, rgba(216,255,244,0.11) 17%, transparent 31%),
-            linear-gradient(72deg, transparent 56%, rgba(91,255,221,0.09) 70%, transparent 84%);
+            linear-gradient(115deg, transparent 0%, rgba(190,220,255,0.11) 17%, transparent 31%),
+            linear-gradient(72deg, transparent 56%, rgba(72,145,255,0.09) 70%, transparent 84%);
         opacity: 0.62;
         mix-blend-mode: screen;
     }
@@ -63,11 +63,11 @@ st.markdown("""
         overflow: hidden;
         margin: 0.25rem 0 1.25rem;
         padding: 1.05rem 1.15rem 1rem;
-        border: 1px solid rgba(183,255,235,0.18);
+        border: 1px solid rgba(142,197,255,0.18);
         border-radius: 24px;
         background:
-            linear-gradient(135deg, rgba(207,255,241,0.17), rgba(255,255,255,0.045) 46%, rgba(119,255,219,0.035)),
-            rgba(5,31,29,0.58);
+            linear-gradient(135deg, rgba(180,215,255,0.17), rgba(255,255,255,0.045) 46%, rgba(74,144,255,0.035)),
+            rgba(4,14,31,0.58);
         box-shadow:
             inset 0 1px 0 rgba(255,255,255,0.22),
             inset 0 -1px 0 rgba(255,255,255,0.06),
@@ -105,30 +105,30 @@ st.markdown("""
         align-items: center;
         gap: 10px;
         padding: 9px 14px;
-        border: 1px solid rgba(167,255,233,0.24);
+        border: 1px solid rgba(142,197,255,0.24);
         border-radius: 999px;
         background:
-            linear-gradient(135deg, rgba(190,255,235,0.16), rgba(255,255,255,0.035)),
-            rgba(3,28,25,0.56);
+            linear-gradient(135deg, rgba(140,197,255,0.16), rgba(255,255,255,0.035)),
+            rgba(4,16,35,0.56);
         box-shadow:
             inset 0 1px 0 rgba(255,255,255,0.18),
             0 14px 38px rgba(0,0,0,0.18);
-        color: rgba(226,255,247,0.72);
+        color: rgba(226,240,255,0.72);
         font-size: 0.82rem;
         white-space: nowrap;
         backdrop-filter: blur(22px) saturate(1.4);
         -webkit-backdrop-filter: blur(22px) saturate(1.4);
     }
     .viewer-pill strong {
-        color: #a7ffe9;
+        color: #9cccff;
         font-weight: 750;
     }
     .viewer-dot {
         width: 8px;
         height: 8px;
         border-radius: 999px;
-        background: #7cffb2;
-        box-shadow: 0 0 18px rgba(124,255,178,0.75);
+        background: #64a8ff;
+        box-shadow: 0 0 18px rgba(100,168,255,0.75);
     }
     .app-hero p {
         position: relative;
@@ -136,6 +136,27 @@ st.markdown("""
         margin: 0.45rem 0 0;
         color: #8e8e93;
         font-size: 0.88rem;
+    }
+    .creator-mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 0.62rem;
+        padding: 5px 10px;
+        border: 1px solid rgba(142,197,255,0.22);
+        border-radius: 999px;
+        background: rgba(10,132,255,0.10);
+        color: #9cccff;
+        font-family: 'DM Mono', monospace;
+        font-size: 0.74rem;
+        font-weight: 500;
+    }
+    .creator-mark::before {
+        content: "by";
+        color: rgba(226,240,255,0.48);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 700;
     }
     .section-label {
         color: #8e8e93;
@@ -169,9 +190,9 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.16);
         border-radius: 11px;
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.18), rgba(10,132,255,0.12)),
+            linear-gradient(135deg, rgba(255,255,255,0.18), rgba(10,132,255,0.16)),
             rgba(10,132,255,0.10);
-        color: #b9dcff;
+        color: #b8dcff;
         font-size: 1.06rem;
         font-family: 'DM Mono', monospace;
         font-weight: 500;
@@ -501,20 +522,20 @@ st.markdown("""
     .stButton > button {
         background:
             linear-gradient(145deg, rgba(255,255,255,0.26), rgba(255,255,255,0.04)),
-            #a7ffe9;
-        color: #06211e;
+            #9cccff;
+        color: #06182f;
         border: 1px solid rgba(255,255,255,0.26);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
         letter-spacing: 0;
         padding: 9px 16px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 18px 46px rgba(91,255,221,0.22);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 18px 46px rgba(72,145,255,0.22);
         transition: background 0.15s ease, transform 0.15s ease;
     }
-    .stButton > button p { color: #06211e !important; }
+    .stButton > button p { color: #06182f !important; }
     .stButton > button:hover {
-        background: #c5fff1;
+        background: #b8dcff;
         transform: translateY(-1px);
     }
 
@@ -523,17 +544,17 @@ st.markdown("""
         background:
             linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035)),
             rgba(14,14,16,0.50);
-        color: #a7ffe9;
-        border: 1px solid rgba(167,255,233,0.35);
+        color: #9cccff;
+        border: 1px solid rgba(142,197,255,0.35);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
         transition: background 0.15s ease, border-color 0.15s ease;
     }
-    .stDownloadButton > button p { color: #a7ffe9 !important; }
+    .stDownloadButton > button p { color: #9cccff !important; }
     .stDownloadButton > button:hover {
-        background: rgba(167,255,233,0.10);
-        border-color: #a7ffe9;
+        background: rgba(142,197,255,0.10);
+        border-color: #9cccff;
     }
 
     /* 스피너 */
@@ -564,7 +585,7 @@ st.markdown("""
     /* code 배지 */
     code {
         background: rgba(10,132,255,0.14) !important;
-        color: #8ec5ff !important;
+        color: #9cccff !important;
         font-family: 'DM Mono', monospace !important;
         font-size: 0.78em !important;
         border-radius: 8px !important;
@@ -748,7 +769,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     fig.add_trace(go.Candlestick(
         x=df['Date'], open=df['Open'], high=df['High'],
         low=df['Low'], close=df['Close'], name='Price',
-        increasing_line_color='#3fb950', increasing_fillcolor='#3fb950',
+        increasing_line_color='#64a8ff', increasing_fillcolor='#64a8ff',
         decreasing_line_color='#f85149', decreasing_fillcolor='#f85149',
         whiskerwidth=0.4,
     ), row=1, col=1)
@@ -780,7 +801,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             line=dict(color='#d2a679', width=1.5),
         ), row=2, col=1)
         fig.add_hline(y=70, line=dict(color='#f85149', width=1, dash='dot'), row=2, col=1)
-        fig.add_hline(y=30, line=dict(color='#3fb950', width=1, dash='dot'), row=2, col=1)
+        fig.add_hline(y=30, line=dict(color='#64a8ff', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(
             title_text='RSI', range=[0, 100], row=2, col=1,
             tickfont=dict(color='#8e8e93', size=10),
@@ -793,7 +814,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             line=dict(color='#79c0ff', width=1.5),
             fill='tozeroy', fillcolor='rgba(121,192,255,0.07)',
         ), row=3, col=1)
-        fig.add_hline(y=25, line=dict(color='#3fb950', width=1, dash='dot'), row=3, col=1)
+        fig.add_hline(y=25, line=dict(color='#64a8ff', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
             title_text='VIX', row=3, col=1,
             tickfont=dict(color='#8e8e93', size=10),
@@ -853,8 +874,8 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             (0, 25,  '극도 공포', 'rgba(248,81,73,0.14)'),
             (25, 45, '공포',     'rgba(210,153,34,0.12)'),
             (45, 55, '중립',     'rgba(88,166,255,0.10)'),
-            (55, 75, '탐욕',     'rgba(63,185,80,0.11)'),
-            (75, 100, '극도 탐욕', 'rgba(63,185,80,0.18)'),
+            (55, 75, '탐욕',     'rgba(100,168,255,0.12)'),
+            (75, 100, '극도 탐욕', 'rgba(10,132,255,0.18)'),
         ]
         for y0, y1, label, color in fg_zones:
             fig.add_hrect(
@@ -867,14 +888,14 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_trace(go.Scatter(
             x=fg_df['Date'], y=fg_df['FG index'], name='Fear & Greed',
             mode='lines',
-            line=dict(color='#f5f5f7', width=2.4, shape='spline'),
+            line=dict(color='#ffcc66', width=2.4, shape='spline'),
             hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
         ), row=2, col=1)
         latest_fg = fg_df.iloc[-1]
         fig.add_trace(go.Scatter(
             x=[latest_fg['Date']], y=[latest_fg['FG index']], name='현재 F&G',
             mode='markers+text',
-            marker=dict(size=13, color='#0a84ff', line=dict(width=2, color='#f5f5f7')),
+            marker=dict(size=13, color='#ffcc66', line=dict(width=2, color='#f5f5f7')),
             text=[f"{latest_fg['FG index']:.0f}"],
             textposition='middle right',
             textfont=dict(size=12, color='#f5f5f7'),
@@ -957,7 +978,7 @@ def style_table(df: pd.DataFrame):
                 v = float(row.iloc[ci])
                 bg = bg_prefix(styles[ci])
                 styles[ci] = f'{bg}color: #f85149; font-weight:600' if v < 0 else \
-                             f'{bg}color: #3fb950; font-weight:600' if v > 0 else styles[ci]
+                             f'{bg}color: #64a8ff; font-weight:600' if v > 0 else styles[ci]
             except: pass
 
         # RSI
@@ -965,7 +986,7 @@ def style_table(df: pd.DataFrame):
             try:
                 v = float(row.iloc[ri])
                 bg = bg_prefix(styles[ri])
-                styles[ri] = f'{bg}color: #3fb950; font-weight:600' if v <= 30 else \
+                styles[ri] = f'{bg}color: #64a8ff; font-weight:600' if v <= 30 else \
                              f'{bg}color: #f85149; font-weight:600' if v >= 70 else styles[ri]
             except: pass
 
@@ -974,7 +995,7 @@ def style_table(df: pd.DataFrame):
         if vi >= 0 and pd.notna(row.iloc[vi]) and row.iloc[vi] != '':
             try:
                 if float(row.iloc[vi]) > 25:
-                    styles[vi] = f'{bg_prefix(styles[vi])}color: #3fb950; font-weight:600'
+                    styles[vi] = f'{bg_prefix(styles[vi])}color: #64a8ff; font-weight:600'
             except: pass
 
         # SKEW
@@ -984,7 +1005,7 @@ def style_table(df: pd.DataFrame):
                 v = float(row.iloc[ski])
                 bg = bg_prefix(styles[ski])
                 styles[ski] = f'{bg}color: #f85149; font-weight:600' if v >= 155 else \
-                              f'{bg}color: #3fb950; font-weight:600' if v <= 127 else styles[ski]
+                              f'{bg}color: #64a8ff; font-weight:600' if v <= 127 else styles[ski]
             except: pass
 
         return styles
@@ -1046,13 +1067,13 @@ def render_market_summary(period: str, delta: int, cache_key: str):
                 try:
                     v = float(val)
                     return 'color: #f85149; font-weight:600' if v < 0 else \
-                           'color: #3fb950; font-weight:600' if v > 0 else ''
+                           'color: #64a8ff; font-weight:600' if v > 0 else ''
                 except: return ''
 
             def hl_rsi(val):
                 try:
                     v = float(val)
-                    return 'color: #3fb950; font-weight:600' if v <= 30 else \
+                    return 'color: #64a8ff; font-weight:600' if v <= 30 else \
                            'color: #f85149; font-weight:600' if v >= 70 else ''
                 except: return ''
 
@@ -1120,7 +1141,7 @@ def render_signal_cards(df: pd.DataFrame):
         ('Puddle', puddle_items, '#bf5af2'),
         ('RSI & Puddle', rsi_puddle_items, '#ff9f0a'),
         ('VIX1D > VIX', vix_items, '#0a84ff'),
-        ('Stochastic', stochastic_items, '#30d158'),
+        ('Stochastic', stochastic_items, '#64a8ff'),
     ]
     html_cards = []
     for title, items, accent in cards:
@@ -1142,8 +1163,8 @@ def render_signal_cards(df: pd.DataFrame):
 
 def status_color(level: str) -> str:
     return {
-        'opportunity': '#30d158',
-        'safe': '#64d2ff',
+        'opportunity': '#64a8ff',
+        'safe': '#8ec5ff',
         'neutral': '#a1a1aa',
         'caution': '#ffcc00',
         'risk': '#ff453a',
@@ -1230,8 +1251,9 @@ st.markdown(
     <div class="app-hero">
       <div class="hero-row">
         <div>
-          <h1>US Stock Dashboard</h1>
+          <h1>미국주식 Dashboard</h1>
           <p>시장 전체를 먼저 훑고, 관심 종목을 깊게 확인합니다.</p>
+          <div class="creator-mark">30s_tech_j</div>
         </div>
         <div class="viewer-pill">
           <span class="viewer-dot"></span>
