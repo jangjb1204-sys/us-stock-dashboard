@@ -158,7 +158,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=70, line=dict(color='#f85149', width=1, dash='dot'), row=2, col=1)
         fig.add_hline(y=30, line=dict(color='#3fb950', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(title_text='RSI', range=[0, 100], row=2, col=1,
-                         tickfont=dict(color='#8b949e'), titlefont=dict(color='#8b949e'))
+                         tickfont=dict(color='#8b949e'),
+                         title=dict(font=dict(color='#8b949e')))
 
     # VIX 패널
     if 'VIX' in df.columns and df['VIX'].notna().any():
@@ -169,7 +170,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         ), row=3, col=1)
         fig.add_hline(y=25, line=dict(color='#3fb950', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(title_text='VIX', row=3, col=1,
-                         tickfont=dict(color='#8b949e'), titlefont=dict(color='#8b949e'))
+                         tickfont=dict(color='#8b949e'),
+                         title=dict(font=dict(color='#8b949e')))
 
     fig.update_layout(
         title=dict(text=f'<b>{name}</b> — Candlestick', x=0.02,
@@ -241,7 +243,8 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         ), row=2, col=1)
         fig.add_hline(y=50, line=dict(color='#58a6ff', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(title_text='F&G', range=[0, 100], row=2, col=1,
-                         tickfont=dict(color='#8b949e'), titlefont=dict(color='#8b949e'))
+                         tickfont=dict(color='#8b949e'),
+                         title=dict(font=dict(color='#8b949e')))
 
     fig.update_layout(
         title=dict(text=f'<b>{name}</b> — Line + Signals', x=0.02,
