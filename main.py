@@ -958,7 +958,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fig.add_trace(go.Scatter(
                 x=puddle_df['Date'], y=puddle_df['Low'] * 0.982,
                 mode='markers', name='Puddle',
-                marker=dict(symbol='triangle-up', size=10, color='#ff7b72',
+                marker=dict(symbol='triangle-up', size=10, color='#ffcc66',
                             line=dict(width=1, color='white')),
             ), row=1, col=1)
 
@@ -1049,7 +1049,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fig.add_trace(go.Scatter(
                 x=overlap['Date'], y=overlap['Close_x'],
                 mode='markers', name='RSI ∩ Puddle',
-                marker=dict(symbol='circle', size=9, color='#bc8cff',
+                marker=dict(symbol='circle', size=9, color='#ffcc66',
                             line=dict(width=1.5, color='white')),
             ), row=1, col=1)
 
@@ -1073,14 +1073,14 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_trace(go.Scatter(
             x=fg_df['Date'], y=fg_df['FG index'], name='Fear & Greed',
             mode='lines',
-            line=dict(color='#ffcc66', width=2.4, shape='spline'),
+            line=dict(color='#bc8cff', width=2.4, shape='spline'),
             hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
         ), row=2, col=1)
         latest_fg = fg_df.iloc[-1]
         fig.add_trace(go.Scatter(
             x=[latest_fg['Date']], y=[latest_fg['FG index']], name='현재 F&G',
             mode='markers+text',
-            marker=dict(size=13, color='#ffcc66', line=dict(width=2, color='#f5f5f7')),
+            marker=dict(size=13, color='#bc8cff', line=dict(width=2, color='#f5f5f7')),
             text=[f"{latest_fg['FG index']:.0f}"],
             textposition='middle right',
             textfont=dict(size=12, color='#f5f5f7'),
