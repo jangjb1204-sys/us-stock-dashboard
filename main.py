@@ -1193,7 +1193,7 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
     summary_tickers = unique_tickers([*TICKER_CONFIGS.keys(), *extra_tickers])
     batch_data = fetch_batch_stock_data(summary_tickers, period)
     rows = []
-    for ticker in summary_tickers:
+    for order, ticker in enumerate(summary_tickers):
         name = TICKER_CONFIGS.get(ticker) or fetch_ticker_display_name(ticker)
         try:
             d = process_stock_frame(batch_data.get(ticker, pd.DataFrame()), ticker, name, common, delta=delta)
@@ -1201,6 +1201,7 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
                 continue
             lat = d.iloc[-1]
             rows.append({
+                '_order':        order,
                 '종목':          name,
                 '종가':          safe_float(lat.get('Close')),
                 'Change(%)':     safe_float(lat.get('Change(%)')),
@@ -1211,7 +1212,9 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
             })
         except Exception:
             continue
-    return pd.DataFrame(rows)
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values('_order').drop(columns=['_order']).reset_index(drop=True)
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
