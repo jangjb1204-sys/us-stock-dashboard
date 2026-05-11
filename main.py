@@ -1097,6 +1097,7 @@ CHART_THEME = dict(
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
+SIGNAL_CHART_HEIGHT = 500
 
 def get_date_axis(df: pd.DataFrame) -> dict:
     dates = pd.to_datetime(df['Date']).dropna().drop_duplicates().sort_values()
@@ -1130,6 +1131,7 @@ def get_date_axis(df: pd.DataFrame) -> dict:
         tickmode='array',
         tickvals=tick_dates,
         ticktext=[d.strftime(label_format) for d in tick_dates],
+        range=[dates.iloc[0], dates.iloc[-1]],
         automargin=True,
     )
 
@@ -1216,7 +1218,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     date_axis = get_date_axis(df)
     fig = make_subplots(
         rows=2, cols=1, shared_xaxes=True,
-        row_heights=[0.68, 0.32], vertical_spacing=0.03,
+        row_heights=[0.68, 0.32], vertical_spacing=0.022,
     )
 
     fig.add_trace(go.Scatter(
@@ -1304,7 +1306,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        height=MAIN_CHART_HEIGHT,
+        height=SIGNAL_CHART_HEIGHT,
     )
     for r in [1, 2]:
         fig.update_xaxes(
@@ -1506,7 +1508,7 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 52
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
-    with st.expander("Market Overview", expanded=True):
+    with st.expander("Market Overview", expanded=False):
         with st.spinner("Market Overview를 불러오는 중..."):
             summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
