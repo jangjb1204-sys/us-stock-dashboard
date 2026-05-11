@@ -1306,29 +1306,21 @@ st.markdown("""
         letter-spacing: 0;
         overflow-wrap: anywhere;
     }
-    .signal-meta {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px;
-        margin-top: 5px;
-    }
-    .signal-detail,
-    .signal-date {
+    .signal-detail {
         color: rgba(255,255,255,0.44);
         font-size: 0.86rem;
         line-height: 1.45;
         overflow-wrap: anywhere;
+        margin-top: 5px;
     }
     .signal-date {
         font-variant-numeric: tabular-nums;
-        color: rgba(255,255,255,0.34);
+        color: rgba(255,255,255,0.58);
+        font-size: 0.82rem;
+        font-weight: 560;
+        line-height: 1.35;
+        margin-bottom: 4px;
         white-space: nowrap;
-    }
-    .signal-date::before {
-        content: "·";
-        margin-right: 6px;
-        color: rgba(255,255,255,0.20);
     }
     .signal-action {
         font-size: 0.95rem;
@@ -1616,12 +1608,13 @@ st.markdown("""
         }
         .signal-detail,
         .signal-date {
-            margin-top: 6px;
             font-size: 0.82rem;
             line-height: 1.48;
         }
         .signal-date {
-            margin-top: 0 !important;
+            margin: 0 0 4px !important;
+            color: rgba(255,255,255,0.60);
+            font-weight: 560;
         }
         .stTabs [data-baseweb="tab-list"] {
             width: 100%;
@@ -2340,11 +2333,9 @@ def render_signal_cards(df: pd.DataFrame):
             f"<div class='signal-main'>"
             f"<div class='signal-action {escape(tone)}'>{escape(action)}</div>"
             f"<div class='signal-copy'>"
+            f"<div class='signal-date'>{escape(date)}</div>"
             f"<div class='signal-title'>{escape(title)}</div>"
-            f"<div class='signal-meta'>"
-            f"<span class='signal-detail'>{escape(detail)}</span>"
-            f"<span class='signal-date'>{escape(date)}</span>"
-            f"</div>"
+            f"<div class='signal-detail'>{escape(detail)}</div>"
             f"</div>"
             f"</div>"
             f"</div>"
