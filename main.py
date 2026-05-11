@@ -697,7 +697,31 @@ st.markdown("""
         color: #eaf5ff !important;
         font-weight: 600;
         font-size: 0.84rem;
-        padding: 10px 4px;
+        margin: 0 !important;
+        padding: 12px 14px !important;
+        border-radius: 21px !important;
+        border: 1px solid rgba(190,220,255,0.10) !important;
+        background:
+            linear-gradient(140deg, rgba(213,235,255,0.13), rgba(91,151,224,0.06)),
+            rgba(12,34,61,0.54) !important;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.14),
+            inset 0 -1px 0 rgba(255,255,255,0.035) !important;
+    }
+    details[open] summary,
+    div[data-testid="stExpander"] details[open] summary,
+    div[data-testid="stExpander"] details[open] summary:hover {
+        background:
+            linear-gradient(140deg, rgba(213,235,255,0.18), rgba(83,145,222,0.08) 55%, rgba(255,255,255,0.035)),
+            rgba(12,34,61,0.68) !important;
+        border-color: rgba(190,220,255,0.18) !important;
+        color: #f1f8ff !important;
+    }
+    details summary::marker {
+        color: #c9e7ff !important;
+    }
+    div[data-testid="stExpander"] > details > summary > div {
+        color: #eaf5ff !important;
     }
     details summary p,
     details summary span {
@@ -852,13 +876,18 @@ st.markdown("""
         }
         div[data-testid="stPlotlyChart"] {
             margin-top: 0.2rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.15rem;
+            overflow: visible !important;
+        }
+        div[data-testid="stPlotlyChart"] .modebar {
+            display: none !important;
         }
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
         div[data-testid="stPlotlyChart"] .main-svg {
-            min-height: 340px !important;
-            max-height: 360px !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
         }
     }
 </style>
@@ -1014,9 +1043,10 @@ CHART_THEME = dict(
         font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.10)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=50, r=16, t=38, b=46),
+    margin=dict(l=50, r=16, t=54, b=64),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
+MAIN_CHART_HEIGHT = 460
 
 def get_date_axis(df: pd.DataFrame) -> dict:
     dates = pd.to_datetime(df['Date']).dropna().drop_duplicates().sort_values()
@@ -1119,7 +1149,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        height=500,
+        height=MAIN_CHART_HEIGHT,
     )
     for r in [1, 2, 3]:
         fig.update_xaxes(
@@ -1224,7 +1254,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        height=440,
+        height=MAIN_CHART_HEIGHT,
     )
     for r in [1, 2]:
         fig.update_xaxes(
