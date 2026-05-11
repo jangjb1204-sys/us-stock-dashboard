@@ -133,9 +133,10 @@ def get_full_analysis(ticker: str, name: str, common_data: dict, period: str = '
         if common_data.get(key) is not None and not common_data[key].empty:
             data = pd.merge(data, common_data[key], on='Date', how='left')
 
+    
     # 신호 생성
     data = generate_signals(data)
     
-    # 불필요한 결측치 처리 및 정리
-    data = data.fillna(method='ffill').fillna('')
+    # 불필요한 결측치 처리 및 정리 (최신 Pandas 방식)
+    data = data.ffill().fillna('') 
     return data
