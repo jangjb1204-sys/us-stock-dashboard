@@ -1337,14 +1337,14 @@ st.markdown("""
         color: rgba(255,255,255,0.68);
     }
     .signal-action.buy {
-        color: #7CCF91;
+        color: #86C79A;
     }
     .signal-action.sell,
     .signal-action.risk {
         color: #EB6A70;
     }
     .signal-action.signal {
-        color: rgba(255,255,255,0.86);
+        color: #8FAFD6;
     }
     .signal-empty-feed {
         padding: 18px 0;
