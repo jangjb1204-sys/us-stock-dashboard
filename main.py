@@ -850,6 +850,15 @@ st.markdown("""
         .focus-title .ticker {
             font-size: 0.92rem;
         }
+        div[data-testid="stPlotlyChart"] {
+            margin-top: 0.2rem;
+        }
+        div[data-testid="stPlotlyChart"] .js-plotly-plot,
+        div[data-testid="stPlotlyChart"] .plotly,
+        div[data-testid="stPlotlyChart"] .main-svg {
+            min-height: 420px !important;
+            max-height: 440px !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1000,30 +1009,45 @@ CHART_THEME = dict(
     paper_bgcolor='#061323',
     font=dict(family='DM Sans, sans-serif', color='#8e8e93', size=12),
     legend=dict(
-        orientation='h', yanchor='bottom', y=1.04, xanchor='right', x=1,
+        orientation='h', yanchor='bottom', y=1.025, xanchor='right', x=1,
         font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.10)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=60, r=24, t=78, b=40),
+    margin=dict(l=54, r=18, t=48, b=34),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
 
-def get_date_axis(df: pd.DataFrame, target_ticks: int = 10) -> dict:
+def get_date_axis(df: pd.DataFrame) -> dict:
     dates = pd.to_datetime(df['Date']).dropna().drop_duplicates().sort_values()
     if dates.empty:
         return dict(automargin=True)
 
-    step = max(1, int(np.ceil(len(dates) / target_ticks)))
-    tick_dates = dates.iloc[::step]
-    if tick_dates.iloc[-1] != dates.iloc[-1]:
-        tick_dates = pd.concat([tick_dates, dates.tail(1)])
-
     span_days = (dates.iloc[-1] - dates.iloc[0]).days
-    label_format = '%y.%m' if span_days > 370 else '%m.%d'
+    if span_days <= 120:
+        freq, label_format = '2W-MON', '%m.%d'
+    elif span_days <= 220:
+        freq, label_format = 'MS', '%m.%d'
+    elif span_days <= 420:
+        freq, label_format = '2MS', '%y.%m'
+    elif span_days <= 800:
+        freq, label_format = 'QS', '%y.%m'
+    else:
+        freq, label_format = '2QS', '%y.%m'
+
+    targets = pd.date_range(dates.iloc[0], dates.iloc[-1], freq=freq)
+    target_dates = [dates.iloc[0], *targets, dates.iloc[-1]]
+    tick_dates = []
+    for target in target_dates:
+        pos = dates.searchsorted(pd.Timestamp(target), side='left')
+        if pos >= len(dates):
+            pos = len(dates) - 1
+        tick = dates.iloc[pos]
+        if not tick_dates or tick != tick_dates[-1]:
+            tick_dates.append(tick)
 
     return dict(
         tickmode='array',
-        tickvals=tick_dates.tolist(),
+        tickvals=tick_dates,
         ticktext=[d.strftime(label_format) for d in tick_dates],
         automargin=True,
     )
@@ -1094,10 +1118,14 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        height=660,
+        height=560,
     )
     for r in [1, 2, 3]:
-        fig.update_xaxes(**GRID, **date_axis, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
+        fig.update_xaxes(
+            **GRID, **date_axis, row=r, col=1,
+            showticklabels=(r == 3),
+            tickfont=dict(color='#8e8e93', size=10),
+        )
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
@@ -1195,10 +1223,14 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        height=590,
+        height=500,
     )
     for r in [1, 2]:
-        fig.update_xaxes(**GRID, **date_axis, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
+        fig.update_xaxes(
+            **GRID, **date_axis, row=r, col=1,
+            showticklabels=(r == 2),
+            tickfont=dict(color='#8e8e93', size=10),
+        )
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
