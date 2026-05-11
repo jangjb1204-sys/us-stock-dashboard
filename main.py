@@ -3,6 +3,11 @@ import pandas as pd
 import plotly.graph_objects as go
 from stock_analyzer import StockAnalyzer
 from datetime import datetime
+import streamlit as st
+import yfinance as yf  # <--- 이 줄이 'yf'를 정의합니다.
+import pandas as pd
+import plotly.graph_objects as go
+from io import BytesIO
 
 # 페이지 설정
 st.set_page_config(page_title="US Stock Dashboard", layout="wide")
