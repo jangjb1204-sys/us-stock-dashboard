@@ -1047,6 +1047,10 @@ def save_recent_ticker(ticker: str):
 
 def clear_recent_tickers():
     st.session_state.recent_tickers = []
+    st.session_state.direct_ticker_query = ""
+
+def clear_direct_ticker_input():
+    st.session_state.direct_ticker_query = ""
 
 def unique_tickers(tickers) -> list[str]:
     result = []
@@ -1775,15 +1779,17 @@ with focus_preset:
         "Saved Tickers",
         ticker_options,
         format_func=load_ticker_display_name,
+        key="saved_ticker_select",
+        on_change=clear_direct_ticker_input,
     )
 with focus_custom:
     raw_custom_ticker = st.text_input(
         "직접 조회",
         placeholder="미국 주식/ETF 티커 예: AAPL, NVDA, VOO",
+        key="direct_ticker_query",
     )
-    if recent_tickers and st.button("최근 티커 비우기", use_container_width=True):
-        clear_recent_tickers()
-        st.rerun()
+    if recent_tickers:
+        st.button("최근 티커 비우기", use_container_width=True, on_click=clear_recent_tickers)
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
 if raw_custom_ticker.strip() and not custom_ticker:
