@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 from html import escape
+import json
+from pathlib import Path
 import time
 import uuid
 
@@ -397,7 +399,8 @@ st.markdown("""
 
     /* 상단 컨트롤 */
     div[data-testid="stSelectbox"] label,
-    div[data-testid="stRadio"] label {
+    div[data-testid="stRadio"] label,
+    div[data-testid="stTextInput"] label {
         color: rgba(207,228,255,0.64) !important;
         font-size: 0.76rem !important;
         font-weight: 600 !important;
@@ -417,6 +420,22 @@ st.markdown("""
     div[data-baseweb="select"] span {
         color: #f5f5f7 !important;
         font-weight: 600 !important;
+    }
+    div[data-testid="stTextInput"] input {
+        min-height: 48px !important;
+        border: 1px solid rgba(190,220,255,0.20) !important;
+        border-radius: 18px !important;
+        background:
+            linear-gradient(135deg, rgba(241,248,255,0.15), rgba(255,255,255,0.04)),
+            rgba(7,23,42,0.56) !important;
+        color: #f5f5f7 !important;
+        font-weight: 600 !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 42px rgba(0,0,0,0.14) !important;
+        backdrop-filter: blur(24px) saturate(1.45);
+        -webkit-backdrop-filter: blur(24px) saturate(1.45);
+    }
+    div[data-testid="stTextInput"] input::placeholder {
+        color: rgba(207,228,255,0.42) !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] {
         display: flex;
@@ -709,6 +728,8 @@ st.markdown("""
 # ── 상수 ───────────────────────────────────────────────────────────────────────
 DELTA_OPTIONS  = {"90일": 90, "180일": 180, "1년": 365, "2년": 730, "전체": 9999}
 DATA_PERIOD = "4y"
+WATCHLIST_PATH = Path(__file__).with_name("watchlist.json")
+RECENT_TICKER_LIMIT = 12
 
 MA_COLORS = {
     "MA20":  "#2196F3",
@@ -739,6 +760,38 @@ def fmt_int(v):
 def safe_float(val):
     try: return float(val)
     except: return None
+
+def normalize_ticker(value: str) -> str:
+    ticker = value.strip().upper().replace(" ", "")
+    if ticker.endswith((".KS", ".KQ")):
+        return ""
+    return ticker
+
+def load_recent_tickers() -> list[str]:
+    try:
+        data = json.loads(WATCHLIST_PATH.read_text(encoding="utf-8"))
+        tickers = data.get("recent_tickers", [])
+        return [
+            normalize_ticker(ticker)
+            for ticker in tickers
+            if isinstance(ticker, str) and normalize_ticker(ticker)
+        ][:RECENT_TICKER_LIMIT]
+    except Exception:
+        return []
+
+def save_recent_ticker(ticker: str):
+    ticker = normalize_ticker(ticker)
+    if not ticker:
+        return
+    recent = [item for item in load_recent_tickers() if item != ticker]
+    recent.insert(0, ticker)
+    try:
+        WATCHLIST_PATH.write_text(
+            json.dumps({"recent_tickers": recent[:RECENT_TICKER_LIMIT]}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
 
 def has_rsi_puddle_signal(rsi, puddle) -> bool:
     try:
@@ -1319,7 +1372,9 @@ def treasury_status(value):
 
 
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
-ticker_options = list(TICKER_CONFIGS.keys())
+base_tickers = list(TICKER_CONFIGS.keys())
+recent_tickers = load_recent_tickers()
+ticker_options = base_tickers + [ticker for ticker in recent_tickers if ticker not in base_tickers]
 total_views, active_viewers = get_view_stats()
 
 st.markdown(
@@ -1369,13 +1424,24 @@ st.markdown("---")
 st.markdown("<div class='section-label'>포커스 종목</div>", unsafe_allow_html=True)
 focus_selector, focus_title = st.columns([1.15, 2.85])
 with focus_selector:
-    selected_ticker = st.selectbox(
-        "종목",
+    preset_ticker = st.selectbox(
+        "기본/최근 티커",
         ticker_options,
-        format_func=lambda ticker: f"{TICKER_CONFIGS[ticker]} · {ticker}",
-        label_visibility="collapsed",
+        format_func=lambda ticker: f"{TICKER_CONFIGS.get(ticker, ticker)} · {ticker}",
     )
-    selected_name = TICKER_CONFIGS[selected_ticker]
+    raw_custom_ticker = st.text_input(
+        "직접 입력",
+        placeholder="미국 주식/ETF 티커 예: AAPL, NVDA, VOO",
+    )
+    custom_ticker = normalize_ticker(raw_custom_ticker)
+    if raw_custom_ticker.strip() and not custom_ticker:
+        st.caption("한국 상장 종목/ETF는 현재 조회 대상에서 제외했습니다.")
+    if custom_ticker:
+        selected_ticker = custom_ticker
+        selected_name = custom_ticker
+    else:
+        selected_ticker = preset_ticker
+        selected_name = TICKER_CONFIGS.get(selected_ticker, selected_ticker)
 
 with focus_title:
     st.markdown(
@@ -1395,6 +1461,8 @@ if df.empty:
     st.error(f"{selected_ticker} 데이터를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.")
     st.stop()
 
+save_recent_ticker(selected_ticker)
+
 table_df = load_ticker_data(
     selected_ticker,
     selected_name,
@@ -1406,6 +1474,10 @@ if table_df.empty:
     table_df = df
 
 latest = df.iloc[-1]
+
+# ── 최근 신호 ──────────────────────────────────────────────────────────────────
+st.markdown("### 최근 신호")
+render_signal_cards(df)
 
 # ── 메트릭 카드 ────────────────────────────────────────────────────────────────
 close_val    = safe_float(latest.get('Close'))
@@ -1475,13 +1547,9 @@ st.markdown("")
 tab1, tab2, tab3 = st.tabs(["캔들스틱", "라인 + 신호", "데이터"])
 
 with tab1:
-    st.markdown("### 최근 신호")
-    render_signal_cards(df)
     st.plotly_chart(build_candlestick_chart(df, selected_name), use_container_width=True)
 
 with tab2:
-    st.markdown("### 최근 신호")
-    render_signal_cards(df)
     st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
 
 with tab3:
