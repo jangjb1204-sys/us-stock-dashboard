@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import requests
 import json
 import numpy as np
-import time
+from concurrent.futures import ThreadPoolExecutor
 
 # --- 상수 정의 ---
 SEARCH_DAYS = 365 * 4
@@ -56,22 +56,27 @@ def fetch_fear_and_greed_index(start_date: str) -> pd.DataFrame | None:
 
 def fetch_common_market_data(period: str = '2y') -> dict:
     results = {}
-
-    for key, ticker_sym, col_name in [
+    market_specs = [
         ('treasury', '^TNX', '10Y Treasury'),
         ('vix',     '^VIX', 'VIX'),
         ('vix1d',   '^VIX1D', 'VIX1D'),
         ('skew',    '^SKEW', 'SKEW'),
-    ]:
+    ]
+
+    def fetch_market_series(spec):
+        key, ticker_sym, col_name = spec
         try:
             df = yf.Ticker(ticker_sym).history(period=period)[['Close']].rename(columns={'Close': col_name})
             df = df.reset_index()
             df['Date'] = pd.to_datetime(df['Date'].dt.date)
             df[col_name] = df[col_name].round(2)
-            results[key] = df
-            time.sleep(0.5)
+            return key, df
         except Exception:
-            results[key] = pd.DataFrame()
+            return key, pd.DataFrame()
+
+    with ThreadPoolExecutor(max_workers=len(market_specs)) as executor:
+        for key, df in executor.map(fetch_market_series, market_specs):
+            results[key] = df
 
     start_date = (datetime.now() - timedelta(days=SEARCH_DAYS)).strftime(DATE_FORMAT)
     results['fg_data'] = fetch_fear_and_greed_index(start_date)
@@ -87,6 +92,38 @@ def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
         return data
     except Exception:
         return pd.DataFrame()
+
+
+def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.DataFrame]:
+    try:
+        raw = yf.download(
+            tickers=tickers,
+            period=period,
+            group_by='ticker',
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+    except Exception:
+        return {ticker: pd.DataFrame() for ticker in tickers}
+
+    results = {}
+    for ticker in tickers:
+        try:
+            if isinstance(raw.columns, pd.MultiIndex):
+                data = raw[ticker].dropna(how='all').reset_index()
+            else:
+                data = raw.dropna(how='all').reset_index()
+            if data.empty:
+                results[ticker] = pd.DataFrame()
+                continue
+            if 'Date' not in data.columns:
+                data = data.rename(columns={data.columns[0]: 'Date'})
+            data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None).dt.normalize()
+            results[ticker] = data
+        except Exception:
+            results[ticker] = pd.DataFrame()
+    return results
 
 
 # --- 기술적 지표 계산 ---
@@ -185,10 +222,8 @@ def calculate_vix_skew_signals(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-# --- 메인 처리 함수 ---
-def process_stock_data(ticker: str, name: str, common_data: dict,
-                       period: str = '2y', delta: int = 400) -> pd.DataFrame:
-    data = fetch_stock_data(ticker, period)
+def process_stock_frame(data: pd.DataFrame, ticker: str, name: str, common_data: dict,
+                        delta: int = 400) -> pd.DataFrame:
     if data.empty:
         return pd.DataFrame()
 
@@ -235,3 +270,10 @@ def process_stock_data(ticker: str, name: str, common_data: dict,
     data_out = data_out[target_columns]
     data_out = data_out.reset_index(drop=True)
     return data_out
+
+
+# --- 메인 처리 함수 ---
+def process_stock_data(ticker: str, name: str, common_data: dict,
+                       period: str = '2y', delta: int = 400) -> pd.DataFrame:
+    data = fetch_stock_data(ticker, period)
+    return process_stock_frame(data, ticker, name, common_data, delta=delta)

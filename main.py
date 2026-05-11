@@ -10,7 +10,9 @@ import uuid
 
 from stock_analyzer import (
     TICKER_CONFIGS,
+    fetch_batch_stock_data,
     fetch_common_market_data,
+    process_stock_frame,
     process_stock_data,
 )
 
@@ -781,6 +783,30 @@ def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key
     common = load_common_data(period)
     return process_stock_data(ticker, name, common, period=period, delta=delta)
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def load_market_summary_rows(period: str, delta: int, _cache_key: str) -> pd.DataFrame:
+    common = load_common_data(period)
+    batch_data = fetch_batch_stock_data(list(TICKER_CONFIGS.keys()), period)
+    rows = []
+    for ticker, name in TICKER_CONFIGS.items():
+        try:
+            d = process_stock_frame(batch_data.get(ticker, pd.DataFrame()), ticker, name, common, delta=delta)
+            if d.empty:
+                continue
+            lat = d.iloc[-1]
+            rows.append({
+                '종목':          name,
+                '종가':          safe_float(lat.get('Close')),
+                'Change(%)':     safe_float(lat.get('Change(%)')),
+                '2sigma(%)':     safe_float(lat.get('2sigma(%)')),
+                'RSI':           safe_float(lat.get('RSI')),
+                'FG/RSI signal': lat.get('FG/RSI signal', ''),
+                'Puddle':        lat.get('Puddle', ''),
+            })
+        except Exception:
+            continue
+    return pd.DataFrame(rows)
+
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
     plot_bgcolor='#061323',
@@ -916,13 +942,13 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         if not vix_signal_dates.empty:
             fig.add_trace(go.Scatter(
                 x=[None], y=[None], mode='lines', name='VIX1D > VIX',
-                line=dict(color='#ffb86c', width=2.2),
+                line=dict(color='#5ee4ff', width=2.2, dash='dot'),
                 hoverinfo='skip',
             ), row=1, col=1)
             for d in vix_signal_dates:
                 fig.add_vline(
                     x=d,
-                    line=dict(color='rgba(255,184,108,0.56)', width=1.8),
+                    line=dict(color='rgba(94,228,255,0.46)', width=1.8, dash='dot'),
                     layer='below',
                     row=1,
                     col=1,
@@ -1108,32 +1134,10 @@ def style_table(df: pd.DataFrame):
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str):
     with st.expander("전체 종목 최신 현황", expanded=True):
-        summary_rows = []
-        prog  = st.progress(0, text="전체 종목 데이터 로딩 중...")
-        total = len(TICKER_CONFIGS)
+        with st.spinner("전체 종목 최신 현황을 불러오는 중..."):
+            summary_df = load_market_summary_rows(period, delta, cache_key)
 
-        for i, (ticker, name) in enumerate(TICKER_CONFIGS.items()):
-            try:
-                d = load_ticker_data(ticker, name, period, delta, cache_key)
-                if not d.empty:
-                    lat = d.iloc[-1]
-                    summary_rows.append({
-                        '종목':          name,
-                        '종가':          safe_float(lat.get('Close')),
-                        'Change(%)':     safe_float(lat.get('Change(%)')),
-                        '2sigma(%)':     safe_float(lat.get('2sigma(%)')),
-                        'RSI':           safe_float(lat.get('RSI')),
-                        'FG/RSI signal': lat.get('FG/RSI signal', ''),
-                        'Puddle':        lat.get('Puddle', ''),
-                    })
-            except Exception:
-                pass
-            prog.progress((i + 1) / total, text=f"로딩 중... {name}")
-            time.sleep(0.05)
-        prog.empty()
-
-        if summary_rows:
-            summary_df = pd.DataFrame(summary_rows)
+        if not summary_df.empty:
 
             def hl_change(val):
                 try:
