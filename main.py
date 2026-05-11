@@ -1,90 +1,88 @@
 import streamlit as st
-import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
-from io import BytesIO
+from stock_analyzer import StockAnalyzer
+from datetime import datetime
 
 # 페이지 설정
 st.set_page_config(page_title="US Stock Dashboard", layout="wide")
 
-st.title("📈 US Stock Analysis Dashboard")
+# 분석기 인스턴스 생성
+@st.cache_resource
+def get_analyzer():
+    return StockAnalyzer()
 
-# 사이드바: 티커 입력
-ticker_input = st.sidebar.text_input("Enter Ticker (e.g., AAPL, TSLA, NVDA)", "AAPL").upper()
-period = st.sidebar.selectbox("Period", ["1mo", "3mo", "6mo", "1y", "2y", "5y", "max"], index=3)
+analyzer = get_analyzer()
 
-if ticker_input:
-    try:
-        # 데이터 가져오기
-        stock = yf.Ticker(ticker_input)
-        hist = stock.history(period=period)
-        info = stock.info
+st.title("🚀 US Stock Real-time Analysis Dashboard")
 
-        if hist.empty:
-            st.error("데이터를 불러올 수 없습니다. 티커를 확인해 주세요.")
-        else:
-            # 1. 상단 지표 요약 (Table 형태)
-            st.subheader(f"📊 {ticker_input} Key Metrics")
-            
-            # 원본 지표 구성
-            current_price = info.get('currentPrice', hist['Close'].iloc[-1])
-            prev_close = info.get('previousClose', hist['Close'].iloc[-2])
-            change = current_price - prev_close
-            change_pct = (change / prev_close) * 100
-            
-            metrics_df = pd.DataFrame({
-                "Metric": ["Current Price", "Change ($)", "Change (%)", "Market Cap", "P/E Ratio", "52 Week High", "52 Week Low"],
-                "Value": [
-                    f"${current_price:,.2f}",
-                    f"{change:+,.2f}",
-                    f"{change_pct:+.2f}%",
-                    f"${info.get('marketCap', 0):,}",
-                    f"{info.get('trailingPE', 'N/A')}",
-                    f"${info.get('fiftyTwoWeekHigh', 0):,.2f}",
-                    f"${info.get('fiftyTwoWeekLow', 0):,.2f}"
-                ]
-            })
-            st.table(metrics_df)
+# 사이드바 설정
+with st.sidebar:
+    st.header("Search Options")
+    ticker = st.text_input("Enter Ticker", value="SOXL").upper()
+    period = st.selectbox("Data Period", ['1y', '2y', '4y'], index=1)
+    view_days = st.slider("Display Range (Days)", 30, 600, 300)
 
-            # 2. 주가 차트 (이전 Plot 유지)
-            st.subheader("Price Action")
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=hist.index, 
-                y=hist['Close'], 
-                mode='lines', 
-                name='Close Price',
-                line=dict(color='#00FFCC', width=2)
-            ))
-            
-            fig.update_layout(
-                template="plotly_dark",
-                xaxis_title="Date",
-                yaxis_title="Price (USD)",
-                margin=dict(l=20, r=20, t=20, b=20),
-                height=500
-            )
-            st.plotly_chart(fig, use_container_width=True)
+# 데이터 로드 (캐싱 활용)
+@st.cache_data(ttl=3600)
+def load_full_data(ticker, period):
+    stock_df = yf.Ticker(ticker).history(period=period).reset_index()
+    stock_df['Date'] = pd.to_datetime(stock_df['Date'].dt.date)
+    
+    # 지표 계산
+    stock_df = analyzer.calculate_metrics(stock_df)
+    
+    # 시장 데이터 병합
+    market_df = analyzer.get_market_indicators(period)
+    fg_df = analyzer.fetch_fear_and_greed()
+    
+    final_df = pd.merge(stock_df, market_df, on='Date', how='left')
+    if not fg_df.empty:
+        final_df = pd.merge(final_df, fg_df, on='Date', how='left')
+    
+    # VIX 신호 생성
+    if 'VIX' in final_df.columns and 'VIX1D' in final_df.columns:
+        final_df['VIX_Signal'] = (final_df['VIX'] >= 25) & (final_df['VIX1D'] > final_df['VIX'])
+    
+    return final_df
 
-            # 3. 엑셀 다운로드 기능 (xlsxwriter 에러 해결 포인트)
-            st.subheader("Download Data")
-            output = BytesIO()
-            # engine='xlsxwriter'를 사용하기 위해 패키지 설치가 선행되어야 함
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                hist.to_excel(writer, sheet_name='Stock_Data')
-                # 시트 포맷팅 등을 추가할 수 있음
-            
-            excel_data = output.getvalue()
-            st.download_button(
-                label="📥 Download Historical Data as Excel",
-                data=excel_data,
-                file_name=f"{ticker_input}_history.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+try:
+    df = load_full_data(ticker, period)
+    recent_df = df.tail(view_days)
 
-            # 4. Raw Data 표시
-            with st.expander("View Raw Historical Data"):
-                st.dataframe(hist.sort_index(ascending=False), use_container_width=True)
+    # 1. 상단 지표 (Metrics)
+    last_row = df.iloc[-1]
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Current Price", f"${last_row['Close']:.2f}", f"{last_row['Change(%)']}%")
+    col2.metric("RSI (14)", last_row['RSI'])
+    col3.metric("Fear & Greed", f"{last_row.get('FG index', 'N/A')}", last_row.get('rating', ''))
+    col4.metric("10Y Treasury", f"{last_row.get('10Y Treasury', 'N/A')}%")
 
-    except Exception as e:
-        st.error(f"오류가 발생했습니다: {e}")
+    # 2. 메인 인터랙티브 차트 (Plotly)
+    st.subheader(f"Technical Analysis: {ticker}")
+    fig = go.Figure()
+
+    # 캔들스틱 차트
+    fig.add_trace(go.Candlestick(x=recent_df['Date'], open=recent_df['Open'], high=recent_df['High'],
+                                 low=recent_df['Low'], close=recent_df['Close'], name='Price'))
+
+    # 이동평균선
+    for ma in ['MA20', 'MA60', 'MA120', 'MA200']:
+        fig.add_trace(go.Scatter(x=recent_df['Date'], y=recent_df[ma], name=ma, line=dict(width=1.5), opacity=0.7))
+
+    # Puddle Buy 신호 표시
+    puddle_points = recent_df[recent_df['Puddle'] != '']
+    fig.add_trace(go.Scatter(x=puddle_points['Date'], y=puddle_points['Low'] * 0.97, mode='markers',
+                             marker=dict(symbol='triangle-up', size=12, color='red'), name='Puddle Signal'))
+
+    fig.update_layout(height=600, xaxis_rangeslider_visible=False, template="plotly_white")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 3. 데이터 테이블
+    st.subheader("Recent Indicators Table")
+    display_cols = ['Date', 'Close', 'Change(%)', 'RSI', 'FG index', 'Puddle', 'VIX', 'SKEW']
+    actual_cols = [c for c in display_cols if c in df.columns]
+    st.dataframe(recent_df[actual_cols].sort_values('Date', ascending=False), use_container_width=True)
+
+except Exception as e:
+    st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
