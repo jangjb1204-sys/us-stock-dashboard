@@ -1346,9 +1346,6 @@ st.markdown("""
     .signal-action.signal {
         color: rgba(255,255,255,0.86);
     }
-    .signal-action.watch {
-        color: rgba(255,255,255,0.58);
-    }
     .signal-empty-feed {
         padding: 18px 0;
         color: rgba(255,255,255,0.44);
@@ -2318,9 +2315,9 @@ def render_signal_cards(df: pd.DataFrame):
     for date, value in puddle_items:
         signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Signal', 'signal', 'Puddle', value))
     for date, value in rsi_puddle_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Watch', 'watch', 'RSI & Puddle', value))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Buy', 'buy', 'RSI & Puddle', value))
     for date, value in vix_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Buy', 'buy', 'VIX1D > VIX', 'Volatility signal'))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Buy', 'buy', 'VIX1D > VIX', 'Volatility trigger'))
 
     signal_rows = sorted(signal_rows, key=lambda item: item[0], reverse=True)[:10]
     if signal_rows:
