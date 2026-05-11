@@ -994,19 +994,325 @@ st.markdown("""
             overflow: visible !important;
         }
     }
+
+    /* 30s Tech premium redesign layer */
+    html, body, [class*="css"], .stApp {
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "DM Sans", sans-serif !important;
+        background:
+            radial-gradient(circle at top left, rgba(47,128,255,0.08), transparent 35%),
+            #05070B !important;
+        color: #F2F5F8 !important;
+    }
+    .stApp::before { display: none !important; }
+    .block-container {
+        max-width: 1240px;
+        padding-top: 1.45rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
+    .app-hero,
+    div[data-testid="metric-container"],
+    details,
+    .glass-table-wrap,
+    .premium-summary,
+    .signal-table-wrap {
+        background: rgba(255,255,255,0.045) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        box-shadow: none !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+    }
+    .app-hero {
+        margin: 0 0 1.35rem !important;
+        padding: 1.05rem 1.15rem !important;
+        border-radius: 24px !important;
+    }
+    .app-hero::before,
+    .app-hero::after { display: none !important; }
+    .app-hero h1 {
+        font-size: 34px !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.03em !important;
+        text-shadow: none !important;
+    }
+    .hero-row { align-items: center !important; }
+    .hero-meta {
+        margin-top: 0.42rem;
+        color: rgba(255,255,255,0.48);
+        font-size: 0.84rem;
+        font-weight: 500;
+    }
+    .updated-mark,
+    .viewer-pill {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        color: rgba(255,255,255,0.52) !important;
+        font-family: inherit !important;
+        font-size: 0.84rem !important;
+    }
+    .updated-mark::before {
+        content: "Updated" !important;
+        margin-right: 6px !important;
+        color: rgba(255,255,255,0.36) !important;
+        font-size: 0.78rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .viewer-pill strong {
+        color: #F2F5F8 !important;
+        font-weight: 650 !important;
+    }
+    .viewer-dot {
+        background: #2F80FF !important;
+        box-shadow: none !important;
+        animation: none !important;
+    }
+    .market-status-dot.open {
+        background: #3FB950 !important;
+        box-shadow: none !important;
+        animation: none !important;
+    }
+    .market-status-dot.closed {
+        background: rgba(255,255,255,0.32) !important;
+        box-shadow: none !important;
+    }
+    .creator-mark { display: none !important; }
+    .section-label,
+    .focus-title .eyebrow,
+    div[data-testid="stSelectbox"] label,
+    div[data-testid="stRadio"] label,
+    div[data-testid="stTextInput"] label {
+        color: rgba(255,255,255,0.50) !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em !important;
+    }
+    .section-label { margin: 1.6rem 0 0.62rem !important; }
+    .focus-title {
+        min-height: auto !important;
+        margin: 1.45rem 0 0.65rem;
+        padding: 0 !important;
+    }
+    .focus-title .name {
+        font-size: 34px !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.03em !important;
+        color: #F2F5F8 !important;
+    }
+    .focus-title .ticker {
+        margin-left: 0.55rem !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: rgba(255,255,255,0.46) !important;
+        font-size: 1.02rem !important;
+    }
+    div[data-baseweb="select"] > div,
+    div[data-testid="stTextInput"] > div,
+    div[data-testid="stTextInput"] [data-baseweb="input"] {
+        min-height: 46px !important;
+        border-radius: 16px !important;
+        background: rgba(255,255,255,0.045) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        box-shadow: none !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] {
+        width: fit-content;
+        padding: 4px;
+        gap: 2px !important;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label {
+        min-height: 34px !important;
+        padding: 7px 13px !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
+        background: #F2F5F8 !important;
+        color: #05070B !important;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label p {
+        font-size: 0.78rem !important;
+        font-weight: 650 !important;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        gap: 24px !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 0 !important;
+        padding: 0 0 12px !important;
+        background: transparent !important;
+        color: rgba(255,255,255,0.46) !important;
+        font-size: 0.9rem !important;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #F2F5F8 !important;
+        background: transparent !important;
+        box-shadow: inset 0 -2px 0 #2F80FF !important;
+    }
+    .premium-summary {
+        border-radius: 24px;
+        padding: 22px 24px;
+        margin: 0.8rem 0 1.8rem;
+    }
+    .summary-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 18px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .summary-price {
+        font-family: "DM Mono", ui-monospace, monospace;
+        font-size: 42px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #F2F5F8;
+    }
+    .summary-change {
+        font-family: "DM Mono", ui-monospace, monospace;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+    .summary-change.safe,
+    .summary-status.safe,
+    .summary-status.opportunity { color: #3FB950; }
+    .summary-change.caution,
+    .summary-status.caution { color: #2F80FF; }
+    .summary-change.risk,
+    .summary-status.risk { color: #FF5A5F; }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+    }
+    .summary-row {
+        padding: 18px 18px 0 0;
+        min-width: 0;
+    }
+    .summary-label {
+        color: rgba(255,255,255,0.48);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 7px;
+    }
+    .summary-value {
+        font-family: "DM Mono", ui-monospace, monospace;
+        color: #F2F5F8;
+        font-size: 1.18rem;
+        font-weight: 650;
+    }
+    .summary-status {
+        margin-top: 5px;
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.56);
+    }
+    .signal-table-wrap {
+        border-radius: 22px;
+        overflow: hidden;
+        margin: 0.6rem 0 1.6rem;
+    }
+    .signal-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+    }
+    .signal-table th {
+        padding: 13px 16px;
+        text-align: left;
+        color: rgba(255,255,255,0.44);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .signal-table td {
+        padding: 14px 16px;
+        color: rgba(255,255,255,0.76);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .signal-table tr:last-child td { border-bottom: 0; }
+    .signal-table tr:hover td { background: rgba(47,128,255,0.08); }
+    .signal-table .date {
+        font-family: "DM Mono", ui-monospace, monospace;
+        color: rgba(255,255,255,0.52);
+        white-space: nowrap;
+    }
+    .signal-table .status { color: #2F80FF; font-weight: 650; }
+    .glass-table th {
+        background: rgba(47,128,255,0.14) !important;
+        color: rgba(255,255,255,0.58) !important;
+    }
+    .glass-table td {
+        background: rgba(255,255,255,0.025) !important;
+        border-bottom-color: rgba(255,255,255,0.06) !important;
+    }
+    .glass-table tr:hover td { background: rgba(47,128,255,0.08) !important; }
+    details summary,
+    details[open] summary,
+    div[data-testid="stExpander"] details summary,
+    div[data-testid="stExpander"] details[open] summary {
+        background: rgba(255,255,255,0.035) !important;
+        border: 1px solid rgba(255,255,255,0.06) !important;
+        box-shadow: none !important;
+        color: rgba(255,255,255,0.82) !important;
+    }
+    details summary p,
+    details summary span {
+        color: rgba(255,255,255,0.82) !important;
+    }
+    div[data-testid="stPlotlyChart"] {
+        border-radius: 24px;
+        overflow: hidden;
+        background: #0A0F18;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    @media (max-width: 640px) {
+        .block-container {
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+        }
+        .app-hero h1 { font-size: 28px !important; }
+        .hero-row { align-items: flex-start !important; }
+        .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .summary-price { font-size: 34px; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ── 상수 ───────────────────────────────────────────────────────────────────────
-DELTA_OPTIONS  = {"90일": 90, "180일": 180, "1년": 365, "2년": 730, "4년": 9999}
+DELTA_OPTIONS  = {"90D": 90, "180D": 180, "1Y": 365, "2Y": 730, "4Y": 9999}
 DATA_PERIOD = "4y"
 RECENT_TICKER_LIMIT = 12
 
 MA_COLORS = {
-    "MA20":  "#2196F3",
+    "MA20":  "#2F80FF",
     "MA60":  "#FF9800",
-    "MA120": "#F44336",
-    "MA200": "#9C27B0",
+    "MA120": "#D18B3A",
+    "MA200": "#6B7280",
 }
 
 # ── 숫자 포맷 헬퍼 ─────────────────────────────────────────────────────────────
@@ -1132,7 +1438,7 @@ def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key
         stock_future = executor.submit(fetch_stock_data, ticker, period)
         common_data = common_future.result()
         stock_data = stock_future.result()
-    data = process_stock_frame(stock_data, ticker, name, common_data, delta=DELTA_OPTIONS["4년"])
+    data = process_stock_frame(stock_data, ticker, name, common_data, delta=DELTA_OPTIONS["4Y"])
     return data, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def filter_by_delta(df: pd.DataFrame, delta: int) -> pd.DataFrame:
@@ -1172,9 +1478,9 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
-    plot_bgcolor='#061323',
-    paper_bgcolor='#061323',
-    font=dict(family='DM Sans, sans-serif', color='#8e8e93', size=12),
+    plot_bgcolor='#0A0F18',
+    paper_bgcolor='#0A0F18',
+    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.52)', size=12),
     legend=dict(
         orientation='h', yanchor='bottom', y=1.025, xanchor='right', x=1,
         font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.10)',
@@ -1182,7 +1488,7 @@ CHART_THEME = dict(
     xaxis_rangeslider_visible=False,
     margin=dict(l=50, r=16, t=54, b=64),
 )
-GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
+GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.08)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
 SIGNAL_CHART_HEIGHT = 500
 
@@ -1234,12 +1540,14 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     fig.add_trace(go.Candlestick(
         x=df['Date'], open=df['Open'], high=df['High'],
         low=df['Low'], close=df['Close'], name='Price',
-        increasing_line_color='#64a8ff', increasing_fillcolor='#64a8ff',
-        decreasing_line_color='#f85149', decreasing_fillcolor='#f85149',
+        increasing_line_color='#2F80FF', increasing_fillcolor='#2F80FF',
+        decreasing_line_color='#FF5A5F', decreasing_fillcolor='#FF5A5F',
         whiskerwidth=0.4,
     ), row=1, col=1)
 
     for ma, color in MA_COLORS.items():
+        if ma not in {'MA20', 'MA120'}:
+            continue
         if ma in df.columns and df[ma].notna().any():
             fig.add_trace(go.Scatter(
                 x=df['Date'], y=df[ma], name=ma,
@@ -1252,7 +1560,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fig.add_trace(go.Scatter(
                 x=puddle_df['Date'], y=puddle_df['Low'] * 0.982,
                 mode='markers', name='Puddle',
-                marker=dict(symbol='triangle-up', size=10, color='#ffcc66',
+                marker=dict(symbol='triangle-up', size=9, color='#2F80FF',
                             line=dict(width=1, color='white')),
             ), row=1, col=1)
 
@@ -1261,8 +1569,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             x=df['Date'], y=df['RSI'], name='RSI',
             line=dict(color='#d2a679', width=1.5),
         ), row=2, col=1)
-        fig.add_hline(y=70, line=dict(color='#f85149', width=1, dash='dot'), row=2, col=1)
-        fig.add_hline(y=30, line=dict(color='#64a8ff', width=1, dash='dot'), row=2, col=1)
+        fig.add_hline(y=70, line=dict(color='#FF5A5F', width=1, dash='dot'), row=2, col=1)
+        fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(
             title_text='RSI', range=[0, 100], row=2, col=1,
             tickfont=dict(color='#8e8e93', size=10),
@@ -1272,10 +1580,10 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     if 'VIX' in df.columns and df['VIX'].notna().any():
         fig.add_trace(go.Scatter(
             x=df['Date'], y=df['VIX'], name='VIX',
-            line=dict(color='#79c0ff', width=1.5),
-            fill='tozeroy', fillcolor='rgba(121,192,255,0.07)',
+            line=dict(color='rgba(255,255,255,0.48)', width=1.4),
+            fill='tozeroy', fillcolor='rgba(255,255,255,0.04)',
         ), row=3, col=1)
-        fig.add_hline(y=25, line=dict(color='#64a8ff', width=1, dash='dot'), row=3, col=1)
+        fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
             title_text='VIX', row=3, col=1,
             tickfont=dict(color='#8e8e93', size=10),
@@ -1310,6 +1618,8 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     ), row=1, col=1)
 
     for ma, color in MA_COLORS.items():
+        if ma not in {'MA20', 'MA120'}:
+            continue
         if ma in df.columns and df[ma].notna().any():
             fig.add_trace(go.Scatter(
                 x=df['Date'], y=df[ma], name=ma,
@@ -1321,13 +1631,13 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         if not vix_signal_dates.empty:
             fig.add_trace(go.Scatter(
                 x=[None], y=[None], mode='lines', name='VIX1D > VIX',
-                line=dict(color='#5ee4ff', width=2.1),
+                line=dict(color='#2F80FF', width=2.1),
                 hoverinfo='skip',
             ), row=1, col=1)
             for d in vix_signal_dates:
                 fig.add_vline(
                     x=d,
-                    line=dict(color='rgba(94,228,255,0.42)', width=1.6),
+                    line=dict(color='rgba(47,128,255,0.46)', width=1.6),
                     layer='below',
                     row=1,
                     col=1,
@@ -1341,7 +1651,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fig.add_trace(go.Scatter(
                 x=overlap['Date'], y=overlap['Close_x'],
                 mode='markers', name='RSI ∩ Puddle',
-                marker=dict(symbol='circle', size=9, color='#ffcc66',
+                marker=dict(symbol='circle', size=8, color='#2F80FF',
                             line=dict(width=1.5, color='white')),
             ), row=1, col=1)
 
@@ -1365,12 +1675,12 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_trace(go.Scatter(
             x=fg_df['Date'], y=fg_df['FG index'], name='Fear & Greed',
             mode='lines',
-            line=dict(color='#bc8cff', width=2.4, shape='spline'),
+            line=dict(color='rgba(255,255,255,0.56)', width=2.1, shape='spline'),
             hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
         ), row=2, col=1)
         for level in [25, 45, 55, 75]:
             fig.add_hline(y=level, line=dict(color='rgba(138,168,192,0.24)', width=1, dash='dot'), row=2, col=1)
-        fig.add_hline(y=50, line=dict(color='#0a84ff', width=1.4, dash='solid'), row=2, col=1)
+        fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=2, col=1)
         fig.update_yaxes(
             title_text='F&G', range=[0, 100], row=2, col=1,
             tickfont=dict(color='#8e8e93', size=10),
@@ -1644,28 +1954,36 @@ def render_signal_cards(df: pd.DataFrame):
     else:
         rsi_puddle_items = []
 
-    cards = [
-        ('Puddle', puddle_items, '#bf5af2'),
-        ('RSI & Puddle', rsi_puddle_items, '#ff9f0a'),
-        ('VIX1D > VIX', vix_items, '#0a84ff'),
-        ('Stochastic', stochastic_items, '#64a8ff'),
-    ]
-    html_cards = []
-    for title, items, accent in cards:
-        body = ''.join(
-            f"<div class='signal-item'><span class='signal-date'>{escape(date)}</span>"
-            f"<span>{escape(value)}</span></div>"
-            for date, value in items
-        )
-        if not body:
-            body = "<div class='signal-empty'>최근 신호 없음</div>"
-        html_cards.append(
-            f"<div class='signal-card' style='--accent:{accent}'>"
-            f"<div class='signal-title'><span class='signal-dot'></span>{escape(title)}</div>"
-            f"{body}</div>"
-        )
+    signal_rows = []
+    for signal, items, default_status in [
+        ('Stochastic', stochastic_items, 'Watch'),
+        ('Puddle', puddle_items, 'Signal'),
+        ('RSI & Puddle', rsi_puddle_items, 'Watch'),
+        ('VIX1D > VIX', vix_items, 'Risk'),
+    ]:
+        for date, value in items:
+            signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, signal, value or default_status))
 
-    st.markdown(f"<div class='signal-grid'>{''.join(html_cards)}</div>", unsafe_allow_html=True)
+    signal_rows = sorted(signal_rows, key=lambda item: item[0], reverse=True)[:12]
+    if signal_rows:
+        body = ''.join(
+            f"<tr><td class='date'>{escape(date)}</td><td>{escape(signal)}</td><td class='status'>{escape(status)}</td></tr>"
+            for _, date, signal, status in signal_rows
+        )
+    else:
+        body = "<tr><td class='date'>—</td><td>No recent signal</td><td class='status'>Calm</td></tr>"
+
+    st.markdown(
+        f"""
+        <div class="signal-table-wrap">
+          <table class="signal-table">
+            <thead><tr><th>Date</th><th>Signal</th><th>Status</th></tr></thead>
+            <tbody>{body}</tbody>
+          </table>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def status_color(level: str) -> str:
@@ -1679,18 +1997,33 @@ def status_color(level: str) -> str:
 
 
 def render_risk_metrics(metrics):
-    cards = []
-    for metric in metrics:
-        accent = status_color(metric['level'])
-        cards.append(
-            f"<div class='risk-card' style='--accent:{accent}'>"
-            f"<div class='risk-top'><span>{escape(metric['label'])}</span>"
-            f"<span class='risk-badge'>{escape(metric['status'])}</span></div>"
-            f"<div class='risk-main'>{escape(metric['value'])}</div>"
-            f"<div class='risk-caption'>{escape(metric['caption'])}</div>"
+    if not metrics:
+        return
+    primary = metrics[0]
+    rows = []
+    for metric in metrics[1:]:
+        rows.append(
+            f"<div class='summary-row'>"
+            f"<div class='summary-label'>{escape(metric['label'])}</div>"
+            f"<div class='summary-value'>{escape(metric['value'])}</div>"
+            f"<div class='summary-status {escape(metric['level'])}'>{escape(metric['status'])}</div>"
             f"</div>"
         )
-    st.markdown(f"<div class='risk-grid'>{''.join(cards)}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="premium-summary">
+          <div class="summary-top">
+            <div>
+              <div class="summary-label">{escape(primary['label'])}</div>
+              <div class="summary-price">{escape(primary['value'])}</div>
+            </div>
+            <div class="summary-change {escape(primary['level'])}">{escape(primary['status'])}</div>
+          </div>
+          <div class="summary-grid">{''.join(rows)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def rsi_status(value):
@@ -1750,6 +2083,7 @@ def treasury_status(value):
 
 
 def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str):
+    updated_short = updated_at[11:16] if len(updated_at) >= 16 else updated_at
     container.markdown(
         f"""
         <div class="app-hero">
@@ -1760,15 +2094,14 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
                 <h1>US Market Signals</h1>
               </div>
               <div class="hero-meta">
-                <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
-                <span class="updated-mark">{escape(updated_at)}</span>
+                <span class="updated-mark">{escape(updated_short)}</span>
               </div>
             </div>
             <div class="viewer-pill">
               <span class="viewer-dot"></span>
-              <span><strong>{active_viewers:,}</strong>명 보는 중</span>
+              <span>Watching <strong>{active_viewers:,}</strong></span>
               <span>·</span>
-              <span>누적 <strong>{total_views:,}</strong>명</span>
+              <span>Total <strong>{total_views:,}</strong></span>
             </div>
           </div>
         </div>
@@ -1789,7 +2122,7 @@ render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")
 delta_label = st.radio(
     "표시 범위",
     options=list(DELTA_OPTIONS.keys()),
-    index=list(DELTA_OPTIONS.keys()).index("180일"),
+    index=list(DELTA_OPTIONS.keys()).index("180D"),
     horizontal=True,
 )
 delta = DELTA_OPTIONS[delta_label]
@@ -1846,8 +2179,8 @@ with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
         selected_ticker,
         selected_name,
         period,
-        DELTA_OPTIONS["4년"],
-        f"{period}_{DELTA_OPTIONS['4년']}",
+        DELTA_OPTIONS["4Y"],
+        f"{period}_{DELTA_OPTIONS['4Y']}",
     )
     df = filter_by_delta(table_df, delta)
 
@@ -1881,7 +2214,7 @@ treasury_level, treasury_state, treasury_caption = treasury_status(treasury_val)
 
 render_risk_metrics([
     {
-        'label': '종가',
+        'label': 'Price',
         'value': fmt_price(close_val),
         'status': fmt_pct(change_val, sign=True) if change_val is not None else 'N/A',
         'caption': '전일 대비 변화',
@@ -1916,7 +2249,7 @@ render_risk_metrics([
         'level': skew_level,
     },
     {
-        'label': '10Y Treasury',
+        'label': '10Y',
         'value': f"{treasury_val:.2f}%" if treasury_val is not None else 'N/A',
         'status': treasury_state,
         'caption': treasury_caption,
