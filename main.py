@@ -492,7 +492,7 @@ def style_table(df: pd.DataFrame):
         'Puddle', 'VIX', 'VIX1D', 'VIX1D>VIX', 'SKEW', '10Y Treasury',
     ]
     existing = [c for c in display_cols if c in df.columns]
-    sub = df[existing].tail(30).iloc[::-1].copy()
+    sub = df[existing].iloc[::-1].copy()
 
     # 화면 표시용 숫자 정리
     if 'Date' in sub.columns:
@@ -518,7 +518,7 @@ def style_table(df: pd.DataFrame):
         def bg_prefix(style):
             return f"{style}; " if style.startswith('background') else ''
 
-        # Puddle + RSI 과매도 겹침: 가장 강한 신호로 행 전체 강조
+        # 라인 차트의 RSI ∩ Puddle 동그라미와 같은 조건
         if ri >= 0 and pi >= 0:
             try:
                 rsi = float(row.iloc[ri]) if pd.notna(row.iloc[ri]) else None
@@ -597,6 +597,67 @@ def style_table(df: pd.DataFrame):
     )
 
 
+# ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
+def render_market_summary(period: str, delta: int, cache_key: str):
+    with st.expander("🗂  전체 종목 최신 현황", expanded=True):
+        summary_rows = []
+        prog  = st.progress(0, text="전체 종목 데이터 로딩 중...")
+        total = len(TICKER_CONFIGS)
+
+        for i, (ticker, name) in enumerate(TICKER_CONFIGS.items()):
+            try:
+                d = load_ticker_data(ticker, name, period, delta, cache_key)
+                if not d.empty:
+                    lat = d.iloc[-1]
+                    summary_rows.append({
+                        '종목':          name,
+                        '종가':          safe_float(lat.get('Close')),
+                        'Change(%)':     safe_float(lat.get('Change(%)')),
+                        '2sigma(%)':     safe_float(lat.get('2sigma(%)')),
+                        'RSI':           safe_float(lat.get('RSI')),
+                        'FG/RSI signal': lat.get('FG/RSI signal', ''),
+                        'Puddle':        lat.get('Puddle', ''),
+                    })
+            except Exception:
+                pass
+            prog.progress((i + 1) / total, text=f"로딩 중... {name}")
+            time.sleep(0.05)
+        prog.empty()
+
+        if summary_rows:
+            summary_df = pd.DataFrame(summary_rows)
+
+            def hl_change(val):
+                try:
+                    v = float(val)
+                    return 'color: #f85149; font-weight:600' if v < 0 else \
+                           'color: #3fb950; font-weight:600' if v > 0 else ''
+                except: return ''
+
+            def hl_rsi(val):
+                try:
+                    v = float(val)
+                    return 'color: #3fb950; font-weight:600' if v <= 30 else \
+                           'color: #f85149; font-weight:600' if v >= 70 else ''
+                except: return ''
+
+            styled_summary = (
+                summary_df.style
+                .map(hl_change, subset=['Change(%)'])
+                .map(hl_rsi,    subset=['RSI'])
+                .format({
+                    '종가':      lambda x: f"${x:.2f}" if pd.notna(x) else '—',
+                    'Change(%)': lambda x: f"{x:+.2f}%" if pd.notna(x) else '—',
+                    '2sigma(%)': lambda x: f"{x:.1f}%" if pd.notna(x) else '—',
+                    'RSI':       lambda x: f"{x:.1f}"  if pd.notna(x) else '—',
+                    'Puddle':    lambda x: x if isinstance(x, str) and x else '—',
+                })
+            )
+            st.dataframe(styled_summary, use_container_width=True, hide_index=True)
+        else:
+            st.info("전체 종목 데이터를 아직 가져오지 못했습니다.")
+
+
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 📊 US Stock Dashboard")
@@ -637,16 +698,29 @@ with ctrl_action:
 
 
 # ── 메인 영역 ──────────────────────────────────────────────────────────────────
-st.markdown(f"## {selected_name} &nbsp; `{selected_ticker}`", unsafe_allow_html=True)
-
 period = DATA_PERIOD
 cache_key = f"{period}_{delta}"
+
+render_market_summary(period, delta, cache_key)
+st.markdown("---")
+st.markdown(f"## {selected_name} &nbsp; `{selected_ticker}`", unsafe_allow_html=True)
+
 with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
     df = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
 
 if df.empty:
     st.error(f"❌ {selected_ticker} 데이터를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.")
     st.stop()
+
+table_df = load_ticker_data(
+    selected_ticker,
+    selected_name,
+    period,
+    DELTA_OPTIONS["전체"],
+    f"{period}_{DELTA_OPTIONS['전체']}",
+)
+if table_df.empty:
+    table_df = df
 
 latest = df.iloc[-1]
 
@@ -746,10 +820,10 @@ with tab2:
         st.dataframe(sc, hide_index=True, use_container_width=False)
 
 with tab3:
-    st.markdown("### 📋 최근 30일 데이터")
-    st.dataframe(style_table(df), use_container_width=True, height=500)
+    st.markdown("### 📋 전체 데이터")
+    st.dataframe(style_table(table_df), use_container_width=True, height=500)
 
-    csv = df.copy()
+    csv = table_df.copy()
     if 'Date' in csv.columns:
         csv['Date'] = pd.to_datetime(csv['Date']).dt.strftime('%Y-%m-%d')
     st.download_button(
@@ -758,62 +832,3 @@ with tab3:
         file_name=f"{selected_name}_{datetime.now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
     )
-
-# ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
-st.markdown("---")
-with st.expander("🗂  전체 종목 최신 현황 (클릭해서 펼치기)", expanded=False):
-    summary_rows = []
-    prog  = st.progress(0, text="전체 종목 데이터 로딩 중...")
-    total = len(TICKER_CONFIGS)
-
-    for i, (ticker, name) in enumerate(TICKER_CONFIGS.items()):
-        try:
-            d = load_ticker_data(ticker, name, period, delta, cache_key)
-            if not d.empty:
-                lat = d.iloc[-1]
-                summary_rows.append({
-                    '종목':          name,
-                    'Ticker':        ticker,
-                    '종가':          safe_float(lat.get('Close')),
-                    'Change(%)':     safe_float(lat.get('Change(%)')),
-                    '2sigma(%)':     safe_float(lat.get('2sigma(%)')),
-                    'RSI':           safe_float(lat.get('RSI')),
-                    'FG/RSI signal': lat.get('FG/RSI signal', ''),
-                    'Puddle':        lat.get('Puddle', ''),
-                })
-        except Exception:
-            pass
-        prog.progress((i + 1) / total, text=f"로딩 중... {name}")
-        time.sleep(0.05)
-    prog.empty()
-
-    if summary_rows:
-        summary_df = pd.DataFrame(summary_rows)
-
-        def hl_change(val):
-            try:
-                v = float(val)
-                return 'color: #f85149; font-weight:600' if v < 0 else \
-                       'color: #3fb950; font-weight:600' if v > 0 else ''
-            except: return ''
-
-        def hl_rsi(val):
-            try:
-                v = float(val)
-                return 'color: #3fb950; font-weight:600' if v <= 30 else \
-                       'color: #f85149; font-weight:600' if v >= 70 else ''
-            except: return ''
-
-        styled_summary = (
-            summary_df.style
-            .map(hl_change, subset=['Change(%)'])
-            .map(hl_rsi,    subset=['RSI'])
-            .format({
-                '종가':      lambda x: f"${x:.2f}" if pd.notna(x) else '—',
-                'Change(%)': lambda x: f"{x:+.2f}%" if pd.notna(x) else '—',
-                '2sigma(%)': lambda x: f"{x:.1f}%" if pd.notna(x) else '—',
-                'RSI':       lambda x: f"{x:.1f}"  if pd.notna(x) else '—',
-                'Puddle':    lambda x: x if isinstance(x, str) and x else '—',
-            })
-        )
-        st.dataframe(styled_summary, use_container_width=True, hide_index=True)
