@@ -1133,29 +1133,36 @@ st.markdown("""
         -webkit-backdrop-filter: none !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] {
+        display: flex !important;
         width: fit-content;
         max-width: 100%;
+        align-items: center;
         flex-wrap: wrap;
-        padding: 4px;
-        gap: 2px !important;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.035);
+        padding: 0 !important;
+        gap: 7px !important;
+        border-radius: 0;
+        background: transparent !important;
         border: 0;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label {
-        min-height: 34px !important;
-        padding: 7px 13px !important;
-        border: 0 !important;
-        background: transparent !important;
+        min-height: 36px !important;
+        justify-content: center !important;
+        padding: 8px 13px !important;
+        border: 1px solid rgba(255,255,255,0.055) !important;
+        border-radius: 999px !important;
+        background: rgba(255,255,255,0.04) !important;
         box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
-        background: #F2F5F8 !important;
+        background: rgba(242,245,248,0.86) !important;
+        border-color: rgba(242,245,248,0.72) !important;
         color: #05070B !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label p {
-        font-size: 0.78rem !important;
-        font-weight: 650 !important;
+        font-size: 0.76rem !important;
+        font-weight: 620 !important;
     }
     .stTabs [data-baseweb="tab-list"] {
         background: transparent !important;
@@ -1437,19 +1444,21 @@ st.markdown("""
             font-size: 12px !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] {
-            width: 100%;
-            display: grid !important;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 3px !important;
-            padding: 4px !important;
+            width: fit-content;
+            max-width: 100%;
+            display: flex !important;
+            grid-template-columns: none !important;
+            gap: 7px !important;
+            padding: 0 !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label {
-            min-height: 44px !important;
+            flex: 0 0 auto;
+            min-height: 40px !important;
             justify-content: center !important;
-            padding: 10px 0 !important;
+            padding: 8px 12px !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label p {
-            font-size: 0.76rem !important;
+            font-size: 0.74rem !important;
         }
         div[data-testid="stSelectbox"] label,
         div[data-testid="stTextInput"] label {
