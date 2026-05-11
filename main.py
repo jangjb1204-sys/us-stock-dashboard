@@ -396,7 +396,7 @@ def style_table(df: pd.DataFrame):
         'Puddle', 'VIX', 'VIX1D', 'VIX1D>VIX', 'SKEW', '10Y Treasury',
     ]
     existing = [c for c in display_cols if c in df.columns]
-    sub = df[existing].tail(30).copy()
+    sub = df[existing].tail(30).iloc[::-1].copy()
 
     # 화면 표시용 숫자 정리
     if 'Date' in sub.columns:
