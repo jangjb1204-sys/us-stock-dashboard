@@ -999,16 +999,16 @@ st.markdown("""
     html, body, [class*="css"], .stApp {
         font-family: -apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "DM Sans", sans-serif !important;
         background:
-            radial-gradient(circle at top left, rgba(47,128,255,0.08), transparent 35%),
+            radial-gradient(circle at top left, rgba(47,128,255,0.045), transparent 32%),
             #05070B !important;
         color: #F2F5F8 !important;
     }
     .stApp::before { display: none !important; }
     .block-container {
-        max-width: 1240px;
-        padding-top: 1.45rem !important;
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
+        max-width: 1180px;
+        padding-top: 2.15rem !important;
+        padding-left: 2.4rem !important;
+        padding-right: 2.4rem !important;
     }
     .app-hero,
     div[data-testid="metric-container"],
@@ -1016,23 +1016,23 @@ st.markdown("""
     .glass-table-wrap,
     .premium-summary,
     .signal-table-wrap {
-        background: rgba(255,255,255,0.045) !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
+        background: transparent !important;
+        border: 0 !important;
         box-shadow: none !important;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
     .app-hero {
-        margin: 0 0 1.35rem !important;
-        padding: 1.05rem 1.15rem !important;
-        border-radius: 24px !important;
+        margin: 0 0 2.25rem !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
     }
     .app-hero::before,
     .app-hero::after { display: none !important; }
     .app-hero h1 {
-        font-size: 34px !important;
+        font-size: 35px !important;
         font-weight: 700 !important;
-        letter-spacing: -0.03em !important;
+        letter-spacing: -0.035em !important;
         text-shadow: none !important;
     }
     .hero-row { align-items: center !important; }
@@ -1053,7 +1053,7 @@ st.markdown("""
         -webkit-backdrop-filter: none !important;
         color: rgba(255,255,255,0.52) !important;
         font-family: inherit !important;
-        font-size: 0.84rem !important;
+        font-size: 0.78rem !important;
     }
     .updated-mark::before {
         content: "Updated" !important;
@@ -1071,6 +1071,7 @@ st.markdown("""
         background: #2F80FF !important;
         box-shadow: none !important;
         animation: none !important;
+        opacity: 0.75;
     }
     .market-status-dot.open {
         background: #3FB950 !important;
@@ -1096,13 +1097,13 @@ st.markdown("""
     .section-label { margin: 1.6rem 0 0.62rem !important; }
     .focus-title {
         min-height: auto !important;
-        margin: 1.45rem 0 0.65rem;
+        margin: 2.2rem 0 0.95rem;
         padding: 0 !important;
     }
     .focus-title .name {
-        font-size: 34px !important;
+        font-size: 42px !important;
         font-weight: 700 !important;
-        letter-spacing: -0.03em !important;
+        letter-spacing: -0.045em !important;
         color: #F2F5F8 !important;
     }
     .focus-title .ticker {
@@ -1118,20 +1119,20 @@ st.markdown("""
     div[data-testid="stTextInput"] > div,
     div[data-testid="stTextInput"] [data-baseweb="input"] {
         min-height: 46px !important;
-        border-radius: 16px !important;
-        background: rgba(255,255,255,0.045) !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 12px !important;
+        background: rgba(255,255,255,0.035) !important;
+        border: 0 !important;
         box-shadow: none !important;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] {
         width: fit-content;
         padding: 4px;
         gap: 2px !important;
         border-radius: 999px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.035);
+        border: 0;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label {
         min-height: 34px !important;
@@ -1170,23 +1171,23 @@ st.markdown("""
         box-shadow: inset 0 -2px 0 #2F80FF !important;
     }
     .premium-summary {
-        border-radius: 24px;
-        padding: 22px 24px;
-        margin: 0.8rem 0 1.8rem;
+        border-radius: 0;
+        padding: 0;
+        margin: 0.4rem 0 3rem;
     }
     .summary-top {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
         gap: 18px;
-        padding-bottom: 18px;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding-bottom: 24px;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
     }
     .summary-price {
         font-family: "DM Mono", ui-monospace, monospace;
-        font-size: 42px;
+        font-size: 56px;
         font-weight: 700;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.055em;
         color: #F2F5F8;
     }
     .summary-change {
@@ -1204,10 +1205,11 @@ st.markdown("""
     .summary-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0;
+        column-gap: 44px;
+        row-gap: 22px;
     }
     .summary-row {
-        padding: 18px 18px 0 0;
+        padding: 24px 0 0;
         min-width: 0;
     }
     .summary-label {
@@ -1221,7 +1223,7 @@ st.markdown("""
     .summary-value {
         font-family: "DM Mono", ui-monospace, monospace;
         color: #F2F5F8;
-        font-size: 1.18rem;
+        font-size: 1.26rem;
         font-weight: 650;
     }
     .summary-status {
@@ -1230,9 +1232,9 @@ st.markdown("""
         color: rgba(255,255,255,0.56);
     }
     .signal-table-wrap {
-        border-radius: 22px;
+        border-radius: 0;
         overflow: hidden;
-        margin: 0.6rem 0 1.6rem;
+        margin: 0.85rem 0 2.6rem;
     }
     .signal-table {
         width: 100%;
@@ -1240,7 +1242,7 @@ st.markdown("""
         font-size: 0.88rem;
     }
     .signal-table th {
-        padding: 13px 16px;
+        padding: 11px 0;
         text-align: left;
         color: rgba(255,255,255,0.44);
         font-size: 12px;
@@ -1250,7 +1252,7 @@ st.markdown("""
         border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .signal-table td {
-        padding: 14px 16px;
+        padding: 14px 0;
         color: rgba(255,255,255,0.76);
         border-bottom: 1px solid rgba(255,255,255,0.06);
     }
@@ -1263,11 +1265,11 @@ st.markdown("""
     }
     .signal-table .status { color: #2F80FF; font-weight: 650; }
     .glass-table th {
-        background: rgba(47,128,255,0.14) !important;
+        background: rgba(255,255,255,0.035) !important;
         color: rgba(255,255,255,0.58) !important;
     }
     .glass-table td {
-        background: rgba(255,255,255,0.025) !important;
+        background: transparent !important;
         border-bottom-color: rgba(255,255,255,0.06) !important;
     }
     .glass-table tr:hover td { background: rgba(47,128,255,0.08) !important; }
@@ -1275,20 +1277,25 @@ st.markdown("""
     details[open] summary,
     div[data-testid="stExpander"] details summary,
     div[data-testid="stExpander"] details[open] summary {
-        background: rgba(255,255,255,0.035) !important;
-        border: 1px solid rgba(255,255,255,0.06) !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+        border-radius: 0 !important;
         box-shadow: none !important;
-        color: rgba(255,255,255,0.82) !important;
+        color: rgba(255,255,255,0.72) !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
     }
     details summary p,
     details summary span {
         color: rgba(255,255,255,0.82) !important;
     }
     div[data-testid="stPlotlyChart"] {
-        border-radius: 24px;
+        border-radius: 0;
         overflow: hidden;
-        background: #0A0F18;
-        border: 1px solid rgba(255,255,255,0.08);
+        background: #080B10;
+        border: 0;
+        margin-top: 1.1rem;
     }
     @media (max-width: 640px) {
         .block-container {
@@ -1478,17 +1485,17 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
-    plot_bgcolor='#0A0F18',
-    paper_bgcolor='#0A0F18',
-    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.52)', size=12),
+    plot_bgcolor='#080B10',
+    paper_bgcolor='#080B10',
+    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.46)', size=11),
     legend=dict(
-        orientation='h', yanchor='bottom', y=1.025, xanchor='right', x=1,
-        font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.10)',
+        orientation='h', yanchor='bottom', y=1.015, xanchor='right', x=1,
+        font=dict(size=9), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=50, r=16, t=54, b=64),
+    margin=dict(l=46, r=8, t=42, b=58),
 )
-GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.08)', zeroline=False)
+GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.045)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
 SIGNAL_CHART_HEIGHT = 500
 
@@ -1567,14 +1574,14 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     if 'RSI' in df.columns and df['RSI'].notna().any():
         fig.add_trace(go.Scatter(
             x=df['Date'], y=df['RSI'], name='RSI',
-            line=dict(color='#d2a679', width=1.5),
+            line=dict(color='rgba(255,255,255,0.46)', width=1.2),
         ), row=2, col=1)
         fig.add_hline(y=70, line=dict(color='#FF5A5F', width=1, dash='dot'), row=2, col=1)
         fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(
             title_text='RSI', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='#8e8e93', size=10),
-            title=dict(font=dict(color='#8e8e93', size=11)),
+            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
+            title=dict(font=dict(color='rgba(255,255,255,0.42)', size=11)),
         )
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
@@ -1586,8 +1593,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
             title_text='VIX', row=3, col=1,
-            tickfont=dict(color='#8e8e93', size=10),
-            title=dict(font=dict(color='#8e8e93', size=11)),
+            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
+            title=dict(font=dict(color='rgba(255,255,255,0.42)', size=11)),
         )
 
     fig.update_layout(
@@ -1598,7 +1605,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 3),
-            tickfont=dict(color='#8e8e93', size=10),
+            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
         )
         fig.update_yaxes(**GRID, row=r, col=1)
 
@@ -1658,18 +1665,18 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     if 'FG index' in df.columns and df['FG index'].notna().any():
         fg_df = df[df['FG index'].notna()]
         fg_zones = [
-            (0, 25,  '극도 공포', 'rgba(248,81,73,0.14)'),
-            (25, 45, '공포',     'rgba(210,153,34,0.12)'),
-            (45, 55, '중립',     'rgba(88,166,255,0.10)'),
-            (55, 75, '탐욕',     'rgba(100,168,255,0.12)'),
-            (75, 100, '극도 탐욕', 'rgba(10,132,255,0.18)'),
+            (0, 25,  '극도 공포', 'rgba(255,255,255,0.025)'),
+            (25, 45, '공포',     'rgba(255,255,255,0.018)'),
+            (45, 55, '중립',     'rgba(47,128,255,0.045)'),
+            (55, 75, '탐욕',     'rgba(255,255,255,0.018)'),
+            (75, 100, '극도 탐욕', 'rgba(255,255,255,0.025)'),
         ]
         for y0, y1, label, color in fg_zones:
             fig.add_hrect(
                 y0=y0, y1=y1,
                 fillcolor=color, line_width=0,
                 annotation_text=label, annotation_position='left',
-                annotation_font=dict(size=10, color='#8e8e93'),
+                annotation_font=dict(size=9, color='rgba(255,255,255,0.34)'),
                 row=2, col=1,
             )
         fig.add_trace(go.Scatter(
@@ -1679,12 +1686,12 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
         ), row=2, col=1)
         for level in [25, 45, 55, 75]:
-            fig.add_hline(y=level, line=dict(color='rgba(138,168,192,0.24)', width=1, dash='dot'), row=2, col=1)
+            fig.add_hline(y=level, line=dict(color='rgba(255,255,255,0.075)', width=1, dash='dot'), row=2, col=1)
         fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=2, col=1)
         fig.update_yaxes(
             title_text='F&G', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='#8e8e93', size=10),
-            title=dict(font=dict(color='#8e8e93', size=11)),
+            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
+            title=dict(font=dict(color='rgba(255,255,255,0.42)', size=11)),
         )
 
     fig.update_layout(
@@ -1695,7 +1702,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 2),
-            tickfont=dict(color='#8e8e93', size=10),
+            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
         )
         fig.update_yaxes(**GRID, row=r, col=1)
 
