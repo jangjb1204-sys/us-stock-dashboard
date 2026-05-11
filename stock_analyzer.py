@@ -25,9 +25,10 @@ def fetch_fear_and_greed_index(start_date: str) -> pd.DataFrame | None:
             }
             for item in data_list
         ])
+        # 병합을 위해 Date를 문자열로 유지
         return df.sort_values('Date').drop_duplicates('Date')
     except:
-        return pd.DataFrame(columns=['Date', 'FG index'])
+        return None
 
 def fetch_common_market_data(period: str):
     results = {}
@@ -35,16 +36,20 @@ def fetch_common_market_data(period: str):
     
     for tk, name in tickers.items():
         try:
-            df = yf.Ticker(tk).history(period=period)[['Close']].rename(columns={'Close': name})
+            # yfinance 데이터 추출
+            ticker_obj = yf.Ticker(tk)
+            df = ticker_obj.history(period=period)[['Close']].rename(columns={'Close': name})
+            
             if tk == '^TNX': 
-                df[name] = df[name] / 10.0
+                df[name] = df[name] / 10.0 # 국채 금리 단위 보정 (4.3% 형태)
+                
             df = df.reset_index()
-            # 병합 전처리: Datetime을 문자열로 고정
-            df['Date'] = pd.to_datetime(df['Date']).dt.strftime(DATE_FORMAT)
+            # [중요] 날짜를 문자열 'YYYY-MM-DD'로 강제 변환하여 타입 통일
+            df['Date'] = df['Date'].dt.strftime(DATE_FORMAT)
             results[name.lower()] = df
             time.sleep(0.1)
         except:
-            results[name.lower()] = pd.DataFrame(columns=['Date', name])
+            results[name.lower()] = pd.DataFrame()
 
     start_date = (datetime.now() - timedelta(days=SEARCH_DAYS)).strftime(DATE_FORMAT)
     results['fg_data'] = fetch_fear_and_greed_index(start_date)
@@ -53,7 +58,8 @@ def fetch_common_market_data(period: str):
 def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
     try:
         data = yf.Ticker(ticker).history(period=period).reset_index()
-        data['Date'] = pd.to_datetime(data['Date']).dt.strftime(DATE_FORMAT)
+        # [중요] 메인 데이터의 날짜도 문자열 'YYYY-MM-DD'로 강제 변환
+        data['Date'] = data['Date'].dt.strftime(DATE_FORMAT)
         return data
     except:
         return pd.DataFrame()
@@ -71,6 +77,7 @@ def calculate_moving_averages(data: pd.DataFrame):
     return data
 
 def generate_signals(data: pd.DataFrame):
+    # 숫자 연산을 위해 컬럼들을 숫자형으로 재확인
     numeric_cols = ['Close', 'MA20', 'MA60', 'MA120', 'MA200', 'RSI', 'FG index', 'Treasury']
     for col in numeric_cols:
         if col in data.columns:
@@ -110,17 +117,13 @@ def get_full_analysis(ticker: str, name: str, common_data: dict, period: str = '
     data = calculate_moving_averages(data)
     data['RSI'] = calculate_rsi(data)
 
-    # 병합 루프
+    # 문자열로 통일된 Date를 기준으로 병합
     for key in ['fg_data', 'treasury', 'vix', 'vix1d']:
         if key in common_data and not common_data[key].empty:
+            # 병합 전 타겟 데이터의 날짜도 문자열인지 재확인
             target_df = common_data[key].copy()
-            
-            # [에러 해결의 핵심] 병합 직전에 양쪽 Date를 모두 문자열로 강제 변환
-            data['Date'] = data['Date'].astype(str)
-            target_df['Date'] = target_df['Date'].astype(str)
-            
             data = pd.merge(data, target_df, on='Date', how='left')
 
-    # 주말 등 빈 데이터 채우기 (국채 금리 표시를 위해 필수)
+    # 국채 등 공휴일 데이터 채우기
     data = data.ffill()
     return generate_signals(data)
