@@ -398,22 +398,16 @@ def style_table(df: pd.DataFrame):
     existing = [c for c in display_cols if c in df.columns]
     sub = df[existing].tail(30).copy()
 
-    # 소수점 정리
+    # 화면 표시용 숫자 정리
     if 'Date' in sub.columns:
         sub['Date'] = pd.to_datetime(sub['Date']).dt.strftime('%Y-%m-%d')
-    for col in ['Close', '10Y Treasury']:
+    numeric_cols = [
+        'Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG index',
+        'VIX', 'VIX1D', 'SKEW', '10Y Treasury',
+    ]
+    for col in numeric_cols:
         if col in sub.columns:
-            sub[col] = pd.to_numeric(sub[col], errors='coerce').round(2)
-    for col in ['Change(%)', '2sigma(%)']:
-        if col in sub.columns:
-            sub[col] = pd.to_numeric(sub[col], errors='coerce').round(2)
-    for col in ['RSI', 'VIX', 'VIX1D', 'SKEW']:
-        if col in sub.columns:
-            sub[col] = pd.to_numeric(sub[col], errors='coerce').round(1)
-    if 'FG index' in sub.columns:
-        sub['FG index'] = pd.to_numeric(sub['FG index'], errors='coerce').apply(
-            lambda x: int(x) if pd.notna(x) else ''
-        )
+            sub[col] = pd.to_numeric(sub[col], errors='coerce')
 
     def color_row(row):
         styles = [''] * len(row)
@@ -468,7 +462,27 @@ def style_table(df: pd.DataFrame):
 
         return styles
 
-    return sub.style.apply(color_row, axis=1)
+    formatters = {
+        'Close':        lambda x: f"${x:,.2f}",
+        'Change(%)':   lambda x: f"{x:+.2f}%",
+        '2sigma(%)':   lambda x: f"{x:.1f}%",
+        'RSI':         lambda x: f"{x:.1f}",
+        'FG index':    lambda x: f"{int(round(x))}",
+        'VIX':         lambda x: f"{x:.1f}",
+        'VIX1D':       lambda x: f"{x:.1f}",
+        'SKEW':        lambda x: f"{x:.1f}",
+        '10Y Treasury': lambda x: f"{x:.2f}%",
+    }
+    existing_formatters = {
+        col: formatter for col, formatter in formatters.items()
+        if col in sub.columns
+    }
+
+    return (
+        sub.style
+        .apply(color_row, axis=1)
+        .format(existing_formatters, na_rep='—')
+    )
 
 
 # ── 사이드바 ───────────────────────────────────────────────────────────────────
