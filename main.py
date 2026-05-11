@@ -6,6 +6,7 @@ from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 from html import escape
 import time
+import uuid
 
 from stock_analyzer import (
     TICKER_CONFIGS,
@@ -29,9 +30,9 @@ st.markdown("""
     html, body, [class*="css"], .stApp {
         font-family: 'DM Sans', sans-serif !important;
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0) 22%),
-            linear-gradient(205deg, rgba(10,132,255,0.12) 0%, rgba(10,132,255,0) 34%),
-            linear-gradient(180deg, #09090b 0%, #050506 42%, #030304 100%) !important;
+            linear-gradient(135deg, rgba(190,255,235,0.08) 0%, rgba(190,255,235,0) 24%),
+            linear-gradient(205deg, rgba(86,255,219,0.13) 0%, rgba(86,255,219,0) 36%),
+            linear-gradient(180deg, #061817 0%, #03100f 42%, #020807 100%) !important;
         color: #f5f5f7 !important;
     }
     .stApp::before {
@@ -41,10 +42,14 @@ st.markdown("""
         pointer-events: none;
         z-index: 0;
         background:
-            linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.09) 17%, transparent 31%),
-            linear-gradient(72deg, transparent 56%, rgba(10,132,255,0.08) 70%, transparent 84%);
-        opacity: 0.58;
+            linear-gradient(115deg, transparent 0%, rgba(216,255,244,0.11) 17%, transparent 31%),
+            linear-gradient(72deg, transparent 56%, rgba(91,255,221,0.09) 70%, transparent 84%);
+        opacity: 0.62;
         mix-blend-mode: screen;
+    }
+    [data-testid="stSidebar"],
+    [data-testid="collapsedControl"] {
+        display: none !important;
     }
     .block-container {
         padding-top: 1.25rem !important;
@@ -57,12 +62,12 @@ st.markdown("""
         position: relative;
         overflow: hidden;
         margin: 0.25rem 0 1.25rem;
-        padding: 1.05rem 1.15rem;
-        border: 1px solid rgba(255,255,255,0.13);
+        padding: 1.05rem 1.15rem 1rem;
+        border: 1px solid rgba(183,255,235,0.18);
         border-radius: 24px;
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.045) 46%, rgba(255,255,255,0.02)),
-            rgba(12,12,14,0.48);
+            linear-gradient(135deg, rgba(207,255,241,0.17), rgba(255,255,255,0.045) 46%, rgba(119,255,219,0.035)),
+            rgba(5,31,29,0.58);
         box-shadow:
             inset 0 1px 0 rgba(255,255,255,0.22),
             inset 0 -1px 0 rgba(255,255,255,0.06),
@@ -86,6 +91,44 @@ st.markdown("""
         line-height: 1.08;
         font-weight: 750;
         letter-spacing: 0;
+    }
+    .hero-row {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+    }
+    .viewer-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        border: 1px solid rgba(167,255,233,0.24);
+        border-radius: 999px;
+        background:
+            linear-gradient(135deg, rgba(190,255,235,0.16), rgba(255,255,255,0.035)),
+            rgba(3,28,25,0.56);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.18),
+            0 14px 38px rgba(0,0,0,0.18);
+        color: rgba(226,255,247,0.72);
+        font-size: 0.82rem;
+        white-space: nowrap;
+        backdrop-filter: blur(22px) saturate(1.4);
+        -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    }
+    .viewer-pill strong {
+        color: #a7ffe9;
+        font-weight: 750;
+    }
+    .viewer-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #7cffb2;
+        box-shadow: 0 0 18px rgba(124,255,178,0.75);
     }
     .app-hero p {
         position: relative;
@@ -458,20 +501,20 @@ st.markdown("""
     .stButton > button {
         background:
             linear-gradient(145deg, rgba(255,255,255,0.26), rgba(255,255,255,0.04)),
-            #0a84ff;
-        color: #fff;
-        border: 1px solid rgba(255,255,255,0.18);
+            #a7ffe9;
+        color: #06211e;
+        border: 1px solid rgba(255,255,255,0.26);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
         letter-spacing: 0;
         padding: 9px 16px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.26), 0 18px 46px rgba(10,132,255,0.25);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 18px 46px rgba(91,255,221,0.22);
         transition: background 0.15s ease, transform 0.15s ease;
     }
-    .stButton > button p { color: #fff !important; }
+    .stButton > button p { color: #06211e !important; }
     .stButton > button:hover {
-        background: #2491ff;
+        background: #c5fff1;
         transform: translateY(-1px);
     }
 
@@ -480,17 +523,17 @@ st.markdown("""
         background:
             linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035)),
             rgba(14,14,16,0.50);
-        color: #0a84ff;
-        border: 1px solid rgba(10,132,255,0.35);
+        color: #a7ffe9;
+        border: 1px solid rgba(167,255,233,0.35);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
         transition: background 0.15s ease, border-color 0.15s ease;
     }
-    .stDownloadButton > button p { color: #0a84ff !important; }
+    .stDownloadButton > button p { color: #a7ffe9 !important; }
     .stDownloadButton > button:hover {
-        background: rgba(10,132,255,0.10);
-        border-color: #0a84ff;
+        background: rgba(167,255,233,0.10);
+        border-color: #a7ffe9;
     }
 
     /* 스피너 */
@@ -574,6 +617,15 @@ st.markdown("""
         .app-hero h1 {
             font-size: 1.28rem;
         }
+        .hero-row {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+        .viewer-pill {
+            width: 100%;
+            justify-content: center;
+            font-size: 0.78rem;
+        }
         .signal-grid {
             grid-template-columns: 1fr;
         }
@@ -635,6 +687,31 @@ def has_rsi_puddle_signal(rsi, puddle) -> bool:
         return rsi_val <= 30 and any(ch.isalpha() for ch in puddle_text)
     except Exception:
         return False
+
+@st.cache_resource
+def get_visit_state():
+    return {
+        'total_views': 0,
+        'sessions': {},
+    }
+
+def get_view_stats():
+    state = get_visit_state()
+    now = time.time()
+
+    if 'session_id' not in st.session_state:
+        st.session_state.session_id = str(uuid.uuid4())
+        state['total_views'] += 1
+
+    session_id = st.session_state.session_id
+    state['sessions'][session_id] = now
+
+    active_cutoff = now - 300
+    state['sessions'] = {
+        sid: ts for sid, ts in state['sessions'].items()
+        if ts >= active_cutoff
+    }
+    return state['total_views'], len(state['sessions'])
 
 # ── 캐싱 ───────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -1145,21 +1222,24 @@ def treasury_status(value):
 
 
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("## US Stock Dashboard")
-    st.caption(f"마지막 업데이트\n{datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    st.caption("캐시 유효시간: 30분")
-    if st.button("데이터 새로고침", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
-
 ticker_options = list(TICKER_CONFIGS.keys())
+total_views, active_viewers = get_view_stats()
 
 st.markdown(
-    """
+    f"""
     <div class="app-hero">
-      <h1>US Stock Dashboard</h1>
-      <p>시장 전체를 먼저 훑고, 관심 종목을 깊게 확인합니다.</p>
+      <div class="hero-row">
+        <div>
+          <h1>US Stock Dashboard</h1>
+          <p>시장 전체를 먼저 훑고, 관심 종목을 깊게 확인합니다.</p>
+        </div>
+        <div class="viewer-pill">
+          <span class="viewer-dot"></span>
+          <span><strong>{active_viewers:,}</strong>명 보는 중</span>
+          <span>·</span>
+          <span>누적 <strong>{total_views:,}</strong>명</span>
+        </div>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
