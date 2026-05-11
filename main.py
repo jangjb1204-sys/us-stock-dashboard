@@ -1033,16 +1033,16 @@ st.markdown("""
         -webkit-backdrop-filter: none !important;
     }
     .app-hero {
-        margin: 0 0 2.25rem !important;
+        margin: 0 0 2.15rem !important;
         padding: 0 !important;
         border-radius: 0 !important;
     }
     .app-hero::before,
     .app-hero::after { display: none !important; }
     .app-hero h1 {
-        font-size: 40px !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.026em !important;
+        font-size: 39px !important;
+        font-weight: 680 !important;
+        letter-spacing: -0.02em !important;
         text-shadow: none !important;
     }
     .hero-row { align-items: center !important; }
@@ -1098,16 +1098,16 @@ st.markdown("""
     div[data-testid="stSelectbox"] label,
     div[data-testid="stRadio"] label,
     div[data-testid="stTextInput"] label {
-        color: rgba(255,255,255,0.50) !important;
-        font-size: 13px !important;
+        color: rgba(255,255,255,0.46) !important;
+        font-size: 12px !important;
         font-weight: 500 !important;
         text-transform: uppercase;
-        letter-spacing: 0.04em !important;
+        letter-spacing: 0.035em !important;
     }
-    .section-label { margin: 1.65rem 0 0.68rem !important; }
+    .section-label { margin: 1.55rem 0 0.64rem !important; }
     .focus-title {
         min-height: auto !important;
-        margin: 2.2rem 0 0.95rem;
+        margin: 2.05rem 0 0.95rem;
         padding: 0 !important;
     }
     .focus-title .name {
@@ -1147,7 +1147,7 @@ st.markdown("""
         align-items: center;
         flex-wrap: wrap;
         padding: 0 !important;
-        gap: 7px !important;
+        gap: 6px !important;
         border-radius: 0;
         background: transparent !important;
         border: 0;
@@ -1155,27 +1155,27 @@ st.markdown("""
     div[data-testid="stRadio"] div[role="radiogroup"] label {
         display: inline-flex !important;
         align-items: center !important;
-        min-height: 36px !important;
-        height: 36px !important;
+        min-height: 35px !important;
+        height: 35px !important;
         justify-content: center !important;
-        padding: 7px 12px !important;
-        border: 1px solid rgba(255,255,255,0.055) !important;
+        padding: 0 12px !important;
+        border: 1px solid rgba(255,255,255,0.05) !important;
         border-radius: 999px !important;
-        background: rgba(255,255,255,0.04) !important;
+        background: rgba(255,255,255,0.035) !important;
         box-shadow: none !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
-        background: rgba(242,245,248,0.80) !important;
-        border-color: rgba(242,245,248,0.60) !important;
+        background: rgba(242,245,248,0.76) !important;
+        border-color: rgba(242,245,248,0.54) !important;
         color: #05070B !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label p {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 0.76rem !important;
+        font-size: 0.75rem !important;
         font-weight: 620 !important;
         line-height: 1 !important;
         margin: 0 !important;
@@ -1189,13 +1189,13 @@ st.markdown("""
         border-bottom: 1px solid rgba(255,255,255,0.065) !important;
         border-radius: 0 !important;
         padding: 0 !important;
-        gap: 28px !important;
+        gap: 26px !important;
     }
     .stTabs [data-baseweb="tab"] {
         border-radius: 0 !important;
         padding: 0 0 13px !important;
         background: transparent !important;
-        color: rgba(255,255,255,0.38) !important;
+        color: rgba(255,255,255,0.36) !important;
         font-size: 0.92rem !important;
         font-weight: 520 !important;
         box-shadow: none !important;
@@ -1204,7 +1204,7 @@ st.markdown("""
     .stTabs [aria-selected="true"] {
         color: rgba(255,255,255,0.96) !important;
         background: transparent !important;
-        box-shadow: inset 0 -2px 0 rgba(110,168,255,0.92) !important;
+        box-shadow: inset 0 -2px 0 rgba(110,168,255,0.82) !important;
     }
     .stTabs [data-baseweb="tab"] p {
         color: inherit !important;
@@ -1220,7 +1220,7 @@ st.markdown("""
         line-height: 1.15 !important;
         font-weight: 650 !important;
         letter-spacing: -0.025em !important;
-        margin-top: 2.4rem !important;
+        margin-top: 2.3rem !important;
         margin-bottom: 0.65rem !important;
     }
     .premium-summary {
@@ -1293,7 +1293,7 @@ st.markdown("""
         margin: 1rem 0 3rem;
     }
     .signal-entry {
-        padding: 17px 0;
+        padding: 16px 0;
         border-bottom: 1px solid rgba(255,255,255,0.035);
     }
     .signal-entry:last-child {
@@ -1301,9 +1301,9 @@ st.markdown("""
     }
     .signal-main {
         display: grid;
-        grid-template-columns: 74px minmax(0, 1fr);
+        grid-template-columns: 70px minmax(0, 1fr);
         align-items: baseline;
-        gap: 16px;
+        gap: 14px;
         min-width: 0;
     }
     .signal-copy {
@@ -1325,8 +1325,8 @@ st.markdown("""
     }
     .signal-date {
         font-variant-numeric: tabular-nums;
-        color: rgba(255,255,255,0.58);
-        font-size: 0.82rem;
+        color: rgba(255,255,255,0.56);
+        font-size: 0.8rem;
         font-weight: 560;
         line-height: 1.35;
         margin-bottom: 4px;
@@ -1466,7 +1466,7 @@ st.markdown("""
         overflow: hidden;
         background: #080B10;
         border: 0;
-        margin-top: 1.1rem;
+        margin-top: 0.95rem;
     }
     div[data-testid="stPlotlyChart"] .legend text {
         fill: rgba(255,255,255,0.42) !important;
@@ -1491,10 +1491,10 @@ st.markdown("""
             margin: 1.95rem 0 2.1rem !important;
         }
         .app-hero {
-            margin-bottom: 2.1rem !important;
+            margin-bottom: 2rem !important;
         }
         .app-hero h1 {
-            font-size: 30px !important;
+            font-size: 29px !important;
             line-height: 1.05 !important;
         }
         .hero-row {
@@ -1528,8 +1528,8 @@ st.markdown("""
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label {
             flex: 0 0 auto;
-            min-height: 38px !important;
-            height: 38px !important;
+            min-height: 37px !important;
+            height: 37px !important;
             justify-content: center !important;
             padding: 0 11px !important;
         }
@@ -1551,7 +1551,7 @@ st.markdown("""
             font-size: 15px !important;
         }
         .focus-title {
-            margin: 2.1rem 0 1rem !important;
+            margin: 2rem 0 0.95rem !important;
         }
         .focus-title .eyebrow {
             font-size: 12px !important;
@@ -1607,7 +1607,7 @@ st.markdown("""
             padding: 17px 0;
         }
         .signal-main {
-            grid-template-columns: 58px minmax(0, 1fr);
+            grid-template-columns: 54px minmax(0, 1fr);
             gap: 12px;
             align-items: baseline;
         }
