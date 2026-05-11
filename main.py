@@ -1240,44 +1240,75 @@ st.markdown("""
         font-size: 0.82rem;
         color: rgba(255,255,255,0.56);
     }
-    .signal-table-wrap {
-        border-radius: 0;
-        overflow: hidden;
-        margin: 0.85rem 0 2.6rem;
+    .signal-feed {
+        margin: 0.95rem 0 2.8rem;
     }
-    .signal-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.88rem;
-        table-layout: fixed;
+    .signal-entry {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        column-gap: 18px;
+        padding: 16px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.055);
     }
-    .signal-table th:nth-child(1),
-    .signal-table td:nth-child(1) { width: 76px; }
-    .signal-table th:nth-child(3),
-    .signal-table td:nth-child(3) { width: 38%; }
-    .signal-table th {
-        padding: 11px 0;
-        text-align: left;
-        color: rgba(255,255,255,0.44);
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+    .signal-entry:last-child {
+        border-bottom: 0;
     }
-    .signal-table td {
-        padding: 14px 0;
-        color: rgba(255,255,255,0.76);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .signal-table tr:last-child td { border-bottom: 0; }
-    .signal-table tr:hover td { background: rgba(47,128,255,0.08); }
-    .signal-table .date {
+    .signal-date {
+        padding-top: 2px;
         font-family: "DM Mono", ui-monospace, monospace;
-        color: rgba(255,255,255,0.52);
+        color: rgba(255,255,255,0.42);
+        font-size: 0.78rem;
         white-space: nowrap;
     }
-    .signal-table .status { color: #2F80FF; font-weight: 650; }
+    .signal-main {
+        display: grid;
+        grid-template-columns: 78px minmax(0, 1fr);
+        align-items: baseline;
+        gap: 18px;
+        min-width: 0;
+    }
+    .signal-copy {
+        min-width: 0;
+    }
+    .signal-title {
+        color: rgba(255,255,255,0.90);
+        font-size: 1rem;
+        font-weight: 620;
+        letter-spacing: -0.01em;
+        overflow-wrap: anywhere;
+    }
+    .signal-detail {
+        margin-top: 5px;
+        color: rgba(255,255,255,0.44);
+        font-size: 0.86rem;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+    .signal-action {
+        font-size: 0.94rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: rgba(255,255,255,0.68);
+    }
+    .signal-action.buy {
+        color: #3FB950;
+    }
+    .signal-action.sell,
+    .signal-action.risk {
+        color: #FF5A5F;
+    }
+    .signal-action.signal {
+        color: rgba(255,255,255,0.88);
+    }
+    .signal-action.watch {
+        color: rgba(255,255,255,0.60);
+    }
+    .signal-empty-feed {
+        padding: 18px 0;
+        color: rgba(255,255,255,0.44);
+        font-size: 0.94rem;
+        border-bottom: 1px solid rgba(255,255,255,0.055);
+    }
     .glass-table th {
         background: rgba(255,255,255,0.035) !important;
         color: rgba(255,255,255,0.58) !important;
@@ -1426,24 +1457,34 @@ st.markdown("""
             margin-top: 2.5rem !important;
             margin-bottom: 0.75rem !important;
         }
-        .signal-table-wrap {
-            margin-bottom: 2.45rem !important;
-            overflow-x: hidden;
+        .signal-feed {
+            margin: 0.75rem 0 2.5rem !important;
         }
-        .signal-table {
-            font-size: 0.84rem !important;
+        .signal-entry {
+            grid-template-columns: 50px minmax(0, 1fr);
+            column-gap: 13px;
+            padding: 15px 0;
         }
-        .signal-table th,
-        .signal-table td {
-            padding: 13px 0 !important;
-            vertical-align: top;
+        .signal-date {
+            font-size: 0.72rem;
         }
-        .signal-table th:nth-child(1),
-        .signal-table td:nth-child(1) { width: 58px; }
-        .signal-table th:nth-child(3),
-        .signal-table td:nth-child(3) { width: 42%; }
-        .signal-table td {
-            overflow-wrap: anywhere;
+        .signal-main {
+            display: grid;
+            grid-template-columns: 62px minmax(0, 1fr);
+            gap: 11px;
+            align-items: baseline;
+        }
+        .signal-title {
+            font-size: 0.98rem;
+            line-height: 1.28;
+        }
+        .signal-action {
+            font-size: 0.92rem;
+        }
+        .signal-detail {
+            margin-top: 6px;
+            font-size: 0.84rem;
+            line-height: 1.45;
         }
         .stTabs [data-baseweb="tab-list"] {
             width: 100%;
@@ -2124,31 +2165,36 @@ def render_signal_cards(df: pd.DataFrame):
         rsi_puddle_items = []
 
     signal_rows = []
-    for signal, items, default_status in [
-        ('Puddle', puddle_items, 'Signal'),
-        ('RSI & Puddle', rsi_puddle_items, 'Watch'),
-        ('VIX1D > VIX', vix_items, 'Risk'),
-    ]:
-        for date, value in items:
-            signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, signal, value or default_status))
+    for date, value in puddle_items:
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Signal', 'signal', 'Puddle', value))
+    for date, value in rsi_puddle_items:
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Watch', 'watch', 'RSI & Puddle', value))
+    for date, value in vix_items:
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Buy', 'buy', 'VIX1D > VIX', 'Volatility signal'))
 
-    signal_rows = sorted(signal_rows, key=lambda item: item[0], reverse=True)[:12]
+    signal_rows = sorted(signal_rows, key=lambda item: item[0], reverse=True)[:10]
     if signal_rows:
         body = ''.join(
-            f"<tr><td class='date'>{escape(date)}</td><td>{escape(signal)}</td><td class='status'>{escape(status)}</td></tr>"
-            for _, date, signal, status in signal_rows
+            f"<div class='signal-entry'>"
+            f"<div class='signal-date'>{escape(date)}</div>"
+            f"<div class='signal-content'>"
+            f"<div class='signal-main'>"
+            f"<div class='signal-action {escape(tone)}'>{escape(action)}</div>"
+            f"<div class='signal-copy'>"
+            f"<div class='signal-title'>{escape(title)}</div>"
+            f"<div class='signal-detail'>{escape(detail)}</div>"
+            f"</div>"
+            f"</div>"
+            f"</div>"
+            f"</div>"
+            for _, date, action, tone, title, detail in signal_rows
         )
     else:
-        body = "<tr><td class='date'>—</td><td>No recent signal</td><td class='status'>Calm</td></tr>"
+        body = "<div class='signal-empty-feed'>No recent actionable signals. Market state looks calm.</div>"
 
     st.markdown(
         f"""
-        <div class="signal-table-wrap">
-          <table class="signal-table">
-            <thead><tr><th>Date</th><th>Signal</th><th>Status</th></tr></thead>
-            <tbody>{body}</tbody>
-          </table>
-        </div>
+        <div class="signal-feed">{body}</div>
         """,
         unsafe_allow_html=True,
     )
