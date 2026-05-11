@@ -965,6 +965,35 @@ def render_signal_cards(df: pd.DataFrame):
     st.markdown(f"<div class='signal-grid'>{''.join(html_cards)}</div>", unsafe_allow_html=True)
 
 
+def render_rsi_puddle_dates(df: pd.DataFrame, limit: int = 5):
+    if not {'Date', 'RSI', 'Puddle'}.issubset(df.columns):
+        st.info("RSI & Puddle 신호 데이터가 아직 없습니다.")
+        return
+
+    signal_df = df[df.apply(lambda row: has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')), axis=1)].tail(limit)
+    if signal_df.empty:
+        st.info("선택한 표시 범위 안에는 RSI & Puddle 중복 신호가 없습니다.")
+        return
+
+    items = []
+    for _, row in signal_df.iloc[::-1].iterrows():
+        date = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
+        rsi = safe_float(row.get('RSI'))
+        rsi_text = f"RSI {rsi:.1f}" if rsi is not None else "RSI —"
+        puddle = str(row.get('Puddle', '')) if pd.notna(row.get('Puddle')) else ''
+        items.append(
+            f"<div class='signal-item'><span class='signal-date'>{escape(date)}</span>"
+            f"<span>{escape(rsi_text)} · {escape(puddle)}</span></div>"
+        )
+
+    st.markdown(
+        "<div class='signal-card' style='--accent:#bf5af2'>"
+        "<div class='signal-title'><span class='signal-dot'></span>RSI & Puddle 중복 신호</div>"
+        f"{''.join(items)}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## US Stock Dashboard")
@@ -1109,11 +1138,8 @@ with tab1:
 with tab2:
     st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
 
-    if 'FG/RSI signal' in df.columns:
-        st.markdown("### FG/RSI 신호 분포")
-        sc = df['FG/RSI signal'].value_counts().reset_index()
-        sc.columns = ['신호', '횟수']
-        st.dataframe(sc, hide_index=True, use_container_width=False)
+    st.markdown("### RSI & Puddle 최근 신호")
+    render_rsi_puddle_dates(df)
 
 with tab3:
     st.markdown("### 전체 데이터")
