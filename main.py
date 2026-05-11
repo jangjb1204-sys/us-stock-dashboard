@@ -15,6 +15,7 @@ from stock_analyzer import (
     fetch_common_market_data,
     process_stock_frame,
     process_stock_data,
+    fetch_ticker_display_name,
 )
 
 # ── 페이지 설정 ────────────────────────────────────────────────────────────────
@@ -1058,6 +1059,12 @@ def unique_tickers(tickers) -> list[str]:
 def ticker_name(ticker: str) -> str:
     return TICKER_CONFIGS.get(ticker, ticker)
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def load_ticker_display_name(ticker: str) -> str:
+    if ticker in TICKER_CONFIGS:
+        return TICKER_CONFIGS[ticker]
+    return fetch_ticker_display_name(ticker)
+
 def has_rsi_puddle_signal(rsi, puddle) -> bool:
     try:
         rsi_val = float(rsi)
@@ -1100,21 +1107,25 @@ def is_us_market_open(now: datetime | None = None) -> bool:
 # ── 캐싱 ───────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_common_data(period: str) -> dict:
-    return fetch_common_market_data(period=period)
+    return {
+        'data': fetch_common_market_data(period=period),
+        'loaded_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key: str) -> pd.DataFrame:
-    common = load_common_data(period)
-    return process_stock_data(ticker, name, common, period=period, delta=delta)
+def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key: str) -> tuple[pd.DataFrame, str]:
+    common_payload = load_common_data(period)
+    data = process_stock_data(ticker, name, common_payload['data'], period=period, delta=delta)
+    return data, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tickers: tuple[str, ...] = ()) -> pd.DataFrame:
-    common = load_common_data(period)
+    common = load_common_data(period)['data']
     summary_tickers = unique_tickers([*TICKER_CONFIGS.keys(), *extra_tickers])
     batch_data = fetch_batch_stock_data(summary_tickers, period)
     rows = []
     for ticker in summary_tickers:
-        name = ticker_name(ticker)
+        name = TICKER_CONFIGS.get(ticker) or fetch_ticker_display_name(ticker)
         try:
             d = process_stock_frame(batch_data.get(ticker, pd.DataFrame()), ticker, name, common, delta=delta)
             if d.empty:
@@ -1707,6 +1718,34 @@ def treasury_status(value):
     return ('neutral', '보통', '중립 금리 구간')
 
 
+def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str):
+    container.markdown(
+        f"""
+        <div class="app-hero">
+          <div class="hero-row">
+            <div>
+              <div class="hero-title">
+                <span class="market-status-dot {market_dot_class}"></span>
+                <h1>US Market Signals</h1>
+              </div>
+              <div class="hero-meta">
+                <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
+                <span class="updated-mark">{escape(updated_at)}</span>
+              </div>
+            </div>
+            <div class="viewer-pill">
+              <span class="viewer-dot"></span>
+              <span><strong>{active_viewers:,}</strong>명 보는 중</span>
+              <span>·</span>
+              <span>누적 <strong>{total_views:,}</strong>명</span>
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 base_tickers = list(TICKER_CONFIGS.keys())
 recent_tickers = load_recent_tickers()
@@ -1714,33 +1753,8 @@ ticker_options = base_tickers + [ticker for ticker in recent_tickers if ticker n
 total_views, active_viewers = get_view_stats()
 market_open = is_us_market_open()
 market_dot_class = "open" if market_open else "closed"
-updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-st.markdown(
-    f"""
-    <div class="app-hero">
-      <div class="hero-row">
-        <div>
-          <div class="hero-title">
-            <span class="market-status-dot {market_dot_class}"></span>
-            <h1>US Market Signals</h1>
-          </div>
-          <div class="hero-meta">
-            <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
-            <span class="updated-mark">{updated_at}</span>
-          </div>
-        </div>
-        <div class="viewer-pill">
-          <span class="viewer-dot"></span>
-          <span><strong>{active_viewers:,}</strong>명 보는 중</span>
-          <span>·</span>
-          <span>누적 <strong>{total_views:,}</strong>명</span>
-        </div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+hero_slot = st.empty()
+render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")
 delta_label = st.radio(
     "표시 범위",
     options=list(DELTA_OPTIONS.keys()),
@@ -1760,7 +1774,7 @@ with focus_preset:
     preset_ticker = st.selectbox(
         "Saved Tickers",
         ticker_options,
-        format_func=ticker_name,
+        format_func=load_ticker_display_name,
     )
 with focus_custom:
     raw_custom_ticker = st.text_input(
@@ -1777,10 +1791,10 @@ if raw_custom_ticker.strip() and not custom_ticker:
 
 if custom_ticker:
     selected_ticker = custom_ticker
-    selected_name = ticker_name(custom_ticker)
+    selected_name = load_ticker_display_name(custom_ticker)
 else:
     selected_ticker = preset_ticker
-    selected_name = ticker_name(selected_ticker)
+    selected_name = load_ticker_display_name(selected_ticker)
 
 summary_extra_tickers = tuple(unique_tickers([*recent_tickers, selected_ticker]))
 render_market_summary(period, delta, cache_key, summary_extra_tickers)
@@ -1797,7 +1811,9 @@ st.markdown(
 )
 
 with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
-    df = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
+    df, updated_at = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
+
+render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at)
 
 if df.empty:
     st.error(f"{selected_ticker} 데이터를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.")
@@ -1806,7 +1822,7 @@ if df.empty:
 if selected_ticker not in TICKER_CONFIGS:
     save_recent_ticker(selected_ticker)
 
-table_df = load_ticker_data(
+table_df, _table_updated_at = load_ticker_data(
     selected_ticker,
     selected_name,
     period,

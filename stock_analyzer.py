@@ -94,6 +94,15 @@ def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def fetch_ticker_display_name(ticker: str) -> str:
+    try:
+        info = yf.Ticker(ticker).info or {}
+        name = info.get('longName') or info.get('shortName') or info.get('displayName')
+        return str(name).strip() if name else ticker
+    except Exception:
+        return ticker
+
+
 def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.DataFrame]:
     try:
         raw = yf.download(
