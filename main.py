@@ -87,7 +87,7 @@ st.markdown("""
         position: relative;
         z-index: 1;
         margin: 0;
-        font-size: 1.88rem;
+        font-size: 2.18rem;
         line-height: 1.08;
         font-weight: 750;
         letter-spacing: 0;
@@ -239,7 +239,7 @@ st.markdown("""
         align-items: center;
         gap: 8px;
         color: #f5f5f7;
-        font-size: 0.88rem;
+        font-size: 0.98rem;
         font-weight: 700;
         margin-bottom: 11px;
     }
@@ -521,21 +521,26 @@ st.markdown("""
     /* 버튼 */
     .stButton > button {
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.26), rgba(255,255,255,0.04)),
-            #9cccff;
-        color: #06182f;
-        border: 1px solid rgba(255,255,255,0.26);
+            linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.035)),
+            rgba(10,132,255,0.10);
+        color: #d9ecff;
+        border: 1px solid rgba(156,204,255,0.30);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
         letter-spacing: 0;
         padding: 9px 16px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 18px 46px rgba(72,145,255,0.22);
-        transition: background 0.15s ease, transform 0.15s ease;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 14px 34px rgba(0,0,0,0.16);
+        backdrop-filter: blur(18px) saturate(1.35);
+        -webkit-backdrop-filter: blur(18px) saturate(1.35);
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
-    .stButton > button p { color: #06182f !important; }
+    .stButton > button p { color: #d9ecff !important; }
     .stButton > button:hover {
-        background: #b8dcff;
+        background:
+            linear-gradient(145deg, rgba(255,255,255,0.20), rgba(255,255,255,0.05)),
+            rgba(10,132,255,0.18);
+        border-color: rgba(184,220,255,0.55);
         transform: translateY(-1px);
     }
 
@@ -636,7 +641,7 @@ st.markdown("""
             justify-content: center;
         }
         .app-hero h1 {
-            font-size: 1.28rem;
+            font-size: 1.52rem;
         }
         .hero-row {
             align-items: flex-start;
@@ -879,13 +884,13 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         if not vix_signal_dates.empty:
             fig.add_trace(go.Scatter(
                 x=[None], y=[None], mode='lines', name='VIX1D > VIX',
-                line=dict(color='#b48cff', width=2.2),
+                line=dict(color='#ffb86c', width=2.2),
                 hoverinfo='skip',
             ), row=1, col=1)
             for d in vix_signal_dates:
                 fig.add_vline(
                     x=d,
-                    line=dict(color='rgba(180,140,255,0.58)', width=1.8),
+                    line=dict(color='rgba(255,184,108,0.56)', width=1.8),
                     layer='below',
                     row=1,
                     col=1,
@@ -1313,7 +1318,7 @@ with ctrl_delta:
 
 with ctrl_action:
     st.markdown("<div style='height: 1.7rem'></div>", unsafe_allow_html=True)
-    if st.button("새로고침", use_container_width=True):
+    if st.button("↻ 새로고침", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
