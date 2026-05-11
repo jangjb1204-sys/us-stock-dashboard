@@ -5,8 +5,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 from html import escape
-import json
-from pathlib import Path
 import time
 import uuid
 
@@ -54,6 +52,17 @@ st.markdown("""
     [data-testid="stSidebar"],
     [data-testid="collapsedControl"] {
         display: none !important;
+    }
+    #MainMenu,
+    header,
+    footer,
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    [data-testid="stHeader"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
     }
     .block-container {
         padding-top: 1.25rem !important;
@@ -732,7 +741,6 @@ st.markdown("""
 # ── 상수 ───────────────────────────────────────────────────────────────────────
 DELTA_OPTIONS  = {"90일": 90, "180일": 180, "1년": 365, "2년": 730, "전체": 9999}
 DATA_PERIOD = "4y"
-WATCHLIST_PATH = Path(__file__).with_name("watchlist.json")
 RECENT_TICKER_LIMIT = 12
 
 MA_COLORS = {
@@ -772,16 +780,12 @@ def normalize_ticker(value: str) -> str:
     return ticker
 
 def load_recent_tickers() -> list[str]:
-    try:
-        data = json.loads(WATCHLIST_PATH.read_text(encoding="utf-8"))
-        tickers = data.get("recent_tickers", [])
-        return [
-            normalize_ticker(ticker)
-            for ticker in tickers
-            if isinstance(ticker, str) and normalize_ticker(ticker)
-        ][:RECENT_TICKER_LIMIT]
-    except Exception:
-        return []
+    tickers = st.session_state.get("recent_tickers", [])
+    return [
+        normalize_ticker(ticker)
+        for ticker in tickers
+        if isinstance(ticker, str) and normalize_ticker(ticker)
+    ][:RECENT_TICKER_LIMIT]
 
 def save_recent_ticker(ticker: str):
     ticker = normalize_ticker(ticker)
@@ -789,13 +793,10 @@ def save_recent_ticker(ticker: str):
         return
     recent = [item for item in load_recent_tickers() if item != ticker]
     recent.insert(0, ticker)
-    try:
-        WATCHLIST_PATH.write_text(
-            json.dumps({"recent_tickers": recent[:RECENT_TICKER_LIMIT]}, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-    except Exception:
-        pass
+    st.session_state.recent_tickers = recent[:RECENT_TICKER_LIMIT]
+
+def clear_recent_tickers():
+    st.session_state.recent_tickers = []
 
 def unique_tickers(tickers) -> list[str]:
     result = []
@@ -1404,9 +1405,9 @@ st.markdown(
         </div>
         <div class="viewer-pill">
           <span class="viewer-dot"></span>
-          <span><strong>{active_viewers:,}</strong>명 보는 중</span>
+          <span>현재 세션 <strong>{active_viewers:,}</strong></span>
           <span>·</span>
-          <span>누적 <strong>{total_views:,}</strong>명</span>
+          <span>누적 세션 <strong>{total_views:,}</strong></span>
         </div>
       </div>
     </div>
@@ -1448,6 +1449,9 @@ with focus_custom:
         "직접 조회",
         placeholder="미국 주식/ETF 티커 예: AAPL, NVDA, VOO",
     )
+    if recent_tickers and st.button("최근 티커 비우기", use_container_width=True):
+        clear_recent_tickers()
+        st.rerun()
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
 if raw_custom_ticker.strip() and not custom_ticker:
