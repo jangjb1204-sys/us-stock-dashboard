@@ -757,6 +757,12 @@ CHART_THEME = dict(
     margin=dict(l=60, r=24, t=78, b=40),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
+DATE_AXIS = dict(
+    tickmode='auto',
+    nticks=14,
+    tickformat='%y.%m.%d',
+    automargin=True,
+)
 
 # ── 캔들스틱 차트 ─────────────────────────────────────────────────────────────
 def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
@@ -828,7 +834,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         height=660,
     )
     for r in [1, 2, 3]:
-        fig.update_xaxes(**GRID, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
+        fig.update_xaxes(**GRID, **DATE_AXIS, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
@@ -930,7 +936,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         height=590,
     )
     for r in [1, 2]:
-        fig.update_xaxes(**GRID, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
+        fig.update_xaxes(**GRID, **DATE_AXIS, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
