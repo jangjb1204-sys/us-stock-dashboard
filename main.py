@@ -319,6 +319,14 @@ def safe_float(val):
     try: return float(val)
     except: return None
 
+def has_rsi_puddle_signal(rsi, puddle) -> bool:
+    try:
+        rsi_val = float(rsi)
+        puddle_text = str(puddle) if pd.notna(puddle) else ''
+        return rsi_val <= 30 and any(ch.isalpha() for ch in puddle_text)
+    except Exception:
+        return False
+
 # ── 캐싱 ───────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_common_data(period: str) -> dict:
@@ -470,13 +478,21 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
                 annotation_font=dict(size=10, color='#8e8e93'),
                 row=2, col=1,
             )
-        fig.add_trace(go.Bar(
+        fig.add_trace(go.Scatter(
             x=fg_df['Date'], y=fg_df['FG index'], name='Fear & Greed',
-            marker=dict(
-                color=fg_df['FG index'],
-                colorscale=[[0, '#f85149'], [0.5, '#d29922'], [1, '#3fb950']],
-                cmin=0, cmax=100,
-            ),
+            mode='lines',
+            line=dict(color='#f5f5f7', width=2.4, shape='spline'),
+            hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
+        ), row=2, col=1)
+        latest_fg = fg_df.iloc[-1]
+        fig.add_trace(go.Scatter(
+            x=[latest_fg['Date']], y=[latest_fg['FG index']], name='현재 F&G',
+            mode='markers+text',
+            marker=dict(size=13, color='#0a84ff', line=dict(width=2, color='#f5f5f7')),
+            text=[f"{latest_fg['FG index']:.0f}"],
+            textposition='middle right',
+            textfont=dict(size=12, color='#f5f5f7'),
+            hovertemplate='%{x|%Y-%m-%d}<br>현재 F&G %{y:.0f}<extra></extra>',
         ), row=2, col=1)
         for level in [25, 45, 55, 75]:
             fig.add_hline(y=level, line=dict(color='rgba(138,168,192,0.24)', width=1, dash='dot'), row=2, col=1)
@@ -536,9 +552,7 @@ def style_table(df: pd.DataFrame):
         # 라인 차트의 RSI ∩ Puddle 동그라미와 같은 조건
         if ri >= 0 and pi >= 0:
             try:
-                rsi = float(row.iloc[ri]) if pd.notna(row.iloc[ri]) else None
-                puddle = str(row.iloc[pi]) if pd.notna(row.iloc[pi]) else ''
-                if rsi is not None and rsi <= 30 and any(ch.isalpha() for ch in puddle):
+                if has_rsi_puddle_signal(row.iloc[ri], row.iloc[pi]):
                     styles = ['background-color: rgba(188,140,255,0.20)'] * len(styles)
             except: pass
 
@@ -656,8 +670,14 @@ def render_market_summary(period: str, delta: int, cache_key: str):
                            'color: #f85149; font-weight:600' if v >= 70 else ''
                 except: return ''
 
+            def hl_signal_row(row):
+                if has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')):
+                    return ['background-color: rgba(188,140,255,0.20)'] * len(row)
+                return [''] * len(row)
+
             styled_summary = (
                 summary_df.style
+                .apply(hl_signal_row, axis=1)
                 .map(hl_change, subset=['Change(%)'])
                 .map(hl_rsi,    subset=['RSI'])
                 .format({
