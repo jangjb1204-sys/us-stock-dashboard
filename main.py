@@ -861,7 +861,13 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
                 hoverinfo='skip',
             ), row=1, col=1)
             for d in vix_signal_dates:
-                fig.add_vline(x=d, line=dict(color='rgba(255,59,48,0.72)', width=1.8), row=1, col=1)
+                fig.add_vline(
+                    x=d,
+                    line=dict(color='rgba(255,59,48,0.72)', width=1.8),
+                    layer='below',
+                    row=1,
+                    col=1,
+                )
 
     if 'RSI' in df.columns and 'Puddle' in df.columns:
         oversold  = df[df['RSI'] <= 30]
