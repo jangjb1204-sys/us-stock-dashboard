@@ -1614,17 +1614,23 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 52
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
     with st.expander("Market Overview", expanded=False):
-        with st.spinner("Market Overview를 불러오는 중..."):
-            summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
-
-        if not summary_df.empty:
-            render_glass_table(
-                summary_df,
-                ['종목', '종가', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal', 'Puddle'],
-                height_px=420,
-            )
+        if not st.session_state.get("market_overview_loaded", False):
+            st.caption("전체 종목 현황은 필요할 때만 불러와 첫 화면을 빠르게 유지합니다.")
+            if st.button("Market Overview 불러오기", use_container_width=True):
+                st.session_state.market_overview_loaded = True
+                st.rerun()
         else:
-            st.info("전체 종목 데이터를 아직 가져오지 못했습니다.")
+            with st.spinner("Market Overview를 불러오는 중..."):
+                summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
+
+            if not summary_df.empty:
+                render_glass_table(
+                    summary_df,
+                    ['종목', '종가', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal', 'Puddle'],
+                    height_px=420,
+                )
+            else:
+                st.info("전체 종목 데이터를 아직 가져오지 못했습니다.")
 
 
 def render_signal_cards(df: pd.DataFrame):
@@ -1832,7 +1838,7 @@ with focus_preset:
     preset_ticker = st.selectbox(
         "Saved Tickers",
         ticker_options,
-        format_func=load_ticker_display_name,
+        format_func=ticker_name,
         key="saved_ticker_select",
         on_change=clear_direct_ticker_input,
     )
