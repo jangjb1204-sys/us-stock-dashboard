@@ -1871,7 +1871,7 @@ SIGNAL_CHART_HEIGHT = 460
 def get_date_axis(df: pd.DataFrame) -> dict:
     dates = pd.to_datetime(df['Date']).dropna().drop_duplicates().sort_values()
     if dates.empty:
-        return dict(automargin=True)
+        return {}
 
     span_days = (dates.iloc[-1] - dates.iloc[0]).days
     if span_days <= 120:
@@ -1901,7 +1901,6 @@ def get_date_axis(df: pd.DataFrame) -> dict:
         tickvals=tick_dates,
         ticktext=[d.strftime(label_format) for d in tick_dates],
         range=[dates.iloc[0], dates.iloc[-1]],
-        automargin=True,
     )
 
 # ── 캔들스틱 차트 ─────────────────────────────────────────────────────────────
