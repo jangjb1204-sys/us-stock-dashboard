@@ -1016,6 +1016,10 @@ st.markdown("""
         padding-left: 2.4rem !important;
         padding-right: 2.4rem !important;
     }
+    hr {
+        border-color: rgba(255,255,255,0.055) !important;
+        margin: 2.15rem 0 2.35rem !important;
+    }
     .app-hero,
     div[data-testid="metric-container"],
     details,
@@ -1100,7 +1104,7 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 0.04em !important;
     }
-    .section-label { margin: 1.6rem 0 0.62rem !important; }
+    .section-label { margin: 1.65rem 0 0.68rem !important; }
     .focus-title {
         min-height: auto !important;
         margin: 2.2rem 0 0.95rem;
@@ -1132,6 +1136,10 @@ st.markdown("""
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
     }
+    div[data-testid="stTextInput"] input {
+        font-weight: 500 !important;
+        letter-spacing: 0 !important;
+    }
     div[data-testid="stRadio"] div[role="radiogroup"] {
         display: flex !important;
         width: fit-content;
@@ -1147,7 +1155,7 @@ st.markdown("""
     div[data-testid="stRadio"] div[role="radiogroup"] label {
         min-height: 36px !important;
         justify-content: center !important;
-        padding: 8px 13px !important;
+        padding: 7px 12px !important;
         border: 1px solid rgba(255,255,255,0.055) !important;
         border-radius: 999px !important;
         background: rgba(255,255,255,0.04) !important;
@@ -1156,8 +1164,8 @@ st.markdown("""
         -webkit-backdrop-filter: none !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
-        background: rgba(242,245,248,0.86) !important;
-        border-color: rgba(242,245,248,0.72) !important;
+        background: rgba(242,245,248,0.80) !important;
+        border-color: rgba(242,245,248,0.60) !important;
         color: #05070B !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label p {
@@ -1208,7 +1216,7 @@ st.markdown("""
     .premium-summary {
         border-radius: 0;
         padding: 0;
-        margin: 0.4rem 0 3rem;
+        margin: 0.45rem 0 3.1rem;
     }
     .summary-top {
         display: flex;
@@ -1272,10 +1280,10 @@ st.markdown("""
         color: rgba(255,255,255,0.56);
     }
     .signal-feed {
-        margin: 1rem 0 3.1rem;
+        margin: 1rem 0 3rem;
     }
     .signal-entry {
-        padding: 18px 0;
+        padding: 17px 0;
         border-bottom: 1px solid rgba(255,255,255,0.035);
     }
     .signal-entry:last-child {
@@ -1383,13 +1391,35 @@ st.markdown("""
         font-weight: 620 !important;
     }
     .glass-table tr:hover td { background: #0D1A2A !important; }
+    .glass-table-wrap {
+        background: #05070B !important;
+        isolation: isolate;
+    }
     .glass-table-wrap + div[data-testid="stDownloadButton"],
     div[data-testid="stDownloadButton"] {
         margin-top: 28px !important;
     }
     div[data-testid="stDownloadButton"] button {
-        opacity: 0.82;
+        min-height: 38px !important;
+        padding: 7px 13px !important;
+        background: rgba(255,255,255,0.035) !important;
+        border: 1px solid rgba(255,255,255,0.075) !important;
+        color: rgba(255,255,255,0.66) !important;
+        opacity: 1;
         box-shadow: none !important;
+        transform: none !important;
+    }
+    div[data-testid="stDownloadButton"] button p {
+        color: rgba(255,255,255,0.66) !important;
+        font-size: 0.78rem !important;
+        font-weight: 560 !important;
+    }
+    div[data-testid="stDownloadButton"] button:hover {
+        background: rgba(255,255,255,0.065) !important;
+        border-color: rgba(255,255,255,0.12) !important;
+    }
+    div[data-testid="stDownloadButton"] button:hover p {
+        color: rgba(255,255,255,0.82) !important;
     }
     details summary,
     details[open] summary,
@@ -1435,11 +1465,14 @@ st.markdown("""
     @media (max-width: 640px) {
         .block-container {
             max-width: 100%;
-            padding-top: 1.35rem !important;
+            padding-top: 1.3rem !important;
             padding-left: 20px !important;
             padding-right: 20px !important;
-            padding-bottom: 2rem !important;
+            padding-bottom: 2.4rem !important;
             overflow-x: hidden;
+        }
+        hr {
+            margin: 1.95rem 0 2.1rem !important;
         }
         .app-hero {
             margin-bottom: 2.1rem !important;
@@ -1466,7 +1499,7 @@ st.markdown("""
             justify-content: flex-start !important;
         }
         .section-label {
-            margin: 1.65rem 0 0.7rem !important;
+            margin: 1.5rem 0 0.68rem !important;
             font-size: 12px !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] {
@@ -1474,14 +1507,14 @@ st.markdown("""
             max-width: 100%;
             display: flex !important;
             grid-template-columns: none !important;
-            gap: 7px !important;
+            gap: 6px !important;
             padding: 0 !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label {
             flex: 0 0 auto;
-            min-height: 40px !important;
+            min-height: 39px !important;
             justify-content: center !important;
-            padding: 8px 12px !important;
+            padding: 8px 11px !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label p {
             font-size: 0.74rem !important;
@@ -1516,7 +1549,7 @@ st.markdown("""
             font-size: 0.9rem !important;
         }
         .premium-summary {
-            margin: 0.25rem 0 2.7rem !important;
+            margin: 0.25rem 0 2.55rem !important;
         }
         .summary-top {
             display: block;
@@ -1550,7 +1583,7 @@ st.markdown("""
             margin-bottom: 0.75rem !important;
         }
         .signal-feed {
-            margin: 0.8rem 0 2.75rem !important;
+            margin: 0.8rem 0 2.6rem !important;
         }
         .signal-entry {
             padding: 17px 0;
@@ -1603,6 +1636,9 @@ st.markdown("""
             max-width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+        }
+        div[data-testid="stDownloadButton"] {
+            margin-top: 24px !important;
         }
     }
 </style>
