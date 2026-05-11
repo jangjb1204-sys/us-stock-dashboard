@@ -440,6 +440,21 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     if 'FG index' in df.columns and df['FG index'].notna().any():
         fg_df = df[df['FG index'].notna()]
+        fg_zones = [
+            (0, 25,  '극도 공포', 'rgba(248,81,73,0.14)'),
+            (25, 45, '공포',     'rgba(210,153,34,0.12)'),
+            (45, 55, '중립',     'rgba(88,166,255,0.10)'),
+            (55, 75, '탐욕',     'rgba(63,185,80,0.11)'),
+            (75, 100, '극도 탐욕', 'rgba(63,185,80,0.18)'),
+        ]
+        for y0, y1, label, color in fg_zones:
+            fig.add_hrect(
+                y0=y0, y1=y1,
+                fillcolor=color, line_width=0,
+                annotation_text=label, annotation_position='left',
+                annotation_font=dict(size=10, color='#8aa8c0'),
+                row=2, col=1,
+            )
         fig.add_trace(go.Bar(
             x=fg_df['Date'], y=fg_df['FG index'], name='Fear & Greed',
             marker=dict(
@@ -448,7 +463,9 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
                 cmin=0, cmax=100,
             ),
         ), row=2, col=1)
-        fig.add_hline(y=50, line=dict(color='#58a6ff', width=1, dash='dot'), row=2, col=1)
+        for level in [25, 45, 55, 75]:
+            fig.add_hline(y=level, line=dict(color='rgba(138,168,192,0.24)', width=1, dash='dot'), row=2, col=1)
+        fig.add_hline(y=50, line=dict(color='#58a6ff', width=1.4, dash='solid'), row=2, col=1)
         fig.update_yaxes(
             title_text='F&G', range=[0, 100], row=2, col=1,
             tickfont=dict(color='#6b7f96', size=10),
@@ -753,10 +770,10 @@ with st.expander("🗂  전체 종목 최신 현황 (클릭해서 펼치기)", e
                     'Ticker':        ticker,
                     '종가':          safe_float(lat.get('Close')),
                     'Change(%)':     safe_float(lat.get('Change(%)')),
+                    '2sigma(%)':     safe_float(lat.get('2sigma(%)')),
                     'RSI':           safe_float(lat.get('RSI')),
                     'FG/RSI signal': lat.get('FG/RSI signal', ''),
-                    'VIX':           safe_float(lat.get('VIX')),
-                    'SKEW':          safe_float(lat.get('SKEW')),
+                    'Puddle':        lat.get('Puddle', ''),
                 })
         except Exception:
             pass
@@ -788,9 +805,9 @@ with st.expander("🗂  전체 종목 최신 현황 (클릭해서 펼치기)", e
             .format({
                 '종가':      lambda x: f"${x:.2f}" if pd.notna(x) else '—',
                 'Change(%)': lambda x: f"{x:+.2f}%" if pd.notna(x) else '—',
+                '2sigma(%)': lambda x: f"{x:.1f}%" if pd.notna(x) else '—',
                 'RSI':       lambda x: f"{x:.1f}"  if pd.notna(x) else '—',
-                'VIX':       lambda x: f"{x:.1f}"  if pd.notna(x) else '—',
-                'SKEW':      lambda x: f"{x:.1f}"  if pd.notna(x) else '—',
+                'Puddle':    lambda x: x if isinstance(x, str) and x else '—',
             })
         )
         st.dataframe(styled_summary, use_container_width=True, hide_index=True)
