@@ -572,6 +572,34 @@ st.markdown("""
     div[data-testid="stTextInput"] input::placeholder {
         color: rgba(207,228,255,0.42) !important;
     }
+    .clear-recent-btn div[data-testid="stButton"] {
+        margin-top: 1.47rem;
+    }
+    .clear-recent-btn .stButton > button {
+        width: 48px;
+        min-width: 48px;
+        max-width: 48px;
+        height: 48px;
+        min-height: 48px;
+        padding: 0 !important;
+        border-radius: 18px;
+        font-size: 1.18rem;
+        line-height: 1;
+        color: rgba(226,240,255,0.82);
+    }
+    .clear-recent-btn .stButton > button p {
+        font-size: 0 !important;
+    }
+    .clear-recent-btn .stButton > button p::before {
+        content: "×";
+        font-size: 1.25rem;
+        line-height: 1;
+        font-weight: 520;
+        color: rgba(226,240,255,0.82);
+    }
+    .clear-recent-btn .stButton > button:hover p::before {
+        color: #071323;
+    }
     div[data-testid="stRadio"] div[role="radiogroup"] {
         display: flex;
         flex-wrap: wrap;
@@ -1783,13 +1811,18 @@ with focus_preset:
         on_change=clear_direct_ticker_input,
     )
 with focus_custom:
-    raw_custom_ticker = st.text_input(
-        "직접 조회",
-        placeholder="미국 주식/ETF 티커 예: AAPL, NVDA, VOO",
-        key="direct_ticker_query",
-    )
-    if recent_tickers:
-        st.button("최근 티커 비우기", use_container_width=True, on_click=clear_recent_tickers)
+    input_col, clear_col = st.columns([1, 0.09])
+    with input_col:
+        raw_custom_ticker = st.text_input(
+            "직접 조회",
+            placeholder="미국 주식/ETF 티커 예: AAPL, NVDA, VOO",
+            key="direct_ticker_query",
+        )
+    with clear_col:
+        if recent_tickers:
+            st.markdown('<div class="clear-recent-btn">', unsafe_allow_html=True)
+            st.button("최근 티커 비우기", use_container_width=True, on_click=clear_recent_tickers)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
 if raw_custom_ticker.strip() and not custom_ticker:
