@@ -27,98 +27,106 @@ st.markdown("""
 
     html, body, [class*="css"], .stApp {
         font-family: 'DM Sans', sans-serif !important;
-        background-color: #0b0f19 !important;
+        background: #050506 !important;
+        color: #f5f5f7 !important;
     }
     .block-container {
-        padding-top: 1.4rem !important;
+        padding-top: 1.25rem !important;
         padding-bottom: 2.5rem !important;
-        max-width: 1440px;
+        max-width: 1360px;
     }
 
     /* 사이드바 */
     section[data-testid="stSidebar"] {
-        background: #0e1420 !important;
-        border-right: 1px solid #1c2840 !important;
+        background: #0b0b0d !important;
+        border-right: 1px solid rgba(255,255,255,0.08) !important;
     }
     section[data-testid="stSidebar"] * { font-family: 'DM Sans', sans-serif !important; }
     section[data-testid="stSidebar"] h2 {
-        color: #e2e8f0 !important;
-        font-size: 1.05rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.05em;
+        color: #f5f5f7 !important;
+        font-size: 1rem !important;
+        font-weight: 650 !important;
+        letter-spacing: 0;
     }
     section[data-testid="stSidebar"] label,
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] small {
-        color: #6b7f96 !important;
+        color: #8e8e93 !important;
         font-size: 0.82rem !important;
     }
 
     /* 상단 컨트롤 */
     div[data-testid="stSelectbox"] label,
     div[data-testid="stRadio"] label {
-        color: #8aa8c0 !important;
-        font-size: 0.76rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.08em !important;
-        text-transform: uppercase;
+        color: #8e8e93 !important;
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0 !important;
     }
     div[data-baseweb="select"] > div {
-        background: #0e1420 !important;
-        border: 1px solid #1c2d42 !important;
-        border-radius: 8px !important;
-        min-height: 42px !important;
+        background: #111113 !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        border-radius: 10px !important;
+        min-height: 44px !important;
+        box-shadow: none !important;
     }
     div[data-baseweb="select"] span {
-        color: #dde6f0 !important;
+        color: #f5f5f7 !important;
         font-weight: 600 !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 8px;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label {
-        background: #0e1420;
-        border: 1px solid #1c2d42;
-        border-radius: 8px;
-        min-height: 42px;
-        padding: 7px 9px;
+        background: #111113;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 999px;
+        min-height: 38px;
+        padding: 7px 13px;
         margin: 0;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
-        background: #163322;
-        border-color: #238636;
+        background: #f5f5f7;
+        border-color: #f5f5f7;
     }
+    div[data-testid="stRadio"] div[role="radiogroup"] label:hover { transform: translateY(-1px); }
     div[data-testid="stRadio"] div[role="radiogroup"] label p {
-        color: #dde6f0 !important;
+        color: #f5f5f7 !important;
         font-weight: 600 !important;
-        font-size: 0.82rem !important;
+        font-size: 0.83rem !important;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p {
+        color: #050506 !important;
     }
 
     /* 메트릭 카드 */
     div[data-testid="metric-container"] {
-        background: linear-gradient(145deg, #111827 0%, #0d1520 100%);
-        border: 1px solid #1c2d42;
-        border-radius: 12px;
-        padding: 14px 18px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-        transition: border-color 0.2s ease;
+        background: #111113;
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 14px;
+        padding: 16px 18px;
+        box-shadow: none;
+        transition: border-color 0.15s ease, background 0.15s ease;
     }
-    div[data-testid="metric-container"]:hover { border-color: #2d5a8e; }
+    div[data-testid="metric-container"]:hover {
+        background: #151517;
+        border-color: rgba(255,255,255,0.20);
+    }
     div[data-testid="metric-container"] label {
-        font-size: 0.72rem !important;
+        font-size: 0.74rem !important;
         font-weight: 600 !important;
-        letter-spacing: 0.1em !important;
-        text-transform: uppercase;
-        color: #4a6880 !important;
+        letter-spacing: 0 !important;
+        color: #8e8e93 !important;
     }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] {
         font-family: 'DM Mono', monospace !important;
-        font-size: 1.3rem !important;
+        font-size: 1.42rem !important;
         font-weight: 500 !important;
-        color: #dde6f0 !important;
-        letter-spacing: -0.01em;
+        color: #f5f5f7 !important;
+        letter-spacing: 0;
     }
     div[data-testid="metric-container"] [data-testid="stMetricDelta"] {
         font-size: 0.78rem !important;
@@ -128,114 +136,121 @@ st.markdown("""
 
     /* 탭 */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
-        background: #0e1420;
-        border-radius: 10px;
-        padding: 5px;
-        border: 1px solid #1c2840;
+        gap: 18px;
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.10);
     }
     .stTabs [data-baseweb="tab"] {
         background: transparent;
-        border-radius: 7px;
-        color: #6b7f96;
+        border-radius: 0;
+        color: #8e8e93;
         font-weight: 600;
         font-size: 0.87rem;
-        letter-spacing: 0.02em;
-        padding: 6px 20px;
-        transition: all 0.15s ease;
+        letter-spacing: 0;
+        padding: 8px 2px 12px;
+        border-bottom: 2px solid transparent;
+        transition: color 0.15s ease, border-color 0.15s ease;
     }
-    .stTabs [data-baseweb="tab"]:hover { color: #c0d0e0; background: #162030; }
+    .stTabs [data-baseweb="tab"]:hover { color: #f5f5f7; background: transparent; }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #1a6b3c, #1f8040) !important;
-        color: #fff !important;
-        box-shadow: 0 2px 8px rgba(30,120,60,0.4);
+        background: transparent !important;
+        color: #f5f5f7 !important;
+        border-bottom-color: #0a84ff;
+        box-shadow: none;
     }
 
     /* 헤딩 */
     h1 {
-        color: #e2e8f0 !important;
-        font-size: 1.65rem !important;
+        color: #f5f5f7 !important;
+        font-size: 1.75rem !important;
         font-weight: 700 !important;
-        letter-spacing: -0.02em;
+        letter-spacing: 0;
     }
-    h2 { color: #c4d4e4 !important; font-weight: 700 !important; }
+    h2 { color: #f5f5f7 !important; font-weight: 700 !important; letter-spacing: 0; }
     h3 {
-        color: #8aa8c0 !important;
+        color: #f5f5f7 !important;
         font-weight: 600 !important;
         font-size: 0.95rem !important;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+        letter-spacing: 0;
     }
-    p, li { color: #6b7f96; font-size: 0.88rem; }
+    p, li { color: #9b9ba1; font-size: 0.88rem; }
 
     /* 버튼 */
     .stButton > button {
-        background: linear-gradient(135deg, #1a6b3c, #208040);
+        background: #0a84ff;
         color: #fff;
         border: none;
-        border-radius: 8px;
+        border-radius: 999px;
         font-weight: 600;
         font-size: 0.85rem;
-        letter-spacing: 0.03em;
-        padding: 8px 16px;
-        box-shadow: 0 2px 8px rgba(30,120,60,0.3);
-        transition: all 0.2s ease;
+        letter-spacing: 0;
+        padding: 9px 16px;
+        box-shadow: none;
+        transition: background 0.15s ease, transform 0.15s ease;
     }
     .stButton > button p { color: #fff !important; }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #20844a, #26a050);
-        box-shadow: 0 4px 14px rgba(30,120,60,0.45);
+        background: #2491ff;
         transform: translateY(-1px);
     }
 
     /* 다운로드 버튼 */
     .stDownloadButton > button {
-        background: #0e1420;
-        color: #58a6ff;
-        border: 1px solid #1c3a5e;
-        border-radius: 8px;
+        background: #111113;
+        color: #0a84ff;
+        border: 1px solid rgba(10,132,255,0.35);
+        border-radius: 999px;
         font-weight: 600;
         font-size: 0.85rem;
-        transition: all 0.15s ease;
+        transition: background 0.15s ease, border-color 0.15s ease;
     }
+    .stDownloadButton > button p { color: #0a84ff !important; }
     .stDownloadButton > button:hover {
-        background: #162030;
-        border-color: #58a6ff;
+        background: rgba(10,132,255,0.10);
+        border-color: #0a84ff;
     }
 
     /* 스피너 */
-    .stSpinner > div { border-top-color: #238636 !important; }
+    .stSpinner > div { border-top-color: #0a84ff !important; }
 
     /* expander */
     details {
-        border: 1px solid #1c2840 !important;
-        border-radius: 10px !important;
-        background: #0e1420 !important;
-        padding: 4px !important;
+        border: 1px solid rgba(255,255,255,0.10) !important;
+        border-radius: 16px !important;
+        background: #111113 !important;
+        padding: 4px 6px !important;
     }
     details summary {
-        color: #8aa8c0 !important;
+        color: #f5f5f7 !important;
         font-weight: 600;
         font-size: 0.9rem;
-        padding: 8px 4px;
+        padding: 10px 4px;
     }
 
     /* code 배지 */
     code {
-        background: #162030 !important;
-        color: #79c0ff !important;
+        background: rgba(10,132,255,0.14) !important;
+        color: #8ec5ff !important;
         font-family: 'DM Mono', monospace !important;
         font-size: 0.83em !important;
-        border-radius: 5px !important;
+        border-radius: 8px !important;
         padding: 2px 8px !important;
-        border: 1px solid #1c3a5e !important;
+        border: 1px solid rgba(10,132,255,0.28) !important;
+    }
+
+    div[data-testid="stDataFrame"] {
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 14px;
+        overflow: hidden;
     }
 
     /* progress bar */
-    .stProgress > div > div { background: #238636 !important; border-radius: 4px; }
+    .stProgress > div > div { background: #0a84ff !important; border-radius: 4px; }
 
     /* 구분선 */
-    hr { border-color: #1c2840 !important; margin: 1.2rem 0 !important; }
+    hr { border-color: rgba(255,255,255,0.10) !important; margin: 1.35rem 0 !important; }
 
     @media (max-width: 640px) {
         .block-container {
@@ -257,7 +272,7 @@ st.markdown("""
             font-size: 0.8rem;
         }
         div[data-testid="metric-container"] {
-            padding: 11px 12px;
+            padding: 12px 13px;
         }
         div[data-testid="metric-container"] [data-testid="stMetricValue"] {
             font-size: 1.05rem !important;
@@ -316,17 +331,17 @@ def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
-    plot_bgcolor='#080d16',
-    paper_bgcolor='#080d16',
-    font=dict(family='DM Sans, sans-serif', color='#6b7f96', size=12),
+    plot_bgcolor='#050506',
+    paper_bgcolor='#050506',
+    font=dict(family='DM Sans, sans-serif', color='#8e8e93', size=12),
     legend=dict(
         orientation='h', yanchor='bottom', y=1.01, xanchor='left', x=0,
-        font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='#1c2840',
+        font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.10)',
     ),
     xaxis_rangeslider_visible=False,
     margin=dict(l=60, r=20, t=65, b=40),
 )
-GRID = dict(showgrid=True, gridcolor='#111c2c', zeroline=False)
+GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
 
 # ── 캔들스틱 차트 ─────────────────────────────────────────────────────────────
 def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
@@ -374,8 +389,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=30, line=dict(color='#3fb950', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(
             title_text='RSI', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='#6b7f96', size=10),
-            title=dict(font=dict(color='#6b7f96', size=11)),
+            tickfont=dict(color='#8e8e93', size=10),
+            title=dict(font=dict(color='#8e8e93', size=11)),
         )
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
@@ -387,18 +402,18 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=25, line=dict(color='#3fb950', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
             title_text='VIX', row=3, col=1,
-            tickfont=dict(color='#6b7f96', size=10),
-            title=dict(font=dict(color='#6b7f96', size=11)),
+            tickfont=dict(color='#8e8e93', size=10),
+            title=dict(font=dict(color='#8e8e93', size=11)),
         )
 
     fig.update_layout(
         **CHART_THEME,
         title=dict(text=f'<b>{name}</b>  캔들스틱', x=0.01,
-                   font=dict(size=17, color='#dde6f0', family='DM Sans')),
+                   font=dict(size=17, color='#f5f5f7', family='DM Sans')),
         height=660,
     )
     for r in [1, 2, 3]:
-        fig.update_xaxes(**GRID, row=r, col=1, tickfont=dict(color='#6b7f96', size=10))
+        fig.update_xaxes(**GRID, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
@@ -412,7 +427,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.add_trace(go.Scatter(
         x=df['Date'], y=df['Close'], name=f'{name} Close',
-        line=dict(color='#dde6f0', width=2),
+        line=dict(color='#f5f5f7', width=2),
     ), row=1, col=1)
 
     for ma, color in MA_COLORS.items():
@@ -452,7 +467,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
                 y0=y0, y1=y1,
                 fillcolor=color, line_width=0,
                 annotation_text=label, annotation_position='left',
-                annotation_font=dict(size=10, color='#8aa8c0'),
+                annotation_font=dict(size=10, color='#8e8e93'),
                 row=2, col=1,
             )
         fig.add_trace(go.Bar(
@@ -465,21 +480,21 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         ), row=2, col=1)
         for level in [25, 45, 55, 75]:
             fig.add_hline(y=level, line=dict(color='rgba(138,168,192,0.24)', width=1, dash='dot'), row=2, col=1)
-        fig.add_hline(y=50, line=dict(color='#58a6ff', width=1.4, dash='solid'), row=2, col=1)
+        fig.add_hline(y=50, line=dict(color='#0a84ff', width=1.4, dash='solid'), row=2, col=1)
         fig.update_yaxes(
             title_text='F&G', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='#6b7f96', size=10),
-            title=dict(font=dict(color='#6b7f96', size=11)),
+            tickfont=dict(color='#8e8e93', size=10),
+            title=dict(font=dict(color='#8e8e93', size=11)),
         )
 
     fig.update_layout(
         **CHART_THEME,
         title=dict(text=f'<b>{name}</b>  라인 + 신호', x=0.01,
-                   font=dict(size=17, color='#dde6f0', family='DM Sans')),
+                   font=dict(size=17, color='#f5f5f7', family='DM Sans')),
         height=590,
     )
     for r in [1, 2]:
-        fig.update_xaxes(**GRID, row=r, col=1, tickfont=dict(color='#6b7f96', size=10))
+        fig.update_xaxes(**GRID, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
@@ -599,7 +614,7 @@ def style_table(df: pd.DataFrame):
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str):
-    with st.expander("🗂  전체 종목 최신 현황", expanded=True):
+    with st.expander("전체 종목 최신 현황", expanded=True):
         summary_rows = []
         prog  = st.progress(0, text="전체 종목 데이터 로딩 중...")
         total = len(TICKER_CONFIGS)
@@ -660,16 +675,16 @@ def render_market_summary(period: str, delta: int, cache_key: str):
 
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 📊 US Stock Dashboard")
-    st.caption(f"⏱ 마지막 업데이트\n{datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.markdown("## US Stock Dashboard")
+    st.caption(f"마지막 업데이트\n{datetime.now().strftime('%Y-%m-%d %H:%M')}")
     st.caption("캐시 유효시간: 30분")
-    if st.button("🔄  데이터 새로고침", use_container_width=True):
+    if st.button("데이터 새로고침", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
 ticker_options = list(TICKER_CONFIGS.keys())
 
-st.markdown("# 📈 US Stock Dashboard")
+st.markdown("# US Stock Dashboard")
 ctrl_ticker, ctrl_delta, ctrl_action = st.columns([1.6, 1.6, 0.8])
 
 with ctrl_ticker:
@@ -692,7 +707,7 @@ with ctrl_delta:
 
 with ctrl_action:
     st.markdown("<div style='height: 1.7rem'></div>", unsafe_allow_html=True)
-    if st.button("🔄 새로고침", use_container_width=True):
+    if st.button("새로고침", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -709,7 +724,7 @@ with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
     df = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
 
 if df.empty:
-    st.error(f"❌ {selected_ticker} 데이터를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.")
+    st.error(f"{selected_ticker} 데이터를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.")
     st.stop()
 
 table_df = load_ticker_data(
@@ -736,18 +751,18 @@ treasury_val = safe_float(latest.get('10Y Treasury'))
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.metric("💰 종가", fmt_price(close_val),
+    st.metric("종가", fmt_price(close_val),
               fmt_pct(change_val, sign=True) if change_val is not None else None)
 
 with col2:
-    rsi_label = ("🟢 과매도" if rsi_val and rsi_val <= 30 else
-                 "🔴 과매수" if rsi_val and rsi_val >= 70 else
-                 "⚪ 중립"   if rsi_val else "")
-    st.metric("📊 RSI", fmt_1f(rsi_val) if rsi_val else "N/A", rsi_label)
+    rsi_label = ("과매도" if rsi_val and rsi_val <= 30 else
+                 "과매수" if rsi_val and rsi_val >= 70 else
+                 "중립"   if rsi_val else "")
+    st.metric("RSI", fmt_1f(rsi_val) if rsi_val else "N/A", rsi_label)
 
 with col3:
-    vix_label = "🟢 급등구간" if vix_val and vix_val > 25 else ""
-    st.metric("😨 VIX", fmt_1f(vix_val) if vix_val else "N/A", vix_label)
+    vix_label = "급등구간" if vix_val and vix_val > 25 else ""
+    st.metric("VIX", fmt_1f(vix_val) if vix_val else "N/A", vix_label)
 
 col4, col5, col6 = st.columns(3)
 
@@ -757,30 +772,30 @@ with col4:
         fg_label = ("극도 탐욕" if fg_val >= 75 else "탐욕"    if fg_val >= 55
                else "중립"     if fg_val >= 45 else "공포"    if fg_val >= 25
                else "극도 공포")
-    st.metric("🎭 F&G", fmt_int(fg_val) if fg_val is not None else "N/A", fg_label)
+    st.metric("F&G", fmt_int(fg_val) if fg_val is not None else "N/A", fg_label)
 
 with col5:
-    skew_label = ("🔴 고위험" if skew_val and skew_val >= 155 else
-                  "🟢 저위험" if skew_val and skew_val <= 127 else "")
-    st.metric("📐 SKEW", fmt_1f(skew_val) if skew_val else "N/A", skew_label)
+    skew_label = ("고위험" if skew_val and skew_val >= 155 else
+                  "저위험" if skew_val and skew_val <= 127 else "")
+    st.metric("SKEW", fmt_1f(skew_val) if skew_val else "N/A", skew_label)
 
 with col6:
-    st.metric("🏦 10Y Treasury",
+    st.metric("10Y Treasury",
               f"{treasury_val:.2f}%" if treasury_val else "N/A")
 
 st.markdown("")
 
 # ── 탭 ────────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["🕯️  캔들스틱 차트", "📉  라인 + 신호 차트", "📋  데이터 테이블"])
+tab1, tab2, tab3 = st.tabs(["캔들스틱", "라인 + 신호", "데이터"])
 
 with tab1:
     st.plotly_chart(build_candlestick_chart(df, selected_name), use_container_width=True)
 
-    st.markdown("### 📌 최근 신호 요약")
+    st.markdown("### 최근 신호")
     sc1, sc2, sc3 = st.columns(3)
 
     with sc1:
-        st.markdown("**🔴 Puddle 신호**")
+        st.markdown("**Puddle**")
         if 'Puddle' in df.columns:
             rp = df[df['Puddle'].str.contains(r'[a-zA-Z]', na=False)].tail(3)
             if not rp.empty:
@@ -790,7 +805,7 @@ with tab1:
                 st.markdown("최근 없음")
 
     with sc2:
-        st.markdown("**🟢 VIX1D > VIX BUY**")
+        st.markdown("**VIX1D > VIX**")
         if 'VIX1D>VIX' in df.columns:
             rv = df[df['VIX1D>VIX'] == 'BUY'].tail(3)
             if not rv.empty:
@@ -800,13 +815,12 @@ with tab1:
                 st.markdown("최근 없음")
 
     with sc3:
-        st.markdown("**🔵 Stochastic 신호**")
+        st.markdown("**Stochastic**")
         if 'SS Signal' in df.columns:
             rs = df[df['SS Signal'].isin(['Buy', 'Sell'])].tail(3)
             if not rs.empty:
                 for _, r in rs.iterrows():
-                    em = "🟢" if r['SS Signal'] == 'Buy' else "🔴"
-                    st.markdown(f"- {pd.to_datetime(r['Date']).strftime('%Y-%m-%d')} · {em} {r['SS Signal']}")
+                    st.markdown(f"- {pd.to_datetime(r['Date']).strftime('%Y-%m-%d')} · {r['SS Signal']}")
             else:
                 st.markdown("최근 없음")
 
@@ -814,20 +828,20 @@ with tab2:
     st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
 
     if 'FG/RSI signal' in df.columns:
-        st.markdown("### 📊 FG/RSI 신호 분포")
+        st.markdown("### FG/RSI 신호 분포")
         sc = df['FG/RSI signal'].value_counts().reset_index()
         sc.columns = ['신호', '횟수']
         st.dataframe(sc, hide_index=True, use_container_width=False)
 
 with tab3:
-    st.markdown("### 📋 전체 데이터")
+    st.markdown("### 전체 데이터")
     st.dataframe(style_table(table_df), use_container_width=True, height=500)
 
     csv = table_df.copy()
     if 'Date' in csv.columns:
         csv['Date'] = pd.to_datetime(csv['Date']).dt.strftime('%Y-%m-%d')
     st.download_button(
-        label="⬇️  전체 데이터 CSV 다운로드",
+        label="CSV 다운로드",
         data=csv.to_csv(index=False, encoding='utf-8-sig'),
         file_name=f"{selected_name}_{datetime.now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
