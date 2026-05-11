@@ -25,7 +25,7 @@ with st.sidebar:
     process_btn = st.button("분석 시작")
 
 if process_btn:
-    with st.spinner('데이터를 불러오고 있습니다...'):
+    with st.spinner('데이터를 불러오고 분석 중입니다...'):
         common_data = get_cached_common_data(period)
         df = get_full_analysis(selected_ticker, selected_name, common_data, period=period)
         
@@ -35,17 +35,17 @@ if process_btn:
             with m1:
                 st.metric("현재가", f"${last_row['Close']:.2f}")
             with m2:
-                st.metric("RSI", f"{last_row['RSI']:.2f}")
+                st.metric("RSI", f"{last_row['RSI']:.2f}" if pd.notna(last_row['RSI']) else "N/A")
             with m3:
-                fg_val = last_row.get('FG index', 'N/A')
-                st.metric("Fear & Greed", f"{int(fg_val)}" if pd.notna(fg_val) else "N/A")
+                fg = last_row.get('FG index', np.nan)
+                st.metric("Fear & Greed", f"{int(fg)}" if pd.notna(fg) else "N/A")
             with m4:
-                # Treasury 컬럼 확인
-                t_val = last_row.get('Treasury', np.nan)
-                st.metric("미 국채 10년물", f"{t_val:.2f}%" if pd.notna(t_val) else "N/A")
+                tr = last_row.get('Treasury', np.nan)
+                st.metric("미 국채 10년물", f"{tr:.2f}%" if pd.notna(tr) else "데이터 없음")
 
-            # --- 차트 시각화 ---
+            # --- 차트 ---
             fig = go.Figure()
+            # 차트에서는 날짜를 다시 날짜형으로 인식하게 시각화
             fig.add_trace(go.Scatter(x=df['Date'], y=df['Close'], name='Price', line=dict(color='#1A1A1B', width=2)))
             
             ma_colors = {'MA20': '#2980B9', 'MA60': '#D35400', 'MA120': '#C0392B', 'MA200': '#8E44AD'}
@@ -53,26 +53,19 @@ if process_btn:
                 if ma in df.columns:
                     fig.add_trace(go.Scatter(x=df['Date'], y=df[ma], name=ma, line=dict(color=col, width=1.5), opacity=0.6))
             
-            # VIX 수직 실선
+            # VIX 신호
             if 'VIX1D' in df.columns and 'VIX' in df.columns:
                 vix_buys = df[(df['VIX'] >= 25) & (df['VIX1D'] > df['VIX'])]
                 for v_date in vix_buys['Date']:
                     fig.add_vline(x=v_date, line_width=2, line_color="#FF0000", opacity=0.4)
 
-            # Puddle 신호
-            p_df = df[df['Puddle'].astype(str).str.len() > 1]
-            if not p_df.empty:
-                fig.add_trace(go.Scatter(x=p_df['Date'], y=p_df['Low']*0.97, mode='markers', name='Puddle',
-                    marker=dict(symbol='triangle-up', size=14, color='#00FF00', line=dict(width=1, color='#004d00')),
-                    text=p_df['Puddle']))
-
             fig.update_layout(height=600, template='plotly_white', hovermode='x unified', xaxis_rangeslider_visible=False)
             st.plotly_chart(fig, use_container_width=True)
             
-            # --- 하단 표 (Date에서 시간 제거됨) ---
-            st.subheader("📋 최근 분석 상세 (최근 15일)")
-            display_cols = ['Date', 'Close', 'RSI', 'FG index', 'FG/RSI signal', 'Puddle']
-            # NaN 제거 및 깔끔하게 출력
-            st.dataframe(df[display_cols].tail(15).sort_values('Date', ascending=False).set_index('Date'), use_container_width=True)
+            # --- 표 출력 (시간 제거됨) ---
+            st.subheader("📋 최근 분석 데이터 (15일)")
+            display_df = df[['Date', 'Close', 'RSI', 'FG index', 'FG/RSI signal', 'Puddle']].tail(15).copy()
+            # 내림차순 정렬 및 표시
+            st.dataframe(display_df.sort_values('Date', ascending=False).set_index('Date'), use_container_width=True)
         else:
-            st.error("데이터 로드 실패")
+            st.error("데이터를 가져오지 못했습니다.")
