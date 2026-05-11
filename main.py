@@ -1627,9 +1627,8 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 52
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
-    with st.expander("Market Overview", expanded=False):
+    with st.expander("Market Overview (Saved Tickers)", expanded=False):
         if not st.session_state.get("market_overview_loaded", False):
-            st.caption("전체 종목 현황은 필요할 때만 불러와 첫 화면을 빠르게 유지합니다.")
             if st.button("Market Overview 불러오기", use_container_width=True):
                 st.session_state.market_overview_loaded = True
                 st.rerun()
