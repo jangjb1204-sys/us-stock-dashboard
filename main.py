@@ -18,7 +18,7 @@ from stock_analyzer import (
 
 # ── 페이지 설정 ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="미국주식 Dashboard",
+    page_title="US Market Signals",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -439,18 +439,43 @@ st.markdown("""
         color: #f5f5f7 !important;
         font-weight: 600 !important;
     }
-    div[data-testid="stTextInput"] input {
+    div[data-testid="stTextInput"] > div,
+    div[data-testid="stTextInput"] [data-baseweb="input"] {
         min-height: 48px !important;
-        padding: 0 16px !important;
-        border: 1px solid rgba(190,220,255,0.24) !important;
         border-radius: 18px !important;
-        background: rgba(9,28,50,0.72) !important;
-        color: #f5f5f7 !important;
-        font-weight: 600 !important;
+        overflow: hidden !important;
+        background:
+            linear-gradient(135deg, rgba(241,248,255,0.12), rgba(255,255,255,0.035)),
+            rgba(9,28,50,0.72) !important;
+        border: 1px solid rgba(190,220,255,0.28) !important;
         box-shadow:
             inset 0 1px 0 rgba(255,255,255,0.18),
             inset 0 -1px 0 rgba(255,255,255,0.06),
             0 16px 42px rgba(0,0,0,0.14) !important;
+        backdrop-filter: blur(24px) saturate(1.45);
+        -webkit-backdrop-filter: blur(24px) saturate(1.45);
+    }
+    div[data-testid="stTextInput"] [data-baseweb="input"]:focus-within {
+        border-color: rgba(207,228,255,0.55) !important;
+        outline: none !important;
+    }
+    div[data-testid="stTextInput"] [data-baseweb="input"] * {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    div[data-testid="stTextInput"] input {
+        display: block !important;
+        width: 100% !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        padding: 0 16px !important;
+        border: 0 !important;
+        border-radius: 18px !important;
+        outline: none !important;
+        background: transparent !important;
+        color: #f5f5f7 !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
         backdrop-filter: blur(24px) saturate(1.45);
         -webkit-backdrop-filter: blur(24px) saturate(1.45);
     }
@@ -669,10 +694,15 @@ st.markdown("""
         -webkit-backdrop-filter: blur(28px) saturate(1.45);
     }
     details summary {
-        color: #f5f5f7 !important;
+        color: #eaf5ff !important;
         font-weight: 600;
         font-size: 0.84rem;
         padding: 10px 4px;
+    }
+    details summary p,
+    details summary span {
+        color: #eaf5ff !important;
+        font-weight: 650 !important;
     }
 
     /* code 배지 */
@@ -1537,7 +1567,7 @@ st.markdown(
     <div class="app-hero">
       <div class="hero-row">
         <div>
-          <h1>미국주식 Dashboard</h1>
+          <h1>US Market Signals</h1>
           <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
         </div>
         <div class="viewer-pill">
