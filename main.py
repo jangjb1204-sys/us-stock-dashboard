@@ -14,18 +14,20 @@ def get_cached_common_data(period):
 
 st.title("🇺🇸 US Stock 분석 대시보드")
 
-# 3. 사이드바 설정
+# 3. 사이드바 설정 (요청하신 정확한 티커 리스트 반영)
 with st.sidebar:
     st.header("🔍 분석 설정")
     ticker_list = {
-        'SOXL': 'SOXL (반도체 3x)', 
-        '^GSPC': 'S&P500 (시장)', 
-        '^IXIC': 'NASDAQ (기술주)',
-        'TSLA': 'TESLA (테슬라)', 
-        'QLD': 'QLD (나스닥 2x)', 
-        'NVDA': 'NVIDIA (엔비디아)',
-        'TQQQ': 'TQQQ (나스닥 3x)',
-        'AAPL': 'APPLE (애플)'
+        'SOXL': 'SOXL',
+        '^GSPC': 'S&P500',
+        '^IXIC': 'NASDAQ',
+        'SSO': 'SSO',
+        'QLD': 'QLD',
+        'GLD': 'GOLD',
+        'BTGD': 'BTGD',
+        'SLV': 'SILVER',
+        'KORU': 'KORU',
+        'TSLA': 'TESLA'
     }
     selected_name = st.selectbox("분석할 종목 선택", list(ticker_list.values()))
     selected_ticker = [k for k, v in ticker_list.items() if v == selected_name][0]
@@ -35,7 +37,7 @@ with st.sidebar:
 
 # 4. 실행 로직
 if process_btn:
-    with st.spinner('차트 구성을 업데이트 중입니다...'):
+    with st.spinner(f'{selected_name} 데이터를 분석 중입니다...'):
         common_data = get_cached_common_data(period)
         df = get_full_analysis(selected_ticker, selected_name, common_data, period=period)
         
@@ -57,7 +59,7 @@ if process_btn:
             
             fig = go.Figure()
             
-            # (1) 주가 라인 (가장 상단 레이어)
+            # (1) 주가 라인
             fig.add_trace(go.Scatter(
                 x=df['Date'], y=df['Close'],
                 mode='lines',
@@ -66,31 +68,26 @@ if process_btn:
                 connectgaps=True
             ))
             
-            # (2) 이동평균선 (선명도 및 두께 상향)
+            # (2) 이동평균선 (선명한 설정)
             ma_colors = {
-                'MA20': '#2980B9',   # 뚜렷한 블루
-                'MA60': '#D35400',   # 뚜렷한 오렌지
-                'MA120': '#C0392B',  # 뚜렷한 레드
-                'MA200': '#8E44AD'   # 뚜렷한 퍼플
+                'MA20': '#2980B9', 'MA60': '#D35400', 
+                'MA120': '#C0392B', 'MA200': '#8E44AD'
             }
             for ma, color in ma_colors.items():
                 if ma in df.columns:
                     fig.add_trace(go.Scatter(
                         x=df['Date'], y=df[ma], name=ma, 
-                        line=dict(color=color, width=1.8), # 두께 상향 (1.0 -> 1.8)
-                        opacity=0.7 # 선명도 상향 (0.3 -> 0.7)
+                        line=dict(color=color, width=1.8),
+                        opacity=0.7 
                     ))
             
-            # (3) VIX1D > VIX Buy 신호 (강력한 수직 실선)
+            # (3) VIX1D > VIX Buy 신호 (강력한 빨간 실선)
             if 'VIX1D>VIX' in df.columns:
                 vix_buys = df[df['VIX1D>VIX'] == 'BUY']
                 for v_date in vix_buys['Date']:
                     fig.add_vline(
-                        x=v_date, 
-                        line_width=2, # 두께 확대
-                        line_dash="solid", # 점선에서 실선으로 변경
-                        line_color="#FF0000", 
-                        opacity=0.5 
+                        x=v_date, line_width=2, line_dash="solid", 
+                        line_color="#FF0000", opacity=0.4 
                     )
 
             # (4) Puddle 매수 신호 (형광 초록 삼각형)
@@ -99,12 +96,10 @@ if process_btn:
                 if not p_df.empty:
                     fig.add_trace(go.Scatter(
                         x=p_df['Date'], y=p_df['Low'] * 0.95,
-                        mode='markers', 
-                        name='Puddle Signal',
+                        mode='markers', name='Puddle Signal',
                         marker=dict(
                             symbol='triangle-up', size=16, 
-                            color='#00FF00', 
-                            line=dict(width=2, color='#004d00')
+                            color='#00FF00', line=dict(width=2, color='#004d00')
                         ),
                         text=p_df['Puddle'],
                         hovertemplate="<b>%{text}</b><br>날짜: %{x}<extra></extra>"
@@ -117,21 +112,17 @@ if process_btn:
                 if not oversold.empty:
                     fig.add_trace(go.Scatter(
                         x=oversold['Date'], y=oversold['Close'],
-                        mode='markers', 
-                        name='RSI Oversold',
+                        mode='markers', name='RSI Oversold',
                         marker=dict(
                             symbol='circle', size=10, 
-                            color='#3498DB', 
-                            line=dict(width=2, color='#1A5276')
+                            color='#3498DB', line=dict(width=2, color='#1A5276')
                         ),
                         hovertemplate="<b>RSI 과매도</b><br>가격: %{y}<br>날짜: %{x}<extra></extra>"
                     ))
 
             # 레이아웃 설정
             fig.update_layout(
-                height=700, 
-                template='plotly_white', 
-                hovermode='x unified',
+                height=700, template='plotly_white', hovermode='x unified',
                 xaxis_rangeslider_visible=False,
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
                 margin=dict(l=10, r=10, t=50, b=10)
@@ -139,10 +130,10 @@ if process_btn:
             
             st.plotly_chart(fig, use_container_width=True)
 
-            # --- 하단 분석 리포트 ---
+            # --- 하단 분석 섹션 ---
             col_l, col_r = st.columns([2, 1])
             with col_l:
-                st.subheader("📋 최근 분석 상세")
+                st.subheader("📋 분석 상세")
                 cols = ['Date', 'Close', 'Change(%)', 'RSI', 'FG index', 'FG/RSI signal', 'Puddle']
                 st.dataframe(df[[c for c in cols if c in df.columns]].tail(15).sort_values('Date', ascending=False), use_container_width=True)
 
@@ -155,4 +146,6 @@ if process_btn:
                 st.success(f"💡 **전략:** {last_row.get('FG/RSI signal', '관망')}")
                 
                 csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button("📊 전체 데이터 다운로드", csv, f"{selected_name}.csv", "text/csv")
+                st.download_button("📊 데이터 CSV 다운로드", csv, f"{selected_name}.csv", "text/csv")
+        else:
+            st.error(f"{selected_name} 데이터를 가져오는 데 실패했습니다.")
