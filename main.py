@@ -1170,6 +1170,15 @@ st.markdown("""
         background: transparent !important;
         box-shadow: inset 0 -2px 0 #2F80FF !important;
     }
+    h3 {
+        color: #F2F5F8 !important;
+        font-size: 24px !important;
+        line-height: 1.15 !important;
+        font-weight: 650 !important;
+        letter-spacing: -0.025em !important;
+        margin-top: 2.4rem !important;
+        margin-bottom: 0.65rem !important;
+    }
     .premium-summary {
         border-radius: 0;
         padding: 0;
@@ -1240,7 +1249,12 @@ st.markdown("""
         width: 100%;
         border-collapse: collapse;
         font-size: 0.88rem;
+        table-layout: fixed;
     }
+    .signal-table th:nth-child(1),
+    .signal-table td:nth-child(1) { width: 76px; }
+    .signal-table th:nth-child(3),
+    .signal-table td:nth-child(3) { width: 38%; }
     .signal-table th {
         padding: 11px 0;
         text-align: left;
@@ -1299,13 +1313,166 @@ st.markdown("""
     }
     @media (max-width: 640px) {
         .block-container {
+            max-width: 100%;
+            padding-top: 1.35rem !important;
             padding-left: 20px !important;
             padding-right: 20px !important;
+            padding-bottom: 2rem !important;
+            overflow-x: hidden;
         }
-        .app-hero h1 { font-size: 28px !important; }
-        .hero-row { align-items: flex-start !important; }
-        .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .summary-price { font-size: 34px; }
+        .app-hero {
+            margin-bottom: 2.1rem !important;
+        }
+        .app-hero h1 {
+            font-size: 30px !important;
+            line-height: 1.05 !important;
+        }
+        .hero-row {
+            align-items: flex-start !important;
+            flex-direction: column !important;
+            gap: 14px !important;
+        }
+        .hero-title {
+            gap: 10px !important;
+        }
+        .hero-meta,
+        .viewer-pill,
+        .updated-mark {
+            font-size: 0.8rem !important;
+        }
+        .viewer-pill {
+            width: auto !important;
+            justify-content: flex-start !important;
+        }
+        .section-label {
+            margin: 1.65rem 0 0.7rem !important;
+            font-size: 12px !important;
+        }
+        div[data-testid="stRadio"] div[role="radiogroup"] {
+            width: 100%;
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 3px !important;
+            padding: 4px !important;
+        }
+        div[data-testid="stRadio"] div[role="radiogroup"] label {
+            min-height: 44px !important;
+            justify-content: center !important;
+            padding: 10px 0 !important;
+        }
+        div[data-testid="stRadio"] div[role="radiogroup"] label p {
+            font-size: 0.76rem !important;
+        }
+        div[data-testid="stSelectbox"] label,
+        div[data-testid="stTextInput"] label {
+            font-size: 12px !important;
+        }
+        div[data-baseweb="select"] > div,
+        div[data-testid="stTextInput"] > div,
+        div[data-testid="stTextInput"] [data-baseweb="input"],
+        div[data-testid="stTextInput"] input {
+            min-height: 48px !important;
+            height: 48px !important;
+            border-radius: 14px !important;
+            font-size: 15px !important;
+        }
+        .focus-title {
+            margin: 2.1rem 0 1rem !important;
+        }
+        .focus-title .eyebrow {
+            font-size: 12px !important;
+        }
+        .focus-title .name {
+            font-size: 31px !important;
+            line-height: 1.05 !important;
+            overflow-wrap: anywhere;
+        }
+        .focus-title .ticker {
+            display: block !important;
+            margin: 0.35rem 0 0 !important;
+            font-size: 0.9rem !important;
+        }
+        .premium-summary {
+            margin: 0.25rem 0 2.7rem !important;
+        }
+        .summary-top {
+            display: block;
+            padding-bottom: 20px !important;
+        }
+        .summary-price {
+            font-size: 42px !important;
+            line-height: 1.02 !important;
+        }
+        .summary-change {
+            margin-top: 8px;
+            font-size: 1rem !important;
+        }
+        .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            column-gap: 24px;
+            row-gap: 18px;
+        }
+        .summary-row {
+            padding-top: 20px !important;
+        }
+        .summary-value {
+            font-size: 1.08rem !important;
+        }
+        .summary-status {
+            font-size: 0.78rem !important;
+        }
+        h3 {
+            font-size: 20px !important;
+            margin-top: 2.5rem !important;
+            margin-bottom: 0.75rem !important;
+        }
+        .signal-table-wrap {
+            margin-bottom: 2.45rem !important;
+            overflow-x: hidden;
+        }
+        .signal-table {
+            font-size: 0.84rem !important;
+        }
+        .signal-table th,
+        .signal-table td {
+            padding: 13px 0 !important;
+            vertical-align: top;
+        }
+        .signal-table th:nth-child(1),
+        .signal-table td:nth-child(1) { width: 58px; }
+        .signal-table th:nth-child(3),
+        .signal-table td:nth-child(3) { width: 42%; }
+        .signal-table td {
+            overflow-wrap: anywhere;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            width: 100%;
+            gap: 0 !important;
+            justify-content: space-between;
+            overflow: visible !important;
+        }
+        .stTabs [data-baseweb="tab"] {
+            min-height: 44px;
+            padding: 0 0 10px !important;
+            font-size: 0.88rem !important;
+        }
+        div[data-testid="stPlotlyChart"] {
+            width: calc(100vw - 40px) !important;
+            min-height: 390px !important;
+            margin-top: 0.85rem !important;
+            margin-bottom: 2rem !important;
+            overflow: hidden !important;
+        }
+        div[data-testid="stPlotlyChart"] .js-plotly-plot,
+        div[data-testid="stPlotlyChart"] .plotly,
+        div[data-testid="stPlotlyChart"] .main-svg {
+            min-height: 390px !important;
+        }
+        .glass-table-wrap {
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1942,11 +2109,6 @@ def render_signal_cards(df: pd.DataFrame):
         recent_rows(df[df['VIX1D>VIX'] == 'BUY']),
     ) if 'VIX1D>VIX' in df.columns else []
 
-    stochastic_items = make_items(
-        recent_rows(df[df['SS Signal'].isin(['Buy', 'Sell'])]),
-        'SS Signal',
-    ) if 'SS Signal' in df.columns else []
-
     if {'Date', 'RSI', 'Puddle'}.issubset(df.columns):
         rsi_puddle_rows = recent_rows(df[
             df.apply(lambda row: has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')), axis=1)
@@ -1963,7 +2125,6 @@ def render_signal_cards(df: pd.DataFrame):
 
     signal_rows = []
     for signal, items, default_status in [
-        ('Stochastic', stochastic_items, 'Watch'),
         ('Puddle', puddle_items, 'Signal'),
         ('RSI & Puddle', rsi_puddle_items, 'Watch'),
         ('VIX1D > VIX', vix_items, 'Risk'),
