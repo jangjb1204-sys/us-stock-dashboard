@@ -1724,7 +1724,7 @@ with focus_preset:
     preset_ticker = st.selectbox(
         "Saved Tickers",
         ticker_options,
-        format_func=lambda ticker: f"{ticker_name(ticker)} · {ticker}",
+        format_func=ticker_name,
     )
 with focus_custom:
     raw_custom_ticker = st.text_input(
