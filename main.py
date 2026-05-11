@@ -1153,7 +1153,10 @@ st.markdown("""
         border: 0;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label {
+        display: inline-flex !important;
+        align-items: center !important;
         min-height: 36px !important;
+        height: 36px !important;
         justify-content: center !important;
         padding: 7px 12px !important;
         border: 1px solid rgba(255,255,255,0.055) !important;
@@ -1169,8 +1172,15 @@ st.markdown("""
         color: #05070B !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label p {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         font-size: 0.76rem !important;
         font-weight: 620 !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: 1em !important;
     }
     .stTabs [data-baseweb="tab-list"] {
         background: transparent !important;
@@ -1518,12 +1528,14 @@ st.markdown("""
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label {
             flex: 0 0 auto;
-            min-height: 39px !important;
+            min-height: 38px !important;
+            height: 38px !important;
             justify-content: center !important;
-            padding: 8px 11px !important;
+            padding: 0 11px !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label p {
             font-size: 0.74rem !important;
+            line-height: 1 !important;
         }
         div[data-testid="stSelectbox"] label,
         div[data-testid="stTextInput"] label {
