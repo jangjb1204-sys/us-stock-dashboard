@@ -1588,9 +1588,9 @@ DATA_PERIOD = "4y"
 RECENT_TICKER_LIMIT = 12
 
 MA_COLORS = {
-    "MA20":  "#2F80FF",
-    "MA60":  "#FF9800",
-    "MA120": "#D18B3A",
+    "MA20":  "#6EA8FF",
+    "MA60":  "#C7A15A",
+    "MA120": "#C77A86",
     "MA200": "#6B7280",
 }
 PRICE_LEGEND_SERIES = {'MA20', 'MA60', 'MA120'}
@@ -1840,7 +1840,6 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fig.add_trace(go.Scatter(
                 x=puddle_df['Date'], y=puddle_df['Low'] * 0.982,
                 mode='markers', name='Puddle',
-                showlegend=False,
                 marker=dict(symbol='triangle-up', size=9, color='#2F80FF',
                             line=dict(width=1, color='white')),
             ), row=1, col=1)
@@ -1912,6 +1911,11 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     if 'VIX1D>VIX' in df.columns:
         vix_signal_dates = df[df['VIX1D>VIX'] == 'BUY']['Date']
         if not vix_signal_dates.empty:
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None], mode='lines', name='VIX1D > VIX',
+                line=dict(color='rgba(47,128,255,0.58)', width=1.8),
+                hoverinfo='skip',
+            ), row=1, col=1)
             for d in vix_signal_dates:
                 fig.add_vline(
                     x=d,
@@ -1928,8 +1932,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         if not overlap.empty:
             fig.add_trace(go.Scatter(
                 x=overlap['Date'], y=overlap['Close_x'],
-                mode='markers', name='RSI ∩ Puddle',
-                showlegend=False,
+                mode='markers', name='RSI & Puddle',
                 marker=dict(symbol='circle', size=8, color='#2F80FF',
                             line=dict(width=1.5, color='white')),
             ), row=1, col=1)
