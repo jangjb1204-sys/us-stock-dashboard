@@ -757,15 +757,30 @@ CHART_THEME = dict(
     margin=dict(l=60, r=24, t=78, b=40),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
-DATE_AXIS = dict(
-    tickmode='auto',
-    nticks=14,
-    tickformat='%y.%m.%d',
-    automargin=True,
-)
+
+def get_date_axis(df: pd.DataFrame, target_ticks: int = 10) -> dict:
+    dates = pd.to_datetime(df['Date']).dropna().drop_duplicates().sort_values()
+    if dates.empty:
+        return dict(automargin=True)
+
+    step = max(1, int(np.ceil(len(dates) / target_ticks)))
+    tick_dates = dates.iloc[::step]
+    if tick_dates.iloc[-1] != dates.iloc[-1]:
+        tick_dates = pd.concat([tick_dates, dates.tail(1)])
+
+    span_days = (dates.iloc[-1] - dates.iloc[0]).days
+    label_format = '%y.%m' if span_days > 370 else '%m.%d'
+
+    return dict(
+        tickmode='array',
+        tickvals=tick_dates.tolist(),
+        ticktext=[d.strftime(label_format) for d in tick_dates],
+        automargin=True,
+    )
 
 # ── 캔들스틱 차트 ─────────────────────────────────────────────────────────────
 def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
+    date_axis = get_date_axis(df)
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True,
         row_heights=[0.60, 0.20, 0.20],
@@ -834,13 +849,14 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         height=660,
     )
     for r in [1, 2, 3]:
-        fig.update_xaxes(**GRID, **DATE_AXIS, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
+        fig.update_xaxes(**GRID, **date_axis, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
 
 # ── 라인 차트 ─────────────────────────────────────────────────────────────────
 def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
+    date_axis = get_date_axis(df)
     fig = make_subplots(
         rows=2, cols=1, shared_xaxes=True,
         row_heights=[0.68, 0.32], vertical_spacing=0.03,
@@ -863,13 +879,13 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         if not vix_signal_dates.empty:
             fig.add_trace(go.Scatter(
                 x=[None], y=[None], mode='lines', name='VIX1D > VIX',
-                line=dict(color='#ff3b30', width=2.2),
+                line=dict(color='#b48cff', width=2.2),
                 hoverinfo='skip',
             ), row=1, col=1)
             for d in vix_signal_dates:
                 fig.add_vline(
                     x=d,
-                    line=dict(color='rgba(255,59,48,0.72)', width=1.8),
+                    line=dict(color='rgba(180,140,255,0.58)', width=1.8),
                     layer='below',
                     row=1,
                     col=1,
@@ -936,7 +952,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         height=590,
     )
     for r in [1, 2]:
-        fig.update_xaxes(**GRID, **DATE_AXIS, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
+        fig.update_xaxes(**GRID, **date_axis, row=r, col=1, tickfont=dict(color='#8e8e93', size=10))
         fig.update_yaxes(**GRID, row=r, col=1)
 
     return fig
