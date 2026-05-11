@@ -1640,11 +1640,21 @@ st.markdown("""
             margin-top: 0.85rem !important;
             margin-bottom: 2rem !important;
             overflow: hidden !important;
+            touch-action: pan-y !important;
+            overscroll-behavior: contain;
+            -webkit-user-select: none;
+            user-select: none;
         }
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
-        div[data-testid="stPlotlyChart"] .main-svg {
+        div[data-testid="stPlotlyChart"] .main-svg,
+        div[data-testid="stPlotlyChart"] .svg-container,
+        div[data-testid="stPlotlyChart"] .draglayer,
+        div[data-testid="stPlotlyChart"] .nsewdrag {
             min-height: 390px !important;
+            touch-action: pan-y !important;
+            -webkit-user-select: none;
+            user-select: none;
         }
         .glass-table-wrap {
             max-width: 100%;
@@ -1956,14 +1966,16 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     fig.update_layout(
         **CHART_THEME,
         height=MAIN_CHART_HEIGHT,
+        dragmode=False,
     )
     for r in [1, 2, 3]:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 3),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
+            fixedrange=True,
         )
-        fig.update_yaxes(**GRID, row=r, col=1)
+        fig.update_yaxes(**GRID, row=r, col=1, fixedrange=True)
 
     return fig
 
@@ -2052,14 +2064,16 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     fig.update_layout(
         **CHART_THEME,
         height=SIGNAL_CHART_HEIGHT,
+        dragmode=False,
     )
     for r in [1, 2]:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 2),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
+            fixedrange=True,
         )
-        fig.update_yaxes(**GRID, row=r, col=1)
+        fig.update_yaxes(**GRID, row=r, col=1, fixedrange=True)
 
     return fig
 
@@ -2635,14 +2649,14 @@ with tab1:
     st.plotly_chart(
         build_candlestick_chart(df, selected_name),
         use_container_width=True,
-        config={'displayModeBar': False, 'responsive': True},
+        config={'displayModeBar': False, 'responsive': True, 'scrollZoom': False, 'doubleClick': False},
     )
 
 with tab2:
     st.plotly_chart(
         build_line_chart(df, selected_name),
         use_container_width=True,
-        config={'displayModeBar': False, 'responsive': True},
+        config={'displayModeBar': False, 'responsive': True, 'scrollZoom': False, 'doubleClick': False},
     )
 
 with tab3:
