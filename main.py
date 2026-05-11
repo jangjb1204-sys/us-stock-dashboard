@@ -1762,10 +1762,18 @@ st.markdown("")
 tab1, tab2, tab3 = st.tabs(["Chart", "Signals", "Metrics"])
 
 with tab1:
-    st.plotly_chart(build_candlestick_chart(df, selected_name), use_container_width=True)
+    st.plotly_chart(
+        build_candlestick_chart(df, selected_name),
+        use_container_width=True,
+        config={'displayModeBar': False, 'responsive': True},
+    )
 
 with tab2:
-    st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
+    st.plotly_chart(
+        build_line_chart(df, selected_name),
+        use_container_width=True,
+        config={'displayModeBar': False, 'responsive': True},
+    )
 
 with tab3:
     render_glass_table(
