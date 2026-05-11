@@ -1264,7 +1264,14 @@ def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers
 
 
 def render_signal_cards(df: pd.DataFrame):
-    def make_items(rows, value_col=None, date_format='%m.%d'):
+    def recent_rows(rows, limit=3):
+        if rows.empty:
+            return rows
+        ordered = rows.copy()
+        ordered['Date'] = pd.to_datetime(ordered['Date'])
+        return ordered.sort_values('Date', ascending=False).head(limit)
+
+    def make_items(rows, value_col=None, date_format='%y.%m.%d'):
         items = []
         for _, row in rows.iterrows():
             date = pd.to_datetime(row['Date']).strftime(date_format)
@@ -1273,26 +1280,26 @@ def render_signal_cards(df: pd.DataFrame):
         return items
 
     puddle_items = make_items(
-        df[df['Puddle'].str.contains(r'[a-zA-Z]', na=False)].tail(3),
+        recent_rows(df[df['Puddle'].str.contains(r'[a-zA-Z]', na=False)]),
         'Puddle',
     ) if 'Puddle' in df.columns else []
 
     vix_items = make_items(
-        df[df['VIX1D>VIX'] == 'BUY'].tail(3),
+        recent_rows(df[df['VIX1D>VIX'] == 'BUY']),
     ) if 'VIX1D>VIX' in df.columns else []
 
     stochastic_items = make_items(
-        df[df['SS Signal'].isin(['Buy', 'Sell'])].tail(3),
+        recent_rows(df[df['SS Signal'].isin(['Buy', 'Sell'])]),
         'SS Signal',
     ) if 'SS Signal' in df.columns else []
 
     if {'Date', 'RSI', 'Puddle'}.issubset(df.columns):
-        rsi_puddle_rows = df[
+        rsi_puddle_rows = recent_rows(df[
             df.apply(lambda row: has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')), axis=1)
-        ].tail(3)
+        ])
         rsi_puddle_items = []
         for _, row in rsi_puddle_rows.iterrows():
-            date = pd.to_datetime(row['Date']).strftime('%m.%d')
+            date = pd.to_datetime(row['Date']).strftime('%y.%m.%d')
             rsi = safe_float(row.get('RSI'))
             rsi_text = f"RSI {rsi:.1f}" if rsi is not None else "RSI —"
             puddle = str(row.get('Puddle', '')) if pd.notna(row.get('Puddle')) else ''
