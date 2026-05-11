@@ -199,8 +199,8 @@ st.markdown("""
         font-weight: 700;
     }
     .section-label {
-        color: #8e8e93;
-        font-size: 0.74rem;
+        color: rgba(207,228,255,0.64);
+        font-size: 0.8rem;
         font-weight: 700;
         margin: 1.2rem 0 0.45rem;
     }
@@ -213,13 +213,13 @@ st.markdown("""
     }
     .focus-title .eyebrow {
         color: rgba(207,228,255,0.58);
-        font-size: 0.74rem;
+        font-size: 0.8rem;
         font-weight: 700;
         margin-bottom: 0.25rem;
     }
     .focus-title .name {
         color: #f7fbff;
-        font-size: 1.86rem;
+        font-size: 1.94rem;
         line-height: 1.05;
         font-weight: 750;
     }
@@ -279,7 +279,7 @@ st.markdown("""
         align-items: center;
         gap: 8px;
         color: #f7fbff;
-        font-size: 1.04rem;
+        font-size: 1.08rem;
         font-weight: 700;
         margin-bottom: 11px;
     }
@@ -299,14 +299,14 @@ st.markdown("""
         padding: 7px 0;
         border-top: 1px solid rgba(255,255,255,0.08);
         color: rgba(235,244,255,0.86);
-        font-size: 0.82rem;
+        font-size: 0.84rem;
     }
     .signal-item:first-of-type { border-top: none; }
     .signal-date {
         color: rgba(207,228,255,0.56);
         white-space: nowrap;
         font-family: 'DM Mono', monospace;
-        font-size: 0.74rem;
+        font-size: 0.76rem;
     }
     .signal-empty {
         position: relative;
@@ -358,7 +358,7 @@ st.markdown("""
         justify-content: space-between;
         gap: 12px;
         color: #8e8e93;
-        font-size: 0.7rem;
+        font-size: 0.76rem;
         font-weight: 700;
         margin-bottom: 8px;
     }
@@ -371,7 +371,7 @@ st.markdown("""
         border-radius: 999px;
         color: var(--accent);
         background: color-mix(in srgb, var(--accent) 13%, transparent);
-        font-size: 0.68rem;
+        font-size: 0.72rem;
         font-weight: 700;
         white-space: nowrap;
     }
@@ -386,14 +386,14 @@ st.markdown("""
     .risk-main {
         color: #f5f5f7;
         font-family: 'DM Mono', monospace;
-        font-size: 1.24rem;
+        font-size: 1.34rem;
         font-weight: 500;
         line-height: 1.1;
     }
     .risk-caption {
         margin-top: 7px;
         color: #9b9ba1;
-        font-size: 0.74rem;
+        font-size: 0.78rem;
     }
 
     /* 사이드바 */
@@ -745,13 +745,13 @@ st.markdown("""
         border-collapse: separate;
         border-spacing: 0;
         color: #f5f5f7;
-        font-size: 0.82rem;
+        font-size: 0.86rem;
     }
     .glass-table th {
         position: sticky;
         top: 0;
         z-index: 1;
-        padding: 11px 12px;
+        padding: 12px 13px;
         text-align: left;
         color: rgba(226,240,255,0.68);
         background:
@@ -761,7 +761,7 @@ st.markdown("""
         white-space: nowrap;
     }
     .glass-table td {
-        padding: 10px 12px;
+        padding: 11px 13px;
         border-bottom: 1px solid rgba(190,220,255,0.08);
         background: rgba(10,28,50,0.54);
         white-space: nowrap;
@@ -816,7 +816,7 @@ st.markdown("""
             padding: 12px 13px;
         }
         div[data-testid="metric-container"] [data-testid="stMetricValue"] {
-            font-size: 1rem !important;
+            font-size: 1.08rem !important;
         }
         div[data-testid="stRadio"] div[role="radiogroup"] label {
             flex: 1 1 calc(50% - 8px);
@@ -845,26 +845,27 @@ st.markdown("""
             padding-top: 0.55rem;
         }
         .focus-title .name {
-            font-size: 1.34rem;
+            font-size: 1.42rem;
         }
         .focus-title .ticker {
             font-size: 0.92rem;
         }
         div[data-testid="stPlotlyChart"] {
             margin-top: 0.2rem;
+            margin-bottom: 1rem;
         }
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
         div[data-testid="stPlotlyChart"] .main-svg {
-            min-height: 420px !important;
-            max-height: 440px !important;
+            min-height: 340px !important;
+            max-height: 360px !important;
         }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ── 상수 ───────────────────────────────────────────────────────────────────────
-DELTA_OPTIONS  = {"90일": 90, "180일": 180, "1년": 365, "2년": 730, "전체": 9999}
+DELTA_OPTIONS  = {"90일": 90, "180일": 180, "1년": 365, "2년": 730, "4년": 9999}
 DATA_PERIOD = "4y"
 RECENT_TICKER_LIMIT = 12
 
@@ -1013,7 +1014,7 @@ CHART_THEME = dict(
         font=dict(size=11), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(255,255,255,0.10)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=54, r=18, t=48, b=34),
+    margin=dict(l=50, r=16, t=38, b=46),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.07)', zeroline=False)
 
@@ -1118,7 +1119,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        height=560,
+        height=500,
     )
     for r in [1, 2, 3]:
         fig.update_xaxes(
@@ -1223,7 +1224,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        height=500,
+        height=440,
     )
     for r in [1, 2]:
         fig.update_xaxes(
@@ -1682,8 +1683,8 @@ table_df = load_ticker_data(
     selected_ticker,
     selected_name,
     period,
-    DELTA_OPTIONS["전체"],
-    f"{period}_{DELTA_OPTIONS['전체']}",
+    DELTA_OPTIONS["4년"],
+    f"{period}_{DELTA_OPTIONS['4년']}",
 )
 if table_df.empty:
     table_df = df
