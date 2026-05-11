@@ -26,7 +26,6 @@ TICKER_CONFIGS = {
     'GLD': 'GOLD',
     'BTGD': 'BTGD',
     'TSLA': 'TESLA',
-    'FINX': 'FINX',
 }
 
 # --- 데이터 수집 ---

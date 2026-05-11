@@ -2478,8 +2478,7 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
 
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 base_tickers = list(TICKER_CONFIGS.keys())
-recent_tickers = load_recent_tickers()
-ticker_options = base_tickers + [ticker for ticker in recent_tickers if ticker not in base_tickers]
+ticker_options = base_tickers
 total_views, active_viewers = get_view_stats()
 market_open = is_us_market_open()
 market_dot_class = "open" if market_open else "closed"
@@ -2530,7 +2529,7 @@ else:
     selected_ticker = preset_ticker
     selected_name = load_ticker_display_name(selected_ticker)
 
-summary_extra_tickers = tuple(unique_tickers([*recent_tickers, selected_ticker]))
+summary_extra_tickers = ()
 render_market_summary(period, delta, cache_key, summary_extra_tickers)
 st.markdown("---")
 
@@ -2559,9 +2558,6 @@ render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at
 if df.empty:
     st.error(f"{selected_ticker} data is not available right now. Please try again shortly.")
     st.stop()
-
-if selected_ticker not in TICKER_CONFIGS:
-    save_recent_ticker(selected_ticker)
 
 latest = df.iloc[-1]
 
