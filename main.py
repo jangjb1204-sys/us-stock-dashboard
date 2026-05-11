@@ -441,16 +441,25 @@ st.markdown("""
     }
     div[data-testid="stTextInput"] input {
         min-height: 48px !important;
-        border: 1px solid rgba(190,220,255,0.20) !important;
+        padding: 0 16px !important;
+        border: 1px solid rgba(190,220,255,0.24) !important;
         border-radius: 18px !important;
-        background:
-            linear-gradient(135deg, rgba(241,248,255,0.15), rgba(255,255,255,0.04)),
-            rgba(7,23,42,0.56) !important;
+        background: rgba(9,28,50,0.72) !important;
         color: #f5f5f7 !important;
         font-weight: 600 !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 42px rgba(0,0,0,0.14) !important;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.18),
+            inset 0 -1px 0 rgba(255,255,255,0.06),
+            0 16px 42px rgba(0,0,0,0.14) !important;
         backdrop-filter: blur(24px) saturate(1.45);
         -webkit-backdrop-filter: blur(24px) saturate(1.45);
+    }
+    div[data-testid="stTextInput"] input:focus {
+        border-color: rgba(207,228,255,0.55) !important;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.22),
+            0 0 0 1px rgba(156,204,255,0.18),
+            0 16px 42px rgba(0,0,0,0.14) !important;
     }
     div[data-testid="stTextInput"] input::placeholder {
         color: rgba(207,228,255,0.42) !important;
@@ -681,7 +690,7 @@ st.markdown("""
         border: 1px solid rgba(190,220,255,0.16);
         border-radius: 22px;
         overflow: hidden;
-        background: rgba(7,23,42,0.38);
+        background: rgba(8,25,45,0.72);
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 58px rgba(0,0,0,0.18);
         backdrop-filter: blur(20px) saturate(1.35);
         -webkit-backdrop-filter: blur(20px) saturate(1.35);
@@ -1247,6 +1256,22 @@ def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers
 
             styled_summary = (
                 summary_df.style
+                .set_table_styles([
+                    {'selector': 'thead th', 'props': [
+                        ('background-color', 'rgba(24,42,67,0.96)'),
+                        ('color', 'rgba(226,240,255,0.72)'),
+                        ('border-color', 'rgba(190,220,255,0.12)'),
+                        ('font-weight', '700'),
+                    ]},
+                    {'selector': 'tbody td', 'props': [
+                        ('background-color', 'rgba(8,20,36,0.82)'),
+                        ('color', '#f5f5f7'),
+                        ('border-color', 'rgba(190,220,255,0.10)'),
+                    ]},
+                    {'selector': 'tbody tr:hover td', 'props': [
+                        ('background-color', 'rgba(30,70,112,0.72)'),
+                    ]},
+                ])
                 .apply(hl_signal_row, axis=1)
                 .map(hl_change, subset=['Change(%)'])
                 .map(hl_rsi,    subset=['RSI'])
