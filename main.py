@@ -1168,22 +1168,33 @@ st.markdown("""
         background: transparent !important;
         border: 0 !important;
         box-shadow: none !important;
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.065) !important;
         border-radius: 0 !important;
         padding: 0 !important;
-        gap: 24px !important;
+        gap: 28px !important;
     }
     .stTabs [data-baseweb="tab"] {
         border-radius: 0 !important;
-        padding: 0 0 12px !important;
+        padding: 0 0 13px !important;
         background: transparent !important;
-        color: rgba(255,255,255,0.46) !important;
-        font-size: 0.9rem !important;
+        color: rgba(255,255,255,0.38) !important;
+        font-size: 0.92rem !important;
+        font-weight: 520 !important;
+        box-shadow: none !important;
+        transition: color 0.15s ease, box-shadow 0.15s ease;
     }
     .stTabs [aria-selected="true"] {
-        color: #F2F5F8 !important;
+        color: rgba(255,255,255,0.96) !important;
         background: transparent !important;
-        box-shadow: inset 0 -2px 0 #2F80FF !important;
+        box-shadow: inset 0 -2px 0 rgba(110,168,255,0.92) !important;
+    }
+    .stTabs [data-baseweb="tab"] p {
+        color: inherit !important;
+        font-weight: inherit !important;
+    }
+    .stTabs [aria-selected="true"] p {
+        color: inherit !important;
+        font-weight: 640 !important;
     }
     h3 {
         color: #F2F5F8 !important;
@@ -1337,17 +1348,24 @@ st.markdown("""
         border-bottom: 1px solid rgba(255,255,255,0.055);
     }
     .glass-table th {
-        background: rgba(255,255,255,0.035) !important;
+        background: #101722 !important;
         color: rgba(255,255,255,0.50) !important;
         font-size: 0.76rem !important;
         font-weight: 560 !important;
         letter-spacing: 0 !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 6 !important;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.07), 0 10px 18px rgba(5,7,11,0.72) !important;
     }
     .glass-table td {
-        background: transparent !important;
+        background: #080D14 !important;
         border-bottom-color: rgba(255,255,255,0.06) !important;
         color: rgba(255,255,255,0.82);
         font-weight: 450;
+    }
+    .glass-table tr:nth-child(even) td {
+        background: #0A111A !important;
     }
     .glass-table td.num {
         font-family: inherit !important;
@@ -1364,7 +1382,15 @@ st.markdown("""
         color: #EA6B70 !important;
         font-weight: 620 !important;
     }
-    .glass-table tr:hover td { background: rgba(47,128,255,0.08) !important; }
+    .glass-table tr:hover td { background: #0D1A2A !important; }
+    .glass-table-wrap + div[data-testid="stDownloadButton"],
+    div[data-testid="stDownloadButton"] {
+        margin-top: 28px !important;
+    }
+    div[data-testid="stDownloadButton"] button {
+        opacity: 0.82;
+        box-shadow: none !important;
+    }
     details summary,
     details[open] summary,
     div[data-testid="stExpander"] details summary,
@@ -1552,7 +1578,7 @@ st.markdown("""
         }
         .stTabs [data-baseweb="tab-list"] {
             width: 100%;
-            gap: 0 !important;
+            gap: 18px !important;
             justify-content: space-between;
             overflow: visible !important;
         }
