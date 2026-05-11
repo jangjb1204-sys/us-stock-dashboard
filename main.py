@@ -126,24 +126,29 @@ st.markdown("""
         z-index: 1;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 13px;
         flex-wrap: wrap;
     }
     .market-status-dot,
     .viewer-dot {
-        width: 9px;
-        height: 9px;
+        width: 8px;
+        height: 8px;
         border-radius: 999px;
         flex: 0 0 auto;
     }
     .market-status-dot.open {
         background: #63f29d;
-        box-shadow: 0 0 0 5px rgba(99,242,157,0.12), 0 0 22px rgba(99,242,157,0.86);
-        animation: livePulseGreen 1.55s ease-in-out infinite;
+        box-shadow:
+            0 0 0 1px rgba(255,255,255,0.30),
+            0 0 10px rgba(99,242,157,0.42),
+            0 0 22px rgba(99,242,157,0.24);
+        animation: elegantPulseGreen 2.8s ease-in-out infinite;
     }
     .market-status-dot.closed {
         background: #8e8e93;
-        box-shadow: 0 0 0 4px rgba(142,142,147,0.10), 0 0 12px rgba(142,142,147,0.30);
+        box-shadow:
+            0 0 0 1px rgba(255,255,255,0.18),
+            0 0 10px rgba(142,142,147,0.18);
         opacity: 0.72;
     }
     .hero-row {
@@ -179,16 +184,19 @@ st.markdown("""
     }
     .viewer-dot {
         background: #64a8ff;
-        box-shadow: 0 0 0 5px rgba(100,168,255,0.12), 0 0 20px rgba(100,168,255,0.82);
-        animation: livePulseBlue 1.7s ease-in-out infinite;
+        box-shadow:
+            0 0 0 1px rgba(255,255,255,0.30),
+            0 0 10px rgba(100,168,255,0.44),
+            0 0 22px rgba(100,168,255,0.24);
+        animation: elegantPulseBlue 3s ease-in-out infinite;
     }
-    @keyframes livePulseGreen {
-        0%, 100% { transform: scale(0.92); opacity: 0.72; box-shadow: 0 0 0 3px rgba(99,242,157,0.10), 0 0 14px rgba(99,242,157,0.48); }
-        50% { transform: scale(1.18); opacity: 1; box-shadow: 0 0 0 7px rgba(99,242,157,0.16), 0 0 26px rgba(99,242,157,0.92); }
+    @keyframes elegantPulseGreen {
+        0%, 100% { opacity: 0.70; filter: saturate(0.95); box-shadow: 0 0 0 1px rgba(255,255,255,0.24), 0 0 8px rgba(99,242,157,0.26), 0 0 18px rgba(99,242,157,0.12); }
+        50% { opacity: 1; filter: saturate(1.18); box-shadow: 0 0 0 1px rgba(255,255,255,0.36), 0 0 13px rgba(99,242,157,0.54), 0 0 28px rgba(99,242,157,0.28); }
     }
-    @keyframes livePulseBlue {
-        0%, 100% { transform: scale(0.92); opacity: 0.72; box-shadow: 0 0 0 3px rgba(100,168,255,0.10), 0 0 14px rgba(100,168,255,0.48); }
-        50% { transform: scale(1.18); opacity: 1; box-shadow: 0 0 0 7px rgba(100,168,255,0.16), 0 0 26px rgba(100,168,255,0.92); }
+    @keyframes elegantPulseBlue {
+        0%, 100% { opacity: 0.72; filter: saturate(0.96); box-shadow: 0 0 0 1px rgba(255,255,255,0.24), 0 0 8px rgba(100,168,255,0.28), 0 0 18px rgba(100,168,255,0.12); }
+        50% { opacity: 1; filter: saturate(1.16); box-shadow: 0 0 0 1px rgba(255,255,255,0.36), 0 0 13px rgba(100,168,255,0.56), 0 0 28px rgba(100,168,255,0.28); }
     }
     .app-hero p {
         position: relative;
@@ -1169,10 +1177,6 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
                             line=dict(width=1, color='white')),
             ), row=1, col=1)
 
-    if 'VIX1D>VIX' in df.columns:
-        for d in df[df['VIX1D>VIX'] == 'BUY']['Date']:
-            fig.add_vline(x=d, line=dict(color='rgba(255,123,114,0.25)', width=1), row=1, col=1)
-
     if 'RSI' in df.columns and df['RSI'].notna().any():
         fig.add_trace(go.Scatter(
             x=df['Date'], y=df['RSI'], name='RSI',
@@ -1685,8 +1689,8 @@ st.markdown(
       <div class="hero-row">
         <div>
           <div class="hero-title">
-            <h1>US Market Signals</h1>
             <span class="market-status-dot {market_dot_class}"></span>
+            <h1>US Market Signals</h1>
           </div>
           <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
         </div>
