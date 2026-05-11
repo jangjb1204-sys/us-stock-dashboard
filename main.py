@@ -1,17 +1,18 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from stock_analyzer import get_full_analysis, fetch_common_market_data
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="US Stock Dashboard", layout="wide")
+# 페이지 설정
+st.set_page_config(page_title="US Stock Dash", layout="wide")
 
 @st.cache_data(ttl=3600)
 def get_cached_common_data(period):
     return fetch_common_market_data(period)
 
-st.title("🇺🇸 US Stock 분석 대시보드")
+st.title("🇺🇸 US Stock 분석 대시보드 (With Signal)")
 
+# 사이드바
 with st.sidebar:
     st.header("🔍 설정")
     ticker_list = {
@@ -25,47 +26,59 @@ with st.sidebar:
     process_btn = st.button("분석 시작")
 
 if process_btn:
-    with st.spinner('데이터를 불러오고 분석 중입니다...'):
+    with st.spinner('시장 데이터를 분석 중입니다...'):
         common_data = get_cached_common_data(period)
-        df = get_full_analysis(selected_ticker, selected_name, common_data, period=period)
+        df = get_full_analysis(selected_ticker, common_data, period=period)
         
         if not df.empty:
-            last_row = df.iloc[-1]
+            # 1. 상단 지표
+            last = df.iloc[-1]
             m1, m2, m3, m4 = st.columns(4)
-            with m1:
-                st.metric("현재가", f"${last_row['Close']:.2f}")
-            with m2:
-                st.metric("RSI", f"{last_row['RSI']:.2f}" if pd.notna(last_row['RSI']) else "N/A")
-            with m3:
-                fg = last_row.get('FG index', np.nan)
-                st.metric("Fear & Greed", f"{int(fg)}" if pd.notna(fg) else "N/A")
-            with m4:
-                tr = last_row.get('Treasury', np.nan)
-                st.metric("미 국채 10년물", f"{tr:.2f}%" if pd.notna(tr) else "데이터 없음")
+            m1.metric("현재가", f"${last['Close']:.2f}")
+            m2.metric("RSI (14)", f"{last['RSI']}")
+            m3.metric("Fear & Greed", f"{int(last.get('FG index', 50))}")
+            m4.metric("10Y Treasury", f"{last.get('Treasury', 0):.2f}%")
 
-            # --- 차트 ---
+            # 2. 메인 차트 (라인 + 신호)
             fig = go.Figure()
-            # 차트에서는 날짜를 다시 날짜형으로 인식하게 시각화
-            fig.add_trace(go.Scatter(x=df['Date'], y=df['Close'], name='Price', line=dict(color='#1A1A1B', width=2)))
             
-            ma_colors = {'MA20': '#2980B9', 'MA60': '#D35400', 'MA120': '#C0392B', 'MA200': '#8E44AD'}
-            for ma, col in ma_colors.items():
+            # 주가 라인
+            fig.add_trace(go.Scatter(x=df['Date'], y=df['Close'], name='Price', line=dict(color='#1A1A1B', width=2.5)))
+            
+            # 이평선
+            for ma, col in {'MA20': '#2980B9', 'MA60': '#D35400', 'MA120': '#C0392B', 'MA200': '#8E44AD'}.items():
                 if ma in df.columns:
-                    fig.add_trace(go.Scatter(x=df['Date'], y=df[ma], name=ma, line=dict(color=col, width=1.5), opacity=0.6))
-            
-            # VIX 신호
-            if 'VIX1D' in df.columns and 'VIX' in df.columns:
-                vix_buys = df[(df['VIX'] >= 25) & (df['VIX1D'] > df['VIX'])]
+                    fig.add_trace(go.Scatter(x=df['Date'], y=df[ma], name=ma, line=dict(color=col, width=1.5), opacity=0.7))
+
+            # VIX 매수 신호 (빨간 실선)
+            if 'VIX1D>VIX' in df.columns:
+                vix_buys = df[df['VIX1D>VIX'] == 'BUY']
                 for v_date in vix_buys['Date']:
                     fig.add_vline(x=v_date, line_width=2, line_color="#FF0000", opacity=0.4)
 
-            fig.update_layout(height=600, template='plotly_white', hovermode='x unified', xaxis_rangeslider_visible=False)
+            # Puddle 신호 (초록 삼각형)
+            p_df = df[df['Puddle'].astype(str).str.len() > 1].copy()
+            if not p_df.empty:
+                fig.add_trace(go.Scatter(x=p_df['Date'], y=p_df['Low']*0.96, mode='markers', name='Puddle Buy',
+                    marker=dict(symbol='triangle-up', size=14, color='#00FF00', line=dict(width=2, color='#004d00')),
+                    text=p_df['Puddle'], hovertemplate="<b>%{text}</b><br>%{x}"))
+
+            # RSI 과매도 (파란 원)
+            oversold = df[df['RSI'] <= 30]
+            if not oversold.empty:
+                fig.add_trace(go.Scatter(x=oversold['Date'], y=oversold['Close'], mode='markers', name='RSI Low',
+                    marker=dict(symbol='circle', size=10, color='#3498DB', line=dict(width=2, color='#1A5276'))))
+
+            fig.update_layout(height=650, template='plotly_white', hovermode='x unified', xaxis_rangeslider_visible=False)
             st.plotly_chart(fig, use_container_width=True)
-            
-            # --- 표 출력 (시간 제거됨) ---
+
+            # 3. 데이터 테이블
             st.subheader("📋 최근 분석 데이터 (15일)")
+            # 날짜를 문자열로 변환하여 시간 제거
             display_df = df[['Date', 'Close', 'RSI', 'FG index', 'FG/RSI signal', 'Puddle']].tail(15).copy()
-            # 내림차순 정렬 및 표시
+            display_df['Date'] = display_df['Date'].dt.strftime('%Y-%m-%d')
             st.dataframe(display_df.sort_values('Date', ascending=False).set_index('Date'), use_container_width=True)
-        else:
-            st.error("데이터를 가져오지 못했습니다.")
+            
+            # 엑셀 다운로드 버튼
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("📊 전체 분석 데이터 다운로드(CSV)", csv, f"{selected_name}_data.csv", "text/csv")
