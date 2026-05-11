@@ -1856,13 +1856,13 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
 CHART_THEME = dict(
     plot_bgcolor='#070B11',
     paper_bgcolor='#070B11',
-    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.42)', size=10),
+    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.42)', size=9),
     legend=dict(
         orientation='h', yanchor='bottom', y=1.01, xanchor='right', x=1,
         font=dict(size=8, color='rgba(255,255,255,0.42)'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=44, r=6, t=38, b=52),
+    margin=dict(l=32, r=4, t=34, b=48),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.035)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
@@ -1950,8 +1950,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(
             title_text='RSI', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
-            title=dict(font=dict(color='rgba(255,255,255,0.38)', size=10)),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+            title=dict(font=dict(color='rgba(255,255,255,0.36)', size=9), standoff=2),
         )
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
@@ -1964,8 +1964,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
             title_text='VIX', row=3, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
-            title=dict(font=dict(color='rgba(255,255,255,0.38)', size=10)),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+            title=dict(font=dict(color='rgba(255,255,255,0.36)', size=9), standoff=2),
         )
 
     fig.update_layout(
@@ -1977,10 +1977,14 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 3),
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
+            automargin=False,
         )
-        fig.update_yaxes(**GRID, row=r, col=1, fixedrange=True)
+        fig.update_yaxes(
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+        )
 
     return fig
 
@@ -2062,8 +2066,8 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=2, col=1)
         fig.update_yaxes(
             title_text='F&G', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
-            title=dict(font=dict(color='rgba(255,255,255,0.38)', size=10)),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+            title=dict(font=dict(color='rgba(255,255,255,0.36)', size=9), standoff=2),
         )
 
     fig.update_layout(
@@ -2075,10 +2079,14 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 2),
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
+            automargin=False,
         )
-        fig.update_yaxes(**GRID, row=r, col=1, fixedrange=True)
+        fig.update_yaxes(
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+        )
 
     return fig
 
