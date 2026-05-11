@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from html import escape
 import time
 import uuid
+from zoneinfo import ZoneInfo
 
 from stock_analyzer import (
     TICKER_CONFIGS,
@@ -120,6 +121,31 @@ st.markdown("""
         color: #f7fbff !important;
         text-shadow: 0 12px 34px rgba(0,0,0,0.28);
     }
+    .hero-title {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .market-status-dot,
+    .viewer-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        flex: 0 0 auto;
+    }
+    .market-status-dot.open {
+        background: #63f29d;
+        box-shadow: 0 0 0 5px rgba(99,242,157,0.12), 0 0 22px rgba(99,242,157,0.86);
+        animation: livePulseGreen 1.55s ease-in-out infinite;
+    }
+    .market-status-dot.closed {
+        background: #8e8e93;
+        box-shadow: 0 0 0 4px rgba(142,142,147,0.10), 0 0 12px rgba(142,142,147,0.30);
+        opacity: 0.72;
+    }
     .hero-row {
         position: relative;
         z-index: 1;
@@ -152,11 +178,17 @@ st.markdown("""
         font-weight: 750;
     }
     .viewer-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
         background: #64a8ff;
-        box-shadow: 0 0 18px rgba(100,168,255,0.75);
+        box-shadow: 0 0 0 5px rgba(100,168,255,0.12), 0 0 20px rgba(100,168,255,0.82);
+        animation: livePulseBlue 1.7s ease-in-out infinite;
+    }
+    @keyframes livePulseGreen {
+        0%, 100% { transform: scale(0.92); opacity: 0.72; box-shadow: 0 0 0 3px rgba(99,242,157,0.10), 0 0 14px rgba(99,242,157,0.48); }
+        50% { transform: scale(1.18); opacity: 1; box-shadow: 0 0 0 7px rgba(99,242,157,0.16), 0 0 26px rgba(99,242,157,0.92); }
+    }
+    @keyframes livePulseBlue {
+        0%, 100% { transform: scale(0.92); opacity: 0.72; box-shadow: 0 0 0 3px rgba(100,168,255,0.10), 0 0 14px rgba(100,168,255,0.48); }
+        50% { transform: scale(1.18); opacity: 1; box-shadow: 0 0 0 7px rgba(100,168,255,0.16), 0 0 26px rgba(100,168,255,0.92); }
     }
     .app-hero p {
         position: relative;
@@ -749,6 +781,14 @@ st.markdown("""
         backdrop-filter: blur(20px) saturate(1.35);
         -webkit-backdrop-filter: blur(20px) saturate(1.35);
     }
+    div[data-testid="stPlotlyChart"] {
+        min-height: 460px;
+    }
+    div[data-testid="stPlotlyChart"] .js-plotly-plot,
+    div[data-testid="stPlotlyChart"] .plotly,
+    div[data-testid="stPlotlyChart"] .main-svg {
+        min-height: 460px;
+    }
     .glass-table-wrap {
         width: 100%;
         max-height: 520px;
@@ -874,7 +914,11 @@ st.markdown("""
         .focus-title .ticker {
             font-size: 0.92rem;
         }
+        .hero-title {
+            gap: 9px;
+        }
         div[data-testid="stPlotlyChart"] {
+            min-height: 430px;
             margin-top: 0.2rem;
             margin-bottom: 1.15rem;
             overflow: visible !important;
@@ -885,7 +929,7 @@ st.markdown("""
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
         div[data-testid="stPlotlyChart"] .main-svg {
-            min-height: 0 !important;
+            min-height: 430px !important;
             max-height: none !important;
             overflow: visible !important;
         }
@@ -996,6 +1040,12 @@ def get_view_stats():
         if ts >= active_cutoff
     }
     return state['total_views'], len(state['sessions'])
+
+def is_us_market_open(now: datetime | None = None) -> bool:
+    eastern_now = now or datetime.now(ZoneInfo("America/New_York"))
+    market_open = eastern_now.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = eastern_now.replace(hour=16, minute=0, second=0, microsecond=0)
+    return eastern_now.weekday() < 5 and market_open <= eastern_now <= market_close
 
 # ── 캐싱 ───────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -1624,13 +1674,18 @@ base_tickers = list(TICKER_CONFIGS.keys())
 recent_tickers = load_recent_tickers()
 ticker_options = base_tickers + [ticker for ticker in recent_tickers if ticker not in base_tickers]
 total_views, active_viewers = get_view_stats()
+market_open = is_us_market_open()
+market_dot_class = "open" if market_open else "closed"
 
 st.markdown(
     f"""
     <div class="app-hero">
       <div class="hero-row">
         <div>
-          <h1>US Market Signals</h1>
+          <div class="hero-title">
+            <h1>US Market Signals</h1>
+            <span class="market-status-dot {market_dot_class}"></span>
+          </div>
           <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
         </div>
         <div class="viewer-pill">
