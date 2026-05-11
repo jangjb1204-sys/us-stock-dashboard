@@ -1002,6 +1002,12 @@ st.markdown("""
             radial-gradient(circle at top left, rgba(47,128,255,0.045), transparent 32%),
             #05070B !important;
         color: #F2F5F8 !important;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+    p, li, div[data-testid="stMarkdownContainer"] {
+        letter-spacing: 0 !important;
+        line-height: 1.55;
     }
     .stApp::before { display: none !important; }
     .block-container {
@@ -1030,9 +1036,9 @@ st.markdown("""
     .app-hero::before,
     .app-hero::after { display: none !important; }
     .app-hero h1 {
-        font-size: 35px !important;
+        font-size: 40px !important;
         font-weight: 700 !important;
-        letter-spacing: -0.035em !important;
+        letter-spacing: -0.026em !important;
         text-shadow: none !important;
     }
     .hero-row { align-items: center !important; }
@@ -1103,7 +1109,7 @@ st.markdown("""
     .focus-title .name {
         font-size: 42px !important;
         font-weight: 700 !important;
-        letter-spacing: -0.045em !important;
+        letter-spacing: -0.024em !important;
         color: #F2F5F8 !important;
     }
     .focus-title .ticker {
@@ -1193,16 +1199,19 @@ st.markdown("""
         border-bottom: 1px solid rgba(255,255,255,0.07);
     }
     .summary-price {
-        font-family: "DM Mono", ui-monospace, monospace;
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
         font-size: 56px;
-        font-weight: 700;
-        letter-spacing: -0.055em;
+        font-weight: 650;
+        letter-spacing: -0.026em;
         color: #F2F5F8;
     }
     .summary-change {
-        font-family: "DM Mono", ui-monospace, monospace;
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
         font-size: 1.05rem;
-        font-weight: 700;
+        font-weight: 620;
+        letter-spacing: -0.01em;
     }
     .summary-change.safe,
     .summary-status.safe,
@@ -1224,16 +1233,18 @@ st.markdown("""
     .summary-label {
         color: rgba(255,255,255,0.48);
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 560;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         margin-bottom: 7px;
     }
     .summary-value {
-        font-family: "DM Mono", ui-monospace, monospace;
+        font-family: inherit;
+        font-variant-numeric: tabular-nums;
         color: #F2F5F8;
         font-size: 1.26rem;
-        font-weight: 650;
+        font-weight: 620;
+        letter-spacing: -0.01em;
     }
     .summary-status {
         margin-top: 5px;
@@ -1241,30 +1252,20 @@ st.markdown("""
         color: rgba(255,255,255,0.56);
     }
     .signal-feed {
-        margin: 0.95rem 0 2.8rem;
+        margin: 1rem 0 3.1rem;
     }
     .signal-entry {
-        display: grid;
-        grid-template-columns: 64px minmax(0, 1fr);
-        column-gap: 18px;
-        padding: 16px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.055);
+        padding: 18px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.035);
     }
     .signal-entry:last-child {
         border-bottom: 0;
     }
-    .signal-date {
-        padding-top: 2px;
-        font-family: "DM Mono", ui-monospace, monospace;
-        color: rgba(255,255,255,0.42);
-        font-size: 0.78rem;
-        white-space: nowrap;
-    }
     .signal-main {
         display: grid;
-        grid-template-columns: 78px minmax(0, 1fr);
+        grid-template-columns: 74px minmax(0, 1fr);
         align-items: baseline;
-        gap: 18px;
+        gap: 16px;
         min-width: 0;
     }
     .signal-copy {
@@ -1272,36 +1273,53 @@ st.markdown("""
     }
     .signal-title {
         color: rgba(255,255,255,0.90);
-        font-size: 1rem;
-        font-weight: 620;
-        letter-spacing: -0.01em;
+        font-size: 0.98rem;
+        font-weight: 560;
+        letter-spacing: 0;
         overflow-wrap: anywhere;
     }
-    .signal-detail {
+    .signal-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
         margin-top: 5px;
+    }
+    .signal-detail,
+    .signal-date {
         color: rgba(255,255,255,0.44);
         font-size: 0.86rem;
         line-height: 1.45;
         overflow-wrap: anywhere;
     }
+    .signal-date {
+        font-variant-numeric: tabular-nums;
+        color: rgba(255,255,255,0.34);
+        white-space: nowrap;
+    }
+    .signal-date::before {
+        content: "·";
+        margin-right: 6px;
+        color: rgba(255,255,255,0.20);
+    }
     .signal-action {
-        font-size: 0.94rem;
-        font-weight: 700;
-        letter-spacing: -0.01em;
+        font-size: 0.95rem;
+        font-weight: 650;
+        letter-spacing: 0;
         color: rgba(255,255,255,0.68);
     }
     .signal-action.buy {
-        color: #3FB950;
+        color: #7CCF91;
     }
     .signal-action.sell,
     .signal-action.risk {
-        color: #FF5A5F;
+        color: #EB6A70;
     }
     .signal-action.signal {
-        color: rgba(255,255,255,0.88);
+        color: rgba(255,255,255,0.86);
     }
     .signal-action.watch {
-        color: rgba(255,255,255,0.60);
+        color: rgba(255,255,255,0.58);
     }
     .signal-empty-feed {
         padding: 18px 0;
@@ -1311,11 +1329,31 @@ st.markdown("""
     }
     .glass-table th {
         background: rgba(255,255,255,0.035) !important;
-        color: rgba(255,255,255,0.58) !important;
+        color: rgba(255,255,255,0.50) !important;
+        font-size: 0.76rem !important;
+        font-weight: 560 !important;
+        letter-spacing: 0 !important;
     }
     .glass-table td {
         background: transparent !important;
         border-bottom-color: rgba(255,255,255,0.06) !important;
+        color: rgba(255,255,255,0.82);
+        font-weight: 450;
+    }
+    .glass-table td.num {
+        font-family: inherit !important;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0 !important;
+    }
+    .glass-table td.pos,
+    .glass-table td.cool {
+        color: #82B8FF !important;
+        font-weight: 620 !important;
+    }
+    .glass-table td.neg,
+    .glass-table td.hot {
+        color: #EA6B70 !important;
+        font-weight: 620 !important;
     }
     .glass-table tr:hover td { background: rgba(47,128,255,0.08) !important; }
     details summary,
@@ -1335,12 +1373,29 @@ st.markdown("""
     details summary span {
         color: rgba(255,255,255,0.82) !important;
     }
+    div[data-testid="stExpander"] details,
+    div[data-testid="stExpander"] details[open],
+    div[data-testid="stExpander"] details > div {
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
     div[data-testid="stPlotlyChart"] {
         border-radius: 0;
         overflow: hidden;
         background: #080B10;
         border: 0;
         margin-top: 1.1rem;
+    }
+    div[data-testid="stPlotlyChart"] .legend text {
+        fill: rgba(255,255,255,0.42) !important;
+        font-size: 9px !important;
+        font-weight: 450 !important;
+    }
+    div[data-testid="stPlotlyChart"] .xtick text,
+    div[data-testid="stPlotlyChart"] .ytick text {
+        fill: rgba(255,255,255,0.36) !important;
+        font-size: 9px !important;
     }
     @media (max-width: 640px) {
         .block-container {
@@ -1458,33 +1513,31 @@ st.markdown("""
             margin-bottom: 0.75rem !important;
         }
         .signal-feed {
-            margin: 0.75rem 0 2.5rem !important;
+            margin: 0.8rem 0 2.75rem !important;
         }
         .signal-entry {
-            grid-template-columns: 50px minmax(0, 1fr);
-            column-gap: 13px;
-            padding: 15px 0;
-        }
-        .signal-date {
-            font-size: 0.72rem;
+            padding: 17px 0;
         }
         .signal-main {
-            display: grid;
-            grid-template-columns: 62px minmax(0, 1fr);
-            gap: 11px;
+            grid-template-columns: 58px minmax(0, 1fr);
+            gap: 12px;
             align-items: baseline;
         }
         .signal-title {
             font-size: 0.98rem;
-            line-height: 1.28;
+            line-height: 1.34;
         }
         .signal-action {
-            font-size: 0.92rem;
+            font-size: 0.91rem;
         }
-        .signal-detail {
+        .signal-detail,
+        .signal-date {
             margin-top: 6px;
-            font-size: 0.84rem;
-            line-height: 1.45;
+            font-size: 0.82rem;
+            line-height: 1.48;
+        }
+        .signal-date {
+            margin-top: 0 !important;
         }
         .stTabs [data-baseweb="tab-list"] {
             width: 100%;
@@ -1693,19 +1746,19 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
-    plot_bgcolor='#080B10',
-    paper_bgcolor='#080B10',
-    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.46)', size=11),
+    plot_bgcolor='#070B11',
+    paper_bgcolor='#070B11',
+    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.42)', size=10),
     legend=dict(
-        orientation='h', yanchor='bottom', y=1.015, xanchor='right', x=1,
-        font=dict(size=9), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
+        orientation='h', yanchor='bottom', y=1.01, xanchor='right', x=1,
+        font=dict(size=8, color='rgba(255,255,255,0.42)'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=46, r=8, t=42, b=58),
+    margin=dict(l=44, r=6, t=38, b=52),
 )
-GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.045)', zeroline=False)
+GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.035)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
-SIGNAL_CHART_HEIGHT = 500
+SIGNAL_CHART_HEIGHT = 460
 
 def get_date_axis(df: pd.DataFrame) -> dict:
     dates = pd.to_datetime(df['Date']).dropna().drop_duplicates().sort_values()
@@ -1788,8 +1841,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(
             title_text='RSI', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
-            title=dict(font=dict(color='rgba(255,255,255,0.42)', size=11)),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
+            title=dict(font=dict(color='rgba(255,255,255,0.38)', size=10)),
         )
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
@@ -1801,8 +1854,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
             title_text='VIX', row=3, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
-            title=dict(font=dict(color='rgba(255,255,255,0.42)', size=11)),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
+            title=dict(font=dict(color='rgba(255,255,255,0.38)', size=10)),
         )
 
     fig.update_layout(
@@ -1813,7 +1866,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 3),
-            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
         )
         fig.update_yaxes(**GRID, row=r, col=1)
 
@@ -1898,8 +1951,8 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=2, col=1)
         fig.update_yaxes(
             title_text='F&G', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
-            title=dict(font=dict(color='rgba(255,255,255,0.42)', size=11)),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
+            title=dict(font=dict(color='rgba(255,255,255,0.38)', size=10)),
         )
 
     fig.update_layout(
@@ -1910,7 +1963,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.update_xaxes(
             **GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 2),
-            tickfont=dict(color='rgba(255,255,255,0.42)', size=10),
+            tickfont=dict(color='rgba(255,255,255,0.38)', size=9),
         )
         fig.update_yaxes(**GRID, row=r, col=1)
 
@@ -2176,13 +2229,13 @@ def render_signal_cards(df: pd.DataFrame):
     if signal_rows:
         body = ''.join(
             f"<div class='signal-entry'>"
-            f"<div class='signal-date'>{escape(date)}</div>"
-            f"<div class='signal-content'>"
             f"<div class='signal-main'>"
             f"<div class='signal-action {escape(tone)}'>{escape(action)}</div>"
             f"<div class='signal-copy'>"
             f"<div class='signal-title'>{escape(title)}</div>"
-            f"<div class='signal-detail'>{escape(detail)}</div>"
+            f"<div class='signal-meta'>"
+            f"<span class='signal-detail'>{escape(detail)}</span>"
+            f"<span class='signal-date'>{escape(date)}</span>"
             f"</div>"
             f"</div>"
             f"</div>"
