@@ -695,6 +695,67 @@ st.markdown("""
         backdrop-filter: blur(20px) saturate(1.35);
         -webkit-backdrop-filter: blur(20px) saturate(1.35);
     }
+    .glass-table-wrap {
+        width: 100%;
+        max-height: 520px;
+        overflow: auto;
+        border: 1px solid rgba(190,220,255,0.17);
+        border-radius: 22px;
+        background:
+            linear-gradient(145deg, rgba(241,248,255,0.11), rgba(255,255,255,0.025)),
+            rgba(8,25,45,0.66);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.16),
+            0 18px 58px rgba(0,0,0,0.18);
+        backdrop-filter: blur(22px) saturate(1.38);
+        -webkit-backdrop-filter: blur(22px) saturate(1.38);
+    }
+    .glass-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: #f5f5f7;
+        font-size: 0.82rem;
+    }
+    .glass-table th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: 11px 12px;
+        text-align: left;
+        color: rgba(226,240,255,0.68);
+        background:
+            linear-gradient(180deg, rgba(39,67,104,0.95), rgba(25,48,78,0.95));
+        border-bottom: 1px solid rgba(190,220,255,0.14);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .glass-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(190,220,255,0.08);
+        background: rgba(10,28,50,0.54);
+        white-space: nowrap;
+    }
+    .glass-table tr:nth-child(even) td {
+        background: rgba(15,38,66,0.58);
+    }
+    .glass-table tr:hover td {
+        background: rgba(31,74,118,0.70);
+    }
+    .glass-table tr.signal-row td {
+        background: rgba(255,204,102,0.13);
+    }
+    .glass-table tr.sigma-row td {
+        background: rgba(94,228,255,0.11);
+    }
+    .glass-table td.num {
+        text-align: right;
+        font-family: 'DM Mono', monospace;
+    }
+    .glass-table td.pos { color: #78b7ff; font-weight: 700; }
+    .glass-table td.neg { color: #ff7b72; font-weight: 700; }
+    .glass-table td.hot { color: #ff7b72; font-weight: 700; }
+    .glass-table td.cool { color: #78b7ff; font-weight: 700; }
 
     /* progress bar */
     .stProgress > div > div { background: #0a84ff !important; border-radius: 4px; }
@@ -1222,6 +1283,83 @@ def style_table(df: pd.DataFrame):
         .format(existing_formatters, na_rep='—')
     )
 
+def format_table_value(col: str, value):
+    if pd.isna(value) or value == '':
+        return '—'
+    try:
+        if col in ['Close', '종가']:
+            return f"${float(value):,.2f}"
+        if col == 'Change(%)':
+            return f"{float(value):+.2f}%"
+        if col == '2sigma(%)':
+            return f"{float(value):.1f}%"
+        if col in ['RSI', 'VIX', 'VIX1D', 'SKEW']:
+            return f"{float(value):.1f}"
+        if col == 'FG index':
+            return f"{int(round(float(value)))}"
+        if col == '10Y Treasury':
+            return f"{float(value):.2f}%"
+    except Exception:
+        pass
+    return str(value)
+
+def table_cell_class(col: str, value) -> str:
+    classes = []
+    if col in ['Close', '종가', 'Change(%)', '2sigma(%)', 'RSI', 'FG index', 'VIX', 'VIX1D', 'SKEW', '10Y Treasury']:
+        classes.append('num')
+    try:
+        num = float(value)
+        if col == 'Change(%)':
+            classes.append('pos' if num > 0 else 'neg' if num < 0 else '')
+        if col == 'RSI':
+            classes.append('cool' if num <= 30 else 'hot' if num >= 70 else '')
+    except Exception:
+        pass
+    return ' '.join(c for c in classes if c)
+
+def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 520, newest_first: bool = False):
+    existing = [col for col in columns if col in df.columns]
+    if not existing:
+        return
+    view = df[existing].copy()
+    if newest_first and 'Date' in view.columns:
+        view['Date'] = pd.to_datetime(view['Date'])
+        view = view.sort_values('Date', ascending=False)
+
+    header = ''.join(f"<th>{escape(col)}</th>" for col in existing)
+    body_rows = []
+    for _, row in view.iterrows():
+        row_classes = []
+        if {'RSI', 'Puddle'}.issubset(view.columns) and has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')):
+            row_classes.append('signal-row')
+        try:
+            if {'Change(%)', '2sigma(%)'}.issubset(view.columns):
+                if float(row.get('Change(%)')) < -float(row.get('2sigma(%)')):
+                    row_classes.append('sigma-row')
+        except Exception:
+            pass
+        cells = []
+        for col in existing:
+            value = row.get(col)
+            if col == 'Date' and pd.notna(value):
+                value = pd.to_datetime(value).strftime('%Y-%m-%d')
+            cls = table_cell_class(col, value)
+            class_attr = f" class='{cls}'" if cls else ''
+            cells.append(f"<td{class_attr}>{escape(format_table_value(col, value))}</td>")
+        body_rows.append(f"<tr class='{' '.join(row_classes)}'>{''.join(cells)}</tr>")
+
+    st.markdown(
+        f"""
+        <div class="glass-table-wrap" style="max-height:{height_px}px">
+          <table class="glass-table">
+            <thead><tr>{header}</tr></thead>
+            <tbody>{''.join(body_rows)}</tbody>
+          </table>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
@@ -1230,56 +1368,11 @@ def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers
             summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
         if not summary_df.empty:
-
-            def hl_change(val):
-                try:
-                    v = float(val)
-                    return 'color: #f85149; font-weight:600' if v < 0 else \
-                           'color: #64a8ff; font-weight:600' if v > 0 else ''
-                except: return ''
-
-            def hl_rsi(val):
-                try:
-                    v = float(val)
-                    return 'color: #64a8ff; font-weight:600' if v <= 30 else \
-                           'color: #f85149; font-weight:600' if v >= 70 else ''
-                except: return ''
-
-            def hl_signal_row(row):
-                if has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')):
-                    return ['background-color: rgba(188,140,255,0.20)'] * len(row)
-                return [''] * len(row)
-
-            styled_summary = (
-                summary_df.style
-                .set_table_styles([
-                    {'selector': 'thead th', 'props': [
-                        ('background-color', 'rgba(24,42,67,0.96)'),
-                        ('color', 'rgba(226,240,255,0.72)'),
-                        ('border-color', 'rgba(190,220,255,0.12)'),
-                        ('font-weight', '700'),
-                    ]},
-                    {'selector': 'tbody td', 'props': [
-                        ('background-color', 'rgba(8,20,36,0.82)'),
-                        ('color', '#f5f5f7'),
-                        ('border-color', 'rgba(190,220,255,0.10)'),
-                    ]},
-                    {'selector': 'tbody tr:hover td', 'props': [
-                        ('background-color', 'rgba(30,70,112,0.72)'),
-                    ]},
-                ])
-                .apply(hl_signal_row, axis=1)
-                .map(hl_change, subset=['Change(%)'])
-                .map(hl_rsi,    subset=['RSI'])
-                .format({
-                    '종가':      lambda x: f"${x:.2f}" if pd.notna(x) else '—',
-                    'Change(%)': lambda x: f"{x:+.2f}%" if pd.notna(x) else '—',
-                    '2sigma(%)': lambda x: f"{x:.1f}%" if pd.notna(x) else '—',
-                    'RSI':       lambda x: f"{x:.1f}"  if pd.notna(x) else '—',
-                    'Puddle':    lambda x: x if isinstance(x, str) and x else '—',
-                })
+            render_glass_table(
+                summary_df,
+                ['종목', '종가', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal', 'Puddle'],
+                height_px=420,
             )
-            st.dataframe(styled_summary, use_container_width=True, hide_index=True)
         else:
             st.info("전체 종목 데이터를 아직 가져오지 못했습니다.")
 
@@ -1613,7 +1706,16 @@ with tab2:
     st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
 
 with tab3:
-    st.dataframe(style_table(table_df), use_container_width=True, height=500)
+    render_glass_table(
+        table_df,
+        [
+            'Date', 'Close', 'Change(%)', '2sigma(%)', 'RSI',
+            'FG index', 'FG/RSI signal', 'SS Signal', 'Puddle',
+            'VIX', 'VIX1D', 'VIX1D>VIX', 'SKEW', '10Y Treasury',
+        ],
+        height_px=500,
+        newest_first=True,
+    )
 
     csv = table_df.copy()
     if 'Date' in csv.columns:
