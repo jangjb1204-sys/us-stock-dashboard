@@ -271,8 +271,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── 상수 ───────────────────────────────────────────────────────────────────────
-PERIOD_OPTIONS = {"6개월": "6mo", "1년": "1y", "2년": "2y", "4년": "4y"}
 DELTA_OPTIONS  = {"90일": 90, "180일": 180, "1년": 365, "2년": 730, "전체": 9999}
+DATA_PERIOD = "4y"
 
 MA_COLORS = {
     "MA20":  "#2196F3",
@@ -512,13 +512,27 @@ def style_table(df: pd.DataFrame):
 
         ci  = si('Change(%)')
         sci = si('2sigma(%)')
+        ri  = si('RSI')
+        pi  = si('Puddle')
 
-        # 2sigma 배경 (먼저 적용)
+        def bg_prefix(style):
+            return f"{style}; " if style.startswith('background') else ''
+
+        # Puddle + RSI 과매도 겹침: 가장 강한 신호로 행 전체 강조
+        if ri >= 0 and pi >= 0:
+            try:
+                rsi = float(row.iloc[ri]) if pd.notna(row.iloc[ri]) else None
+                puddle = str(row.iloc[pi]) if pd.notna(row.iloc[pi]) else ''
+                if rsi is not None and rsi <= 30 and any(ch.isalpha() for ch in puddle):
+                    styles = ['background-color: rgba(188,140,255,0.20)'] * len(styles)
+            except: pass
+
+        # 2sigma 배경
         if ci >= 0 and sci >= 0:
             try:
                 chg = float(row.iloc[ci]) if pd.notna(row.iloc[ci]) else 0
                 sig = float(row.iloc[sci]) if pd.notna(row.iloc[sci]) else 0
-                if chg < -sig:
+                if chg < -sig and not styles[ci].startswith('background'):
                     styles = ['background-color: rgba(210,153,34,0.18)'] * len(styles)
             except: pass
 
@@ -526,25 +540,26 @@ def style_table(df: pd.DataFrame):
         if ci >= 0 and pd.notna(row.iloc[ci]) and row.iloc[ci] != '':
             try:
                 v = float(row.iloc[ci])
-                bg = 'background-color: rgba(210,153,34,0.18); ' if styles[ci].startswith('background') else ''
+                bg = bg_prefix(styles[ci])
                 styles[ci] = f'{bg}color: #f85149; font-weight:600' if v < 0 else \
                              f'{bg}color: #3fb950; font-weight:600' if v > 0 else styles[ci]
             except: pass
 
         # RSI
-        ri = si('RSI')
         if ri >= 0 and pd.notna(row.iloc[ri]) and row.iloc[ri] != '':
             try:
                 v = float(row.iloc[ri])
-                styles[ri] = 'color: #3fb950; font-weight:600' if v <= 30 else \
-                             'color: #f85149; font-weight:600' if v >= 70 else ''
+                bg = bg_prefix(styles[ri])
+                styles[ri] = f'{bg}color: #3fb950; font-weight:600' if v <= 30 else \
+                             f'{bg}color: #f85149; font-weight:600' if v >= 70 else styles[ri]
             except: pass
 
         # VIX
         vi = si('VIX')
         if vi >= 0 and pd.notna(row.iloc[vi]) and row.iloc[vi] != '':
             try:
-                if float(row.iloc[vi]) > 25: styles[vi] = 'color: #3fb950; font-weight:600'
+                if float(row.iloc[vi]) > 25:
+                    styles[vi] = f'{bg_prefix(styles[vi])}color: #3fb950; font-weight:600'
             except: pass
 
         # SKEW
@@ -552,8 +567,9 @@ def style_table(df: pd.DataFrame):
         if ski >= 0 and pd.notna(row.iloc[ski]) and row.iloc[ski] != '':
             try:
                 v = float(row.iloc[ski])
-                styles[ski] = 'color: #f85149; font-weight:600' if v >= 155 else \
-                              'color: #3fb950; font-weight:600' if v <= 127 else ''
+                bg = bg_prefix(styles[ski])
+                styles[ski] = f'{bg}color: #f85149; font-weight:600' if v >= 155 else \
+                              f'{bg}color: #3fb950; font-weight:600' if v <= 127 else styles[ski]
             except: pass
 
         return styles
@@ -593,7 +609,7 @@ with st.sidebar:
 ticker_options = list(TICKER_CONFIGS.keys())
 
 st.markdown("# 📈 US Stock Dashboard")
-ctrl_ticker, ctrl_action = st.columns([3.2, 0.8])
+ctrl_ticker, ctrl_delta, ctrl_action = st.columns([1.6, 1.6, 0.8])
 
 with ctrl_ticker:
     selected_ticker = st.selectbox(
@@ -604,23 +620,6 @@ with ctrl_ticker:
     )
     selected_name = TICKER_CONFIGS[selected_ticker]
 
-with ctrl_action:
-    st.markdown("<div style='height: 1.7rem'></div>", unsafe_allow_html=True)
-    if st.button("🔄 새로고침", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
-
-ctrl_period, ctrl_delta = st.columns([1, 1])
-
-with ctrl_period:
-    period_label = st.radio(
-        "데이터 기간",
-        options=list(PERIOD_OPTIONS.keys()),
-        index=list(PERIOD_OPTIONS.keys()).index("2년"),
-        horizontal=True,
-    )
-    period = PERIOD_OPTIONS[period_label]
-
 with ctrl_delta:
     delta_label = st.radio(
         "표시 범위",
@@ -630,10 +629,17 @@ with ctrl_delta:
     )
     delta = DELTA_OPTIONS[delta_label]
 
+with ctrl_action:
+    st.markdown("<div style='height: 1.7rem'></div>", unsafe_allow_html=True)
+    if st.button("🔄 새로고침", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+
 
 # ── 메인 영역 ──────────────────────────────────────────────────────────────────
 st.markdown(f"## {selected_name} &nbsp; `{selected_ticker}`", unsafe_allow_html=True)
 
+period = DATA_PERIOD
 cache_key = f"{period}_{delta}"
 with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
     df = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
