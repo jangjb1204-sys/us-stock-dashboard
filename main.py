@@ -810,21 +810,13 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
         fig.add_trace(go.Scatter(
-            x=df['Date'], y=df['VIX'], name='VIX 시장 변동성',
+            x=df['Date'], y=df['VIX'], name='VIX',
             line=dict(color='#79c0ff', width=1.5),
             fill='tozeroy', fillcolor='rgba(121,192,255,0.07)',
-            hovertemplate='%{x|%Y-%m-%d}<br>VIX 시장 변동성 %{y:.1f}<extra></extra>',
         ), row=3, col=1)
-        fig.add_hline(
-            y=25,
-            line=dict(color='#64a8ff', width=1, dash='dot'),
-            annotation_text='경계 25',
-            annotation_position='top left',
-            annotation_font=dict(size=10, color='#9cccff'),
-            row=3, col=1,
-        )
+        fig.add_hline(y=25, line=dict(color='#64a8ff', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
-            title_text='VIX<br>시장 변동성', row=3, col=1,
+            title_text='VIX', row=3, col=1,
             tickfont=dict(color='#8e8e93', size=10),
             title=dict(font=dict(color='#8e8e93', size=11)),
         )
@@ -861,8 +853,15 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             ), row=1, col=1)
 
     if 'VIX1D>VIX' in df.columns:
-        for d in df[df['VIX1D>VIX'] == 'BUY']['Date']:
-            fig.add_vline(x=d, line=dict(color='rgba(248,81,73,0.3)', width=1), row=1, col=1)
+        vix_signal_dates = df[df['VIX1D>VIX'] == 'BUY']['Date']
+        if not vix_signal_dates.empty:
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None], mode='lines', name='VIX1D > VIX',
+                line=dict(color='#ff3b30', width=2.2),
+                hoverinfo='skip',
+            ), row=1, col=1)
+            for d in vix_signal_dates:
+                fig.add_vline(x=d, line=dict(color='rgba(255,59,48,0.72)', width=1.8), row=1, col=1)
 
     if 'RSI' in df.columns and 'Puddle' in df.columns:
         oversold  = df[df['RSI'] <= 30]
