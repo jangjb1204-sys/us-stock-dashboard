@@ -7,3 +7,8 @@ matplotlib
 requests
 kaleido
 numpy
+pandas
+yfinance
+streamlit
+xlsxwriter
+plotly
