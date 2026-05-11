@@ -247,6 +247,39 @@ st.markdown("""
         font-size: 0.64rem;
         font-weight: 650;
     }
+    .hero-meta {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .updated-mark {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 0.66rem;
+        padding: 7px 12px;
+        border: 1px solid rgba(190,220,255,0.14);
+        border-radius: 999px;
+        background:
+            linear-gradient(145deg, rgba(226,240,255,0.08), rgba(255,255,255,0.025)),
+            rgba(9,29,52,0.30);
+        color: rgba(207,228,255,0.58);
+        font-family: 'DM Mono', monospace;
+        font-size: 0.72rem;
+        font-weight: 500;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+        white-space: nowrap;
+    }
+    .updated-mark::before {
+        content: "Updated";
+        margin-right: 8px;
+        color: rgba(226,240,255,0.38);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.63rem;
+        font-weight: 700;
+    }
     .section-label {
         color: rgba(207,228,255,0.64);
         font-size: 0.8rem;
@@ -1681,6 +1714,7 @@ ticker_options = base_tickers + [ticker for ticker in recent_tickers if ticker n
 total_views, active_viewers = get_view_stats()
 market_open = is_us_market_open()
 market_dot_class = "open" if market_open else "closed"
+updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 st.markdown(
     f"""
@@ -1691,7 +1725,10 @@ st.markdown(
             <span class="market-status-dot {market_dot_class}"></span>
             <h1>US Market Signals</h1>
           </div>
-          <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
+          <div class="hero-meta">
+            <a class="creator-mark" href="https://www.threads.com/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
+            <span class="updated-mark">{updated_at}</span>
+          </div>
         </div>
         <div class="viewer-pill">
           <span class="viewer-dot"></span>
