@@ -208,35 +208,44 @@ st.markdown("""
     .creator-mark {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
-        margin-top: 0.62rem;
-        padding: 6px 11px;
-        border: 1px solid rgba(190,220,255,0.24);
+        gap: 8px;
+        margin-top: 0.66rem;
+        padding: 7px 12px;
+        border: 1px solid rgba(190,220,255,0.18);
         border-radius: 999px;
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035)),
-            rgba(10,132,255,0.10);
-        color: #b9ddff;
+            linear-gradient(145deg, rgba(226,240,255,0.12), rgba(255,255,255,0.035)),
+            rgba(9,29,52,0.42);
+        color: rgba(220,238,255,0.86);
         font-family: 'DM Mono', monospace;
-        font-size: 0.76rem;
-        font-weight: 500;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
-        text-decoration: none;
+        font-size: 0.73rem;
+        font-weight: 520;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.14),
+            0 10px 28px rgba(0,0,0,0.10);
+        text-decoration: none !important;
+        text-underline-offset: 0;
         transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .creator-mark:visited,
+    .creator-mark:active,
+    .creator-mark:hover {
+        color: rgba(232,246,255,0.94);
+        text-decoration: none !important;
     }
     .creator-mark:hover {
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.055)),
-            rgba(10,132,255,0.16);
-        border-color: rgba(207,228,255,0.42);
+            linear-gradient(145deg, rgba(232,246,255,0.16), rgba(255,255,255,0.045)),
+            rgba(13,42,75,0.52);
+        border-color: rgba(207,228,255,0.30);
         transform: translateY(-1px);
     }
     .creator-mark::before {
         content: "by";
-        color: rgba(226,240,255,0.48);
+        color: rgba(226,240,255,0.44);
         font-family: 'DM Sans', sans-serif;
-        font-size: 0.68rem;
-        font-weight: 700;
+        font-size: 0.64rem;
+        font-weight: 650;
     }
     .section-label {
         color: rgba(207,228,255,0.64);
@@ -1242,13 +1251,13 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         if not vix_signal_dates.empty:
             fig.add_trace(go.Scatter(
                 x=[None], y=[None], mode='lines', name='VIX1D > VIX',
-                line=dict(color='#5ee4ff', width=2.2, dash='dot'),
+                line=dict(color='#5ee4ff', width=2.1),
                 hoverinfo='skip',
             ), row=1, col=1)
             for d in vix_signal_dates:
                 fig.add_vline(
                     x=d,
-                    line=dict(color='rgba(94,228,255,0.46)', width=1.8, dash='dot'),
+                    line=dict(color='rgba(94,228,255,0.42)', width=1.6),
                     layer='below',
                     row=1,
                     col=1,
@@ -1288,16 +1297,6 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             mode='lines',
             line=dict(color='#bc8cff', width=2.4, shape='spline'),
             hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
-        ), row=2, col=1)
-        latest_fg = fg_df.iloc[-1]
-        fig.add_trace(go.Scatter(
-            x=[latest_fg['Date']], y=[latest_fg['FG index']], name='현재 F&G',
-            mode='markers+text',
-            marker=dict(size=13, color='#bc8cff', line=dict(width=2, color='#f5f5f7')),
-            text=[f"{latest_fg['FG index']:.0f}"],
-            textposition='middle right',
-            textfont=dict(size=12, color='#f5f5f7'),
-            hovertemplate='%{x|%Y-%m-%d}<br>현재 F&G %{y:.0f}<extra></extra>',
         ), row=2, col=1)
         for level in [25, 45, 55, 75]:
             fig.add_hline(y=level, line=dict(color='rgba(138,168,192,0.24)', width=1, dash='dot'), row=2, col=1)
