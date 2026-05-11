@@ -137,7 +137,7 @@ st.markdown("""
     }
     .signal-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px;
         margin: 0.7rem 0 1.1rem;
     }
@@ -920,10 +920,10 @@ def render_market_summary(period: str, delta: int, cache_key: str):
 
 
 def render_signal_cards(df: pd.DataFrame):
-    def make_items(rows, value_col=None):
+    def make_items(rows, value_col=None, date_format='%m.%d'):
         items = []
         for _, row in rows.iterrows():
-            date = pd.to_datetime(row['Date']).strftime('%m.%d')
+            date = pd.to_datetime(row['Date']).strftime(date_format)
             value = row.get(value_col, '') if value_col else ''
             items.append((date, str(value) if pd.notna(value) and value else 'Signal'))
         return items
@@ -942,8 +942,23 @@ def render_signal_cards(df: pd.DataFrame):
         'SS Signal',
     ) if 'SS Signal' in df.columns else []
 
+    if {'Date', 'RSI', 'Puddle'}.issubset(df.columns):
+        rsi_puddle_rows = df[
+            df.apply(lambda row: has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')), axis=1)
+        ].tail(3)
+        rsi_puddle_items = []
+        for _, row in rsi_puddle_rows.iterrows():
+            date = pd.to_datetime(row['Date']).strftime('%m.%d')
+            rsi = safe_float(row.get('RSI'))
+            rsi_text = f"RSI {rsi:.1f}" if rsi is not None else "RSI —"
+            puddle = str(row.get('Puddle', '')) if pd.notna(row.get('Puddle')) else ''
+            rsi_puddle_items.append((date, f"{rsi_text} · {puddle}"))
+    else:
+        rsi_puddle_items = []
+
     cards = [
         ('Puddle', puddle_items, '#bf5af2'),
+        ('RSI & Puddle', rsi_puddle_items, '#ff9f0a'),
         ('VIX1D > VIX', vix_items, '#0a84ff'),
         ('Stochastic', stochastic_items, '#30d158'),
     ]
@@ -963,35 +978,6 @@ def render_signal_cards(df: pd.DataFrame):
         )
 
     st.markdown(f"<div class='signal-grid'>{''.join(html_cards)}</div>", unsafe_allow_html=True)
-
-
-def render_rsi_puddle_dates(df: pd.DataFrame, limit: int = 5):
-    if not {'Date', 'RSI', 'Puddle'}.issubset(df.columns):
-        st.info("RSI & Puddle 신호 데이터가 아직 없습니다.")
-        return
-
-    signal_df = df[df.apply(lambda row: has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')), axis=1)].tail(limit)
-    if signal_df.empty:
-        st.info("선택한 표시 범위 안에는 RSI & Puddle 중복 신호가 없습니다.")
-        return
-
-    items = []
-    for _, row in signal_df.iloc[::-1].iterrows():
-        date = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
-        rsi = safe_float(row.get('RSI'))
-        rsi_text = f"RSI {rsi:.1f}" if rsi is not None else "RSI —"
-        puddle = str(row.get('Puddle', '')) if pd.notna(row.get('Puddle')) else ''
-        items.append(
-            f"<div class='signal-item'><span class='signal-date'>{escape(date)}</span>"
-            f"<span>{escape(rsi_text)} · {escape(puddle)}</span></div>"
-        )
-
-    st.markdown(
-        "<div class='signal-card' style='--accent:#bf5af2'>"
-        "<div class='signal-title'><span class='signal-dot'></span>RSI & Puddle 중복 신호</div>"
-        f"{''.join(items)}</div>",
-        unsafe_allow_html=True,
-    )
 
 
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
@@ -1138,8 +1124,8 @@ with tab1:
 with tab2:
     st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True)
 
-    st.markdown("### RSI & Puddle 최근 신호")
-    render_rsi_puddle_dates(df)
+    st.markdown("### 최근 신호")
+    render_signal_cards(df)
 
 with tab3:
     st.markdown("### 전체 데이터")
