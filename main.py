@@ -569,48 +569,52 @@ st.markdown("""
     /* 버튼 */
     .stButton > button {
         background:
-            linear-gradient(145deg, rgba(241,248,255,0.18), rgba(255,255,255,0.045)),
-            rgba(7,23,42,0.54);
+            linear-gradient(135deg, rgba(241,248,255,0.13), rgba(255,255,255,0.035)),
+            rgba(7,23,42,0.50);
         color: #dff0ff;
-        border: 1px solid rgba(190,220,255,0.26);
+        border: 1px solid rgba(190,220,255,0.18);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
         letter-spacing: 0;
-        padding: 10px 17px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 14px 34px rgba(0,0,0,0.16);
-        backdrop-filter: blur(24px) saturate(1.45);
-        -webkit-backdrop-filter: blur(24px) saturate(1.45);
+        min-height: 40px;
+        padding: 8px 14px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 12px 28px rgba(0,0,0,0.14);
+        backdrop-filter: blur(18px) saturate(1.28);
+        -webkit-backdrop-filter: blur(18px) saturate(1.28);
         transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
     .stButton > button p { color: #d9ecff !important; }
     .stButton > button:hover {
         background:
-            linear-gradient(145deg, rgba(241,248,255,0.24), rgba(255,255,255,0.07)),
-            rgba(10,45,82,0.62);
-        border-color: rgba(207,228,255,0.48);
+            linear-gradient(145deg, rgba(232,246,255,0.96), rgba(156,204,255,0.74));
+        border-color: rgba(231,246,255,0.78);
         transform: translateY(-1px);
     }
+    .stButton > button:hover p { color: #071323 !important; }
 
     /* 다운로드 버튼 */
     .stDownloadButton > button {
         background:
-            linear-gradient(135deg, rgba(241,248,255,0.14), rgba(255,255,255,0.04)),
-            rgba(7,23,42,0.52);
+            linear-gradient(135deg, rgba(241,248,255,0.13), rgba(255,255,255,0.035)),
+            rgba(7,23,42,0.50);
         color: #b9ddff;
-        border: 1px solid rgba(190,220,255,0.28);
+        border: 1px solid rgba(190,220,255,0.18);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 14px 34px rgba(0,0,0,0.14);
+        min-height: 40px;
+        padding: 8px 14px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 12px 28px rgba(0,0,0,0.14);
         transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
     .stDownloadButton > button p { color: #b9ddff !important; }
     .stDownloadButton > button:hover {
-        background: rgba(142,197,255,0.12);
-        border-color: rgba(207,228,255,0.48);
+        background: linear-gradient(145deg, rgba(232,246,255,0.96), rgba(156,204,255,0.74));
+        border-color: rgba(231,246,255,0.78);
         transform: translateY(-1px);
     }
+    .stDownloadButton > button:hover p { color: #071323 !important; }
 
     /* 스피너 */
     .stSpinner > div { border-top-color: #0a84ff !important; }
@@ -793,6 +797,17 @@ def save_recent_ticker(ticker: str):
     except Exception:
         pass
 
+def unique_tickers(tickers) -> list[str]:
+    result = []
+    for ticker in tickers:
+        normalized = normalize_ticker(str(ticker))
+        if normalized and normalized not in result:
+            result.append(normalized)
+    return result
+
+def ticker_name(ticker: str) -> str:
+    return TICKER_CONFIGS.get(ticker, ticker)
+
 def has_rsi_puddle_signal(rsi, puddle) -> bool:
     try:
         rsi_val = float(rsi)
@@ -837,11 +852,13 @@ def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key
     return process_stock_data(ticker, name, common, period=period, delta=delta)
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def load_market_summary_rows(period: str, delta: int, _cache_key: str) -> pd.DataFrame:
+def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tickers: tuple[str, ...] = ()) -> pd.DataFrame:
     common = load_common_data(period)
-    batch_data = fetch_batch_stock_data(list(TICKER_CONFIGS.keys()), period)
+    summary_tickers = unique_tickers([*TICKER_CONFIGS.keys(), *extra_tickers])
+    batch_data = fetch_batch_stock_data(summary_tickers, period)
     rows = []
-    for ticker, name in TICKER_CONFIGS.items():
+    for ticker in summary_tickers:
+        name = ticker_name(ticker)
         try:
             d = process_stock_frame(batch_data.get(ticker, pd.DataFrame()), ticker, name, common, delta=delta)
             if d.empty:
@@ -1185,10 +1202,10 @@ def style_table(df: pd.DataFrame):
 
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
-def render_market_summary(period: str, delta: int, cache_key: str):
+def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
     with st.expander("전체 종목 최신 현황", expanded=True):
         with st.spinner("전체 종목 최신 현황을 불러오는 중..."):
-            summary_df = load_market_summary_rows(period, delta, cache_key)
+            summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
         if not summary_df.empty:
 
@@ -1418,41 +1435,44 @@ with ctrl_action:
 period = DATA_PERIOD
 cache_key = f"{period}_{delta}"
 
-render_market_summary(period, delta, cache_key)
-st.markdown("---")
-
 st.markdown("<div class='section-label'>포커스 종목</div>", unsafe_allow_html=True)
-focus_selector, focus_title = st.columns([1.15, 2.85])
-with focus_selector:
+focus_preset, focus_custom = st.columns([1, 1])
+with focus_preset:
     preset_ticker = st.selectbox(
         "기본/최근 티커",
         ticker_options,
-        format_func=lambda ticker: f"{TICKER_CONFIGS.get(ticker, ticker)} · {ticker}",
+        format_func=lambda ticker: f"{ticker_name(ticker)} · {ticker}",
     )
+with focus_custom:
     raw_custom_ticker = st.text_input(
-        "직접 입력",
+        "직접 조회",
         placeholder="미국 주식/ETF 티커 예: AAPL, NVDA, VOO",
     )
-    custom_ticker = normalize_ticker(raw_custom_ticker)
-    if raw_custom_ticker.strip() and not custom_ticker:
-        st.caption("한국 상장 종목/ETF는 현재 조회 대상에서 제외했습니다.")
-    if custom_ticker:
-        selected_ticker = custom_ticker
-        selected_name = custom_ticker
-    else:
-        selected_ticker = preset_ticker
-        selected_name = TICKER_CONFIGS.get(selected_ticker, selected_ticker)
 
-with focus_title:
-    st.markdown(
-        f"""
-        <div class="focus-title">
-          <div class="eyebrow">Selected</div>
-          <div class="name">{escape(selected_name)} <span class="ticker">{escape(selected_ticker)}</span></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+custom_ticker = normalize_ticker(raw_custom_ticker)
+if raw_custom_ticker.strip() and not custom_ticker:
+    st.caption("한국 상장 종목/ETF는 현재 조회 대상에서 제외했습니다.")
+
+if custom_ticker:
+    selected_ticker = custom_ticker
+    selected_name = ticker_name(custom_ticker)
+else:
+    selected_ticker = preset_ticker
+    selected_name = ticker_name(selected_ticker)
+
+summary_extra_tickers = tuple(unique_tickers([*recent_tickers, selected_ticker]))
+render_market_summary(period, delta, cache_key, summary_extra_tickers)
+st.markdown("---")
+
+st.markdown(
+    f"""
+    <div class="focus-title">
+      <div class="eyebrow">포커스 종목</div>
+      <div class="name">{escape(selected_name)} <span class="ticker">{escape(selected_ticker)}</span></div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
     df = load_ticker_data(selected_ticker, selected_name, period, delta, cache_key)
@@ -1461,7 +1481,8 @@ if df.empty:
     st.error(f"{selected_ticker} 데이터를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.")
     st.stop()
 
-save_recent_ticker(selected_ticker)
+if selected_ticker not in TICKER_CONFIGS:
+    save_recent_ticker(selected_ticker)
 
 table_df = load_ticker_data(
     selected_ticker,
