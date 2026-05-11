@@ -541,8 +541,8 @@ with st.expander("🗂 전체 종목 최신 현황 (클릭해서 펼치기)", ex
 
         styled_summary = (
             summary_df.style
-            .applymap(highlight_change, subset=['Change(%)'])
-            .applymap(highlight_rsi, subset=['RSI'])
+            .map(highlight_change, subset=['Change(%)'])
+            .map(highlight_rsi, subset=['RSI'])
             .format({
                 '종가': lambda x: f"${x:.2f}" if pd.notna(x) else '',
                 'Change(%)': lambda x: f"{x:+.2f}%" if pd.notna(x) else '',
