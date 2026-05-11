@@ -1225,8 +1225,8 @@ def style_table(df: pd.DataFrame):
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
-    with st.expander("전체 종목 최신 현황", expanded=True):
-        with st.spinner("전체 종목 최신 현황을 불러오는 중..."):
+    with st.expander("Market Overview", expanded=True):
+        with st.spinner("Market Overview를 불러오는 중..."):
             summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
         if not summary_df.empty:
@@ -1471,11 +1471,11 @@ delta = DELTA_OPTIONS[delta_label]
 period = DATA_PERIOD
 cache_key = f"{period}_{delta}"
 
-st.markdown("<div class='section-label'>포커스 종목</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-label'>Watchlist</div>", unsafe_allow_html=True)
 focus_preset, focus_custom = st.columns([1, 1])
 with focus_preset:
     preset_ticker = st.selectbox(
-        "기본/내 최근 티커",
+        "Saved Tickers",
         ticker_options,
         format_func=lambda ticker: f"{ticker_name(ticker)} · {ticker}",
     )
@@ -1506,7 +1506,7 @@ st.markdown("---")
 st.markdown(
     f"""
     <div class="focus-title">
-      <div class="eyebrow">포커스 종목</div>
+      <div class="eyebrow">Watchlist</div>
       <div class="name">{escape(selected_name)} <span class="ticker">{escape(selected_ticker)}</span></div>
     </div>
     """,
@@ -1598,7 +1598,7 @@ render_risk_metrics([
 ])
 
 # ── 최근 신호 ──────────────────────────────────────────────────────────────────
-st.markdown("### 최근 신호")
+st.markdown("### Signal Feed")
 render_signal_cards(df)
 
 st.markdown("")
