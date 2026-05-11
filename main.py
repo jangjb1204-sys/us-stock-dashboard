@@ -17,7 +17,7 @@ st.set_page_config(
     page_title="US Stock Dashboard",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ── 스타일 ─────────────────────────────────────────────────────────────────────
@@ -28,6 +28,11 @@ st.markdown("""
     html, body, [class*="css"], .stApp {
         font-family: 'DM Sans', sans-serif !important;
         background-color: #0b0f19 !important;
+    }
+    .block-container {
+        padding-top: 1.4rem !important;
+        padding-bottom: 2.5rem !important;
+        max-width: 1440px;
     }
 
     /* 사이드바 */
@@ -46,6 +51,48 @@ st.markdown("""
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] small {
         color: #6b7f96 !important;
+        font-size: 0.82rem !important;
+    }
+
+    /* 상단 컨트롤 */
+    div[data-testid="stSelectbox"] label,
+    div[data-testid="stRadio"] label {
+        color: #8aa8c0 !important;
+        font-size: 0.76rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase;
+    }
+    div[data-baseweb="select"] > div {
+        background: #0e1420 !important;
+        border: 1px solid #1c2d42 !important;
+        border-radius: 8px !important;
+        min-height: 42px !important;
+    }
+    div[data-baseweb="select"] span {
+        color: #dde6f0 !important;
+        font-weight: 600 !important;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label {
+        background: #0e1420;
+        border: 1px solid #1c2d42;
+        border-radius: 8px;
+        min-height: 42px;
+        padding: 7px 9px;
+        margin: 0;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
+        background: #163322;
+        border-color: #238636;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label p {
+        color: #dde6f0 !important;
+        font-weight: 600 !important;
         font-size: 0.82rem !important;
     }
 
@@ -134,6 +181,7 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(30,120,60,0.3);
         transition: all 0.2s ease;
     }
+    .stButton > button p { color: #fff !important; }
     .stButton > button:hover {
         background: linear-gradient(135deg, #20844a, #26a050);
         box-shadow: 0 4px 14px rgba(30,120,60,0.45);
@@ -188,6 +236,37 @@ st.markdown("""
 
     /* 구분선 */
     hr { border-color: #1c2840 !important; margin: 1.2rem 0 !important; }
+
+    @media (max-width: 640px) {
+        .block-container {
+            padding-left: 0.85rem !important;
+            padding-right: 0.85rem !important;
+            padding-top: 0.9rem !important;
+        }
+        h1 {
+            font-size: 1.22rem !important;
+            line-height: 1.25 !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+        }
+        .stTabs [data-baseweb="tab"] {
+            min-width: max-content;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        div[data-testid="metric-container"] {
+            padding: 11px 12px;
+        }
+        div[data-testid="metric-container"] [data-testid="stMetricValue"] {
+            font-size: 1.05rem !important;
+        }
+        div[data-testid="stRadio"] div[role="radiogroup"] label {
+            flex: 1 1 calc(50% - 8px);
+            justify-content: center;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -485,36 +564,58 @@ def style_table(df: pd.DataFrame):
     )
 
 
-# ── 사이드바 ───────────────────────────────────────────────────────────────────
+# ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 📊 US Stock Dashboard")
-    st.markdown("---")
-
-    ticker_labels   = {v: k for k, v in TICKER_CONFIGS.items()}
-    all_names       = list(TICKER_CONFIGS.values())
-    selected_name   = st.selectbox("종목 선택", all_names, index=0)
-    selected_ticker = ticker_labels[selected_name]
-
-    st.markdown("---")
-    period_label = st.select_slider("데이터 기간", options=list(PERIOD_OPTIONS.keys()), value="2년")
-    period = PERIOD_OPTIONS[period_label]
-
-    delta_label = st.select_slider("표시 범위", options=list(DELTA_OPTIONS.keys()), value="180일")
-    delta = DELTA_OPTIONS[delta_label]
-
-    st.markdown("---")
+    st.caption(f"⏱ 마지막 업데이트\n{datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.caption("캐시 유효시간: 30분")
     if st.button("🔄  데이터 새로고침", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
-    st.markdown("---")
-    st.caption(f"⏱ 마지막 업데이트\n{datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    st.caption("캐시 유효시간: 30분")
+ticker_options = list(TICKER_CONFIGS.keys())
+
+st.markdown("# 📈 US Stock Dashboard")
+ctrl_ticker, ctrl_action = st.columns([3.2, 0.8])
+
+with ctrl_ticker:
+    selected_ticker = st.selectbox(
+        "종목",
+        ticker_options,
+        format_func=lambda ticker: f"{TICKER_CONFIGS[ticker]} · {ticker}",
+        label_visibility="visible",
+    )
+    selected_name = TICKER_CONFIGS[selected_ticker]
+
+with ctrl_action:
+    st.markdown("<div style='height: 1.7rem'></div>", unsafe_allow_html=True)
+    if st.button("🔄 새로고침", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+
+ctrl_period, ctrl_delta = st.columns([1, 1])
+
+with ctrl_period:
+    period_label = st.radio(
+        "데이터 기간",
+        options=list(PERIOD_OPTIONS.keys()),
+        index=list(PERIOD_OPTIONS.keys()).index("2년"),
+        horizontal=True,
+    )
+    period = PERIOD_OPTIONS[period_label]
+
+with ctrl_delta:
+    delta_label = st.radio(
+        "표시 범위",
+        options=list(DELTA_OPTIONS.keys()),
+        index=list(DELTA_OPTIONS.keys()).index("180일"),
+        horizontal=True,
+    )
+    delta = DELTA_OPTIONS[delta_label]
 
 
 # ── 메인 영역 ──────────────────────────────────────────────────────────────────
-st.markdown(f"# 📈 {selected_name} &nbsp; `{selected_ticker}`", unsafe_allow_html=True)
-st.markdown("---")
+st.markdown(f"## {selected_name} &nbsp; `{selected_ticker}`", unsafe_allow_html=True)
 
 cache_key = f"{period}_{delta}"
 with st.spinner(f"{selected_name} 데이터 불러오는 중..."):
@@ -535,7 +636,7 @@ fg_val       = safe_float(latest.get('FG index'))
 skew_val     = safe_float(latest.get('SKEW'))
 treasury_val = safe_float(latest.get('10Y Treasury'))
 
-col1, col2, col3, col4, col5, col6 = st.columns(6)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     st.metric("💰 종가", fmt_price(close_val),
@@ -550,6 +651,8 @@ with col2:
 with col3:
     vix_label = "🟢 급등구간" if vix_val and vix_val > 25 else ""
     st.metric("😨 VIX", fmt_1f(vix_val) if vix_val else "N/A", vix_label)
+
+col4, col5, col6 = st.columns(3)
 
 with col4:
     fg_label = ""

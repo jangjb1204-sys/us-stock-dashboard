@@ -79,11 +79,14 @@ def fetch_common_market_data(period: str = '2y') -> dict:
 
 
 def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
-    stock = yf.Ticker(ticker)
-    data = stock.history(period=period).reset_index()
-    if not data.empty:
-        data['Date'] = pd.to_datetime(data['Date'].dt.date)
-    return data
+    try:
+        stock = yf.Ticker(ticker)
+        data = stock.history(period=period).reset_index()
+        if not data.empty:
+            data['Date'] = pd.to_datetime(data['Date'].dt.date)
+        return data
+    except Exception:
+        return pd.DataFrame()
 
 
 # --- 기술적 지표 계산 ---
