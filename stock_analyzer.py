@@ -16,17 +16,17 @@ USER_AGENT = (
 )
 
 TICKER_CONFIGS = {
-    'SOXL': 'SOXL',
     '^GSPC': 'S&P500',
     '^IXIC': 'NASDAQ',
     'SSO': 'SSO',
     'QLD': 'QLD',
-    'GLD': 'GOLD',
-    'FINX': 'FINX',
-    'BTGD': 'BTGD',
-    'SLV': 'SILVER',
+    'SOXL': 'SOXL',
     'KORU': 'KORU',
+    'SLV': 'SILVER',
+    'GLD': 'GOLD',
+    'BTGD': 'BTGD',
     'TSLA': 'TESLA',
+    'FINX': 'FINX',
 }
 
 # --- 데이터 수집 ---
