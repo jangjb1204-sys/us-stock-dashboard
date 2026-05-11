@@ -30,9 +30,9 @@ st.markdown("""
     html, body, [class*="css"], .stApp {
         font-family: 'DM Sans', sans-serif !important;
         background:
-            linear-gradient(135deg, rgba(140,197,255,0.08) 0%, rgba(140,197,255,0) 24%),
-            linear-gradient(205deg, rgba(47,123,255,0.13) 0%, rgba(47,123,255,0) 36%),
-            linear-gradient(180deg, #07111f 0%, #040b16 42%, #02050d 100%) !important;
+            linear-gradient(118deg, rgba(182,221,255,0.08) 0%, rgba(182,221,255,0) 34%),
+            linear-gradient(212deg, rgba(0,117,255,0.14) 0%, rgba(0,117,255,0) 42%),
+            linear-gradient(180deg, #091b31 0%, #061323 42%, #020711 100%) !important;
         color: #f5f5f7 !important;
     }
     .stApp::before {
@@ -42,9 +42,9 @@ st.markdown("""
         pointer-events: none;
         z-index: 0;
         background:
-            linear-gradient(115deg, transparent 0%, rgba(190,220,255,0.11) 17%, transparent 31%),
-            linear-gradient(72deg, transparent 56%, rgba(72,145,255,0.09) 70%, transparent 84%);
-        opacity: 0.62;
+            linear-gradient(112deg, transparent 0%, rgba(235,247,255,0.13) 18%, transparent 36%),
+            linear-gradient(75deg, transparent 52%, rgba(86,154,255,0.10) 72%, transparent 90%);
+        opacity: 0.72;
         mix-blend-mode: screen;
     }
     [data-testid="stSidebar"],
@@ -61,36 +61,51 @@ st.markdown("""
     .app-hero {
         position: relative;
         overflow: hidden;
-        margin: 0.25rem 0 1.25rem;
-        padding: 1.05rem 1.15rem 1rem;
-        border: 1px solid rgba(142,197,255,0.18);
-        border-radius: 24px;
+        margin: 0.2rem 0 1.05rem;
+        padding: 1.22rem 1.32rem 1.18rem;
+        border: 1px solid rgba(190,220,255,0.24);
+        border-radius: 30px;
         background:
-            linear-gradient(135deg, rgba(180,215,255,0.17), rgba(255,255,255,0.045) 46%, rgba(74,144,255,0.035)),
-            rgba(4,14,31,0.58);
+            linear-gradient(142deg, rgba(238,248,255,0.21), rgba(117,181,255,0.07) 38%, rgba(255,255,255,0.035) 70%),
+            rgba(8,28,50,0.62);
         box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.22),
-            inset 0 -1px 0 rgba(255,255,255,0.06),
-            0 24px 80px rgba(0,0,0,0.30);
-        backdrop-filter: blur(26px) saturate(1.45);
-        -webkit-backdrop-filter: blur(26px) saturate(1.45);
+            inset 0 1px 0 rgba(255,255,255,0.34),
+            inset 0 -1px 0 rgba(255,255,255,0.08),
+            0 22px 70px rgba(0,0,0,0.32),
+            0 0 0 1px rgba(255,255,255,0.035);
+        backdrop-filter: blur(34px) saturate(1.65);
+        -webkit-backdrop-filter: blur(34px) saturate(1.65);
+    }
+    .app-hero::before {
+        content: "";
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        top: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.58), transparent);
+        opacity: 0.95;
     }
     .app-hero::after {
         content: "";
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: linear-gradient(118deg, rgba(255,255,255,0.20), transparent 32%, transparent 72%, rgba(255,255,255,0.06));
-        opacity: 0.52;
+        background:
+            linear-gradient(120deg, rgba(255,255,255,0.24), transparent 30%, transparent 74%, rgba(255,255,255,0.08)),
+            linear-gradient(180deg, rgba(255,255,255,0.07), transparent 42%);
+        opacity: 0.66;
     }
     .app-hero h1 {
         position: relative;
         z-index: 1;
         margin: 0;
-        font-size: 2.18rem;
+        font-size: 2.42rem !important;
         line-height: 1.08;
-        font-weight: 750;
+        font-weight: 760 !important;
         letter-spacing: 0;
+        color: #f7fbff !important;
+        text-shadow: 0 12px 34px rgba(0,0,0,0.28);
     }
     .hero-row {
         position: relative;
@@ -104,14 +119,14 @@ st.markdown("""
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        padding: 9px 14px;
-        border: 1px solid rgba(142,197,255,0.24);
+        padding: 10px 15px;
+        border: 1px solid rgba(190,220,255,0.27);
         border-radius: 999px;
         background:
-            linear-gradient(135deg, rgba(140,197,255,0.16), rgba(255,255,255,0.035)),
-            rgba(4,16,35,0.56);
+            linear-gradient(135deg, rgba(231,246,255,0.17), rgba(255,255,255,0.045)),
+            rgba(7,24,43,0.58);
         box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.18),
+            inset 0 1px 0 rgba(255,255,255,0.24),
             0 14px 38px rgba(0,0,0,0.18);
         color: rgba(226,240,255,0.72);
         font-size: 0.82rem;
@@ -142,14 +157,17 @@ st.markdown("""
         align-items: center;
         gap: 7px;
         margin-top: 0.62rem;
-        padding: 5px 10px;
-        border: 1px solid rgba(142,197,255,0.22);
+        padding: 6px 11px;
+        border: 1px solid rgba(190,220,255,0.24);
         border-radius: 999px;
-        background: rgba(10,132,255,0.10);
-        color: #9cccff;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035)),
+            rgba(10,132,255,0.10);
+        color: #b9ddff;
         font-family: 'DM Mono', monospace;
-        font-size: 0.74rem;
+        font-size: 0.76rem;
         font-weight: 500;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
     }
     .creator-mark::before {
         content: "by";
@@ -172,14 +190,14 @@ st.markdown("""
         padding: 0 0 0 0.2rem;
     }
     .focus-title .eyebrow {
-        color: #8e8e93;
-        font-size: 0.72rem;
+        color: rgba(207,228,255,0.58);
+        font-size: 0.74rem;
         font-weight: 700;
         margin-bottom: 0.25rem;
     }
     .focus-title .name {
-        color: #f5f5f7;
-        font-size: 1.72rem;
+        color: #f7fbff;
+        font-size: 1.86rem;
         line-height: 1.05;
         font-weight: 750;
     }
@@ -187,12 +205,12 @@ st.markdown("""
         display: inline-block;
         margin-left: 0.55rem;
         padding: 0.16rem 0.52rem;
-        border: 1px solid rgba(255,255,255,0.16);
-        border-radius: 11px;
+        border: 1px solid rgba(190,220,255,0.22);
+        border-radius: 13px;
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.18), rgba(10,132,255,0.16)),
-            rgba(10,132,255,0.10);
-        color: #b8dcff;
+            linear-gradient(135deg, rgba(255,255,255,0.20), rgba(10,132,255,0.16)),
+            rgba(7,24,43,0.42);
+        color: #c9e7ff;
         font-size: 1.06rem;
         font-family: 'DM Mono', monospace;
         font-weight: 500;
@@ -202,25 +220,25 @@ st.markdown("""
     .signal-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
+        gap: 14px;
         margin: 0.7rem 0 1.1rem;
     }
     .signal-card {
         position: relative;
         overflow: hidden;
-        min-height: 118px;
-        padding: 15px 16px;
-        border: 1px solid rgba(255,255,255,0.16);
-        border-radius: 22px;
+        min-height: 124px;
+        padding: 16px 17px;
+        border: 1px solid rgba(190,220,255,0.18);
+        border-radius: 26px;
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.045) 48%, rgba(255,255,255,0.025)),
-            rgba(12,12,14,0.45);
+            linear-gradient(145deg, rgba(241,248,255,0.16), rgba(255,255,255,0.045) 48%, rgba(117,181,255,0.035)),
+            rgba(7,23,42,0.52);
         box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.20),
-            inset 0 -1px 0 rgba(255,255,255,0.06),
-            0 20px 64px rgba(0,0,0,0.28);
-        backdrop-filter: blur(28px) saturate(1.5);
-        -webkit-backdrop-filter: blur(28px) saturate(1.5);
+            inset 0 1px 0 rgba(255,255,255,0.28),
+            inset 0 -1px 0 rgba(255,255,255,0.07),
+            0 18px 58px rgba(0,0,0,0.25);
+        backdrop-filter: blur(32px) saturate(1.58);
+        -webkit-backdrop-filter: blur(32px) saturate(1.58);
     }
     .signal-card::after {
         content: "";
@@ -228,8 +246,8 @@ st.markdown("""
         inset: 0;
         pointer-events: none;
         background:
-            linear-gradient(118deg, rgba(255,255,255,0.18), transparent 34%),
-            linear-gradient(180deg, color-mix(in srgb, var(--accent) 13%, transparent), transparent 58%);
+            linear-gradient(118deg, rgba(255,255,255,0.20), transparent 34%),
+            linear-gradient(180deg, color-mix(in srgb, var(--accent) 15%, transparent), transparent 58%);
         opacity: 0.72;
     }
     .signal-title {
@@ -238,8 +256,8 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 8px;
-        color: #f5f5f7;
-        font-size: 0.98rem;
+        color: #f7fbff;
+        font-size: 1.04rem;
         font-weight: 700;
         margin-bottom: 11px;
     }
@@ -258,12 +276,12 @@ st.markdown("""
         gap: 12px;
         padding: 7px 0;
         border-top: 1px solid rgba(255,255,255,0.08);
-        color: #d8d8dc;
-        font-size: 0.8rem;
+        color: rgba(235,244,255,0.86);
+        font-size: 0.82rem;
     }
     .signal-item:first-of-type { border-top: none; }
     .signal-date {
-        color: #8e8e93;
+        color: rgba(207,228,255,0.56);
         white-space: nowrap;
         font-family: 'DM Mono', monospace;
         font-size: 0.74rem;
@@ -272,27 +290,27 @@ st.markdown("""
         position: relative;
         z-index: 1;
         padding-top: 14px;
-        color: #8e8e93;
+        color: rgba(207,228,255,0.54);
         font-size: 0.8rem;
     }
     .risk-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
+        gap: 14px;
         margin: 0.95rem 0 1.2rem;
     }
     .risk-card {
         position: relative;
         overflow: hidden;
-        min-height: 92px;
-        padding: 14px 15px;
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 20px;
+        min-height: 96px;
+        padding: 15px 16px;
+        border: 1px solid rgba(190,220,255,0.17);
+        border-radius: 24px;
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035) 54%, rgba(255,255,255,0.02)),
-            rgba(12,12,14,0.48);
+            linear-gradient(145deg, rgba(241,248,255,0.14), rgba(255,255,255,0.04) 54%, rgba(117,181,255,0.03)),
+            rgba(7,23,42,0.52);
         box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.18),
+            inset 0 1px 0 rgba(255,255,255,0.24),
             inset 0 -1px 0 rgba(255,255,255,0.05),
             0 18px 54px rgba(0,0,0,0.22);
         backdrop-filter: blur(24px) saturate(1.42);
@@ -305,7 +323,7 @@ st.markdown("""
         pointer-events: none;
         background:
             linear-gradient(120deg, rgba(255,255,255,0.15), transparent 38%),
-            radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 46%);
+            linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 62%);
         opacity: 0.7;
     }
     .risk-top, .risk-main, .risk-caption {
@@ -378,21 +396,21 @@ st.markdown("""
     /* 상단 컨트롤 */
     div[data-testid="stSelectbox"] label,
     div[data-testid="stRadio"] label {
-        color: #8e8e93 !important;
-        font-size: 0.74rem !important;
+        color: rgba(207,228,255,0.64) !important;
+        font-size: 0.76rem !important;
         font-weight: 600 !important;
         letter-spacing: 0 !important;
     }
     div[data-baseweb="select"] > div {
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035)),
-            rgba(14,14,16,0.54) !important;
-        border: 1px solid rgba(255,255,255,0.16) !important;
-        border-radius: 14px !important;
-        min-height: 44px !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 14px 38px rgba(0,0,0,0.18) !important;
-        backdrop-filter: blur(20px) saturate(1.35);
-        -webkit-backdrop-filter: blur(20px) saturate(1.35);
+            linear-gradient(135deg, rgba(241,248,255,0.15), rgba(255,255,255,0.04)),
+            rgba(7,23,42,0.56) !important;
+        border: 1px solid rgba(190,220,255,0.20) !important;
+        border-radius: 18px !important;
+        min-height: 48px !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 16px 42px rgba(0,0,0,0.18) !important;
+        backdrop-filter: blur(24px) saturate(1.45);
+        -webkit-backdrop-filter: blur(24px) saturate(1.45);
     }
     div[data-baseweb="select"] span {
         color: #f5f5f7 !important;
@@ -401,16 +419,19 @@ st.markdown("""
     div[data-testid="stRadio"] div[role="radiogroup"] {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 9px;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label > div:first-child {
+        display: none !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label {
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)),
-            rgba(14,14,16,0.50);
-        border: 1px solid rgba(255,255,255,0.15);
+            linear-gradient(135deg, rgba(241,248,255,0.13), rgba(255,255,255,0.035)),
+            rgba(7,23,42,0.50);
+        border: 1px solid rgba(190,220,255,0.18);
         border-radius: 999px;
-        min-height: 38px;
-        padding: 7px 13px;
+        min-height: 40px;
+        padding: 8px 14px;
         margin: 0;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 12px 28px rgba(0,0,0,0.14);
         backdrop-filter: blur(18px) saturate(1.28);
@@ -419,9 +440,9 @@ st.markdown("""
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) {
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.96), rgba(255,255,255,0.72));
-        border-color: rgba(255,255,255,0.72);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.90), 0 18px 42px rgba(255,255,255,0.10);
+            linear-gradient(145deg, rgba(232,246,255,0.96), rgba(156,204,255,0.74));
+        border-color: rgba(231,246,255,0.78);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.92), 0 18px 42px rgba(55,144,255,0.20);
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:hover { transform: translateY(-1px); }
     div[data-testid="stRadio"] div[role="radiogroup"] label p {
@@ -430,43 +451,43 @@ st.markdown("""
         font-size: 0.8rem !important;
     }
     div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p {
-        color: #050506 !important;
+        color: #071323 !important;
     }
 
     /* 메트릭 카드 */
     div[data-testid="metric-container"] {
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035) 54%, rgba(255,255,255,0.02)),
-            rgba(12,12,14,0.48);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 20px;
-        padding: 16px 18px;
+            linear-gradient(145deg, rgba(241,248,255,0.14), rgba(255,255,255,0.04) 54%, rgba(117,181,255,0.03)),
+            rgba(7,23,42,0.52);
+        border: 1px solid rgba(190,220,255,0.17);
+        border-radius: 24px;
+        padding: 17px 18px;
         box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.18),
+            inset 0 1px 0 rgba(255,255,255,0.24),
             inset 0 -1px 0 rgba(255,255,255,0.05),
             0 18px 54px rgba(0,0,0,0.22);
-        backdrop-filter: blur(24px) saturate(1.42);
-        -webkit-backdrop-filter: blur(24px) saturate(1.42);
+        backdrop-filter: blur(28px) saturate(1.5);
+        -webkit-backdrop-filter: blur(28px) saturate(1.5);
         transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
     }
     div[data-testid="metric-container"]:hover {
         background:
             linear-gradient(145deg, rgba(255,255,255,0.17), rgba(255,255,255,0.045)),
-            rgba(18,18,20,0.56);
-        border-color: rgba(255,255,255,0.24);
+            rgba(10,31,56,0.62);
+        border-color: rgba(190,220,255,0.28);
         transform: translateY(-1px);
     }
     div[data-testid="metric-container"] label {
         font-size: 0.7rem !important;
         font-weight: 600 !important;
         letter-spacing: 0 !important;
-        color: #8e8e93 !important;
+        color: rgba(207,228,255,0.60) !important;
     }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] {
         font-family: 'DM Mono', monospace !important;
         font-size: 1.26rem !important;
         font-weight: 500 !important;
-        color: #f5f5f7 !important;
+        color: #f7fbff !important;
         letter-spacing: 0;
     }
     div[data-testid="metric-container"] [data-testid="stMetricDelta"] {
@@ -477,29 +498,35 @@ st.markdown("""
 
     /* 탭 */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 18px;
-        background: transparent;
-        border-radius: 0;
-        padding: 0;
-        border-bottom: 1px solid rgba(255,255,255,0.10);
+        gap: 8px;
+        width: fit-content;
+        max-width: 100%;
+        background:
+            linear-gradient(135deg, rgba(241,248,255,0.12), rgba(255,255,255,0.035)),
+            rgba(7,23,42,0.48);
+        border: 1px solid rgba(190,220,255,0.16);
+        border-radius: 999px;
+        padding: 5px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 16px 42px rgba(0,0,0,0.16);
+        backdrop-filter: blur(22px) saturate(1.4);
+        -webkit-backdrop-filter: blur(22px) saturate(1.4);
     }
     .stTabs [data-baseweb="tab"] {
         background: transparent;
-        border-radius: 0;
+        border-radius: 999px;
         color: #8e8e93;
         font-weight: 600;
         font-size: 0.82rem;
         letter-spacing: 0;
-        padding: 8px 2px 12px;
-        border-bottom: 2px solid transparent;
-        transition: color 0.15s ease, border-color 0.15s ease;
+        padding: 7px 14px;
+        border: 0;
+        transition: color 0.15s ease, background 0.15s ease;
     }
-    .stTabs [data-baseweb="tab"]:hover { color: #f5f5f7; background: transparent; }
+    .stTabs [data-baseweb="tab"]:hover { color: #f5f5f7; background: rgba(255,255,255,0.05); }
     .stTabs [aria-selected="true"] {
-        background: transparent !important;
-        color: #f5f5f7 !important;
-        border-bottom-color: #0a84ff;
-        box-shadow: none;
+        background: linear-gradient(145deg, rgba(232,246,255,0.96), rgba(156,204,255,0.74)) !important;
+        color: #071323 !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), 0 10px 28px rgba(55,144,255,0.18);
     }
 
     /* 헤딩 */
@@ -513,7 +540,7 @@ st.markdown("""
     h3 {
         color: #f5f5f7 !important;
         font-weight: 600 !important;
-        font-size: 0.9rem !important;
+        font-size: 1rem !important;
         letter-spacing: 0;
     }
     p, li { color: #9b9ba1; font-size: 0.84rem; }
@@ -521,45 +548,47 @@ st.markdown("""
     /* 버튼 */
     .stButton > button {
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.035)),
-            rgba(10,132,255,0.10);
-        color: #d9ecff;
-        border: 1px solid rgba(156,204,255,0.30);
+            linear-gradient(145deg, rgba(241,248,255,0.18), rgba(255,255,255,0.045)),
+            rgba(7,23,42,0.54);
+        color: #dff0ff;
+        border: 1px solid rgba(190,220,255,0.26);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
         letter-spacing: 0;
-        padding: 9px 16px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 14px 34px rgba(0,0,0,0.16);
-        backdrop-filter: blur(18px) saturate(1.35);
-        -webkit-backdrop-filter: blur(18px) saturate(1.35);
+        padding: 10px 17px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 14px 34px rgba(0,0,0,0.16);
+        backdrop-filter: blur(24px) saturate(1.45);
+        -webkit-backdrop-filter: blur(24px) saturate(1.45);
         transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
     .stButton > button p { color: #d9ecff !important; }
     .stButton > button:hover {
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.20), rgba(255,255,255,0.05)),
-            rgba(10,132,255,0.18);
-        border-color: rgba(184,220,255,0.55);
+            linear-gradient(145deg, rgba(241,248,255,0.24), rgba(255,255,255,0.07)),
+            rgba(10,45,82,0.62);
+        border-color: rgba(207,228,255,0.48);
         transform: translateY(-1px);
     }
 
     /* 다운로드 버튼 */
     .stDownloadButton > button {
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035)),
-            rgba(14,14,16,0.50);
-        color: #9cccff;
-        border: 1px solid rgba(142,197,255,0.35);
+            linear-gradient(135deg, rgba(241,248,255,0.14), rgba(255,255,255,0.04)),
+            rgba(7,23,42,0.52);
+        color: #b9ddff;
+        border: 1px solid rgba(190,220,255,0.28);
         border-radius: 999px;
         font-weight: 600;
         font-size: 0.82rem;
-        transition: background 0.15s ease, border-color 0.15s ease;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 14px 34px rgba(0,0,0,0.14);
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
-    .stDownloadButton > button p { color: #9cccff !important; }
+    .stDownloadButton > button p { color: #b9ddff !important; }
     .stDownloadButton > button:hover {
-        background: rgba(142,197,255,0.10);
-        border-color: #9cccff;
+        background: rgba(142,197,255,0.12);
+        border-color: rgba(207,228,255,0.48);
+        transform: translateY(-1px);
     }
 
     /* 스피너 */
@@ -567,14 +596,14 @@ st.markdown("""
 
     /* expander */
     details {
-        border: 1px solid rgba(255,255,255,0.16) !important;
-        border-radius: 24px !important;
+        border: 1px solid rgba(190,220,255,0.17) !important;
+        border-radius: 26px !important;
         background:
-            linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.04) 48%, rgba(255,255,255,0.025)),
-            rgba(12,12,14,0.46) !important;
+            linear-gradient(145deg, rgba(241,248,255,0.14), rgba(255,255,255,0.04) 48%, rgba(117,181,255,0.03)),
+            rgba(7,23,42,0.52) !important;
         padding: 4px 6px !important;
         box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.18),
+            inset 0 1px 0 rgba(255,255,255,0.24),
             inset 0 -1px 0 rgba(255,255,255,0.05),
             0 22px 70px rgba(0,0,0,0.28);
         backdrop-filter: blur(28px) saturate(1.45);
@@ -599,10 +628,13 @@ st.markdown("""
     }
 
     div[data-testid="stDataFrame"] {
-        border: 1px solid rgba(255,255,255,0.14);
-        border-radius: 18px;
+        border: 1px solid rgba(190,220,255,0.16);
+        border-radius: 22px;
         overflow: hidden;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 18px 58px rgba(0,0,0,0.18);
+        background: rgba(7,23,42,0.38);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 58px rgba(0,0,0,0.18);
+        backdrop-filter: blur(20px) saturate(1.35);
+        -webkit-backdrop-filter: blur(20px) saturate(1.35);
     }
 
     /* progress bar */
@@ -641,7 +673,7 @@ st.markdown("""
             justify-content: center;
         }
         .app-hero h1 {
-            font-size: 1.52rem;
+            font-size: 1.68rem !important;
         }
         .hero-row {
             align-items: flex-start;
@@ -751,8 +783,8 @@ def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
-    plot_bgcolor='#050506',
-    paper_bgcolor='#050506',
+    plot_bgcolor='#061323',
+    paper_bgcolor='#061323',
     font=dict(family='DM Sans, sans-serif', color='#8e8e93', size=12),
     legend=dict(
         orientation='h', yanchor='bottom', y=1.04, xanchor='right', x=1,
