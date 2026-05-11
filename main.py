@@ -1584,6 +1584,7 @@ MA_COLORS = {
     "MA120": "#D18B3A",
     "MA200": "#6B7280",
 }
+PRICE_LEGEND_SERIES = {'MA20', 'MA60', 'MA120'}
 
 # ── 숫자 포맷 헬퍼 ─────────────────────────────────────────────────────────────
 def fmt_price(v):
@@ -1816,7 +1817,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     ), row=1, col=1)
 
     for ma, color in MA_COLORS.items():
-        if ma not in {'MA20', 'MA120'}:
+        if ma not in PRICE_LEGEND_SERIES:
             continue
         if ma in df.columns and df[ma].notna().any():
             fig.add_trace(go.Scatter(
@@ -1830,6 +1831,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fig.add_trace(go.Scatter(
                 x=puddle_df['Date'], y=puddle_df['Low'] * 0.982,
                 mode='markers', name='Puddle',
+                showlegend=False,
                 marker=dict(symbol='triangle-up', size=9, color='#2F80FF',
                             line=dict(width=1, color='white')),
             ), row=1, col=1)
@@ -1838,6 +1840,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_trace(go.Scatter(
             x=df['Date'], y=df['RSI'], name='RSI',
             line=dict(color='rgba(255,255,255,0.46)', width=1.2),
+            showlegend=False,
         ), row=2, col=1)
         fig.add_hline(y=70, line=dict(color='#FF5A5F', width=1, dash='dot'), row=2, col=1)
         fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=2, col=1)
@@ -1852,6 +1855,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             x=df['Date'], y=df['VIX'], name='VIX',
             line=dict(color='rgba(255,255,255,0.48)', width=1.4),
             fill='tozeroy', fillcolor='rgba(255,255,255,0.04)',
+            showlegend=False,
         ), row=3, col=1)
         fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
@@ -1883,12 +1887,12 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     )
 
     fig.add_trace(go.Scatter(
-        x=df['Date'], y=df['Close'], name=f'{name} Close',
+        x=df['Date'], y=df['Close'], name='Price',
         line=dict(color='#f5f5f7', width=2),
     ), row=1, col=1)
 
     for ma, color in MA_COLORS.items():
-        if ma not in {'MA20', 'MA120'}:
+        if ma not in PRICE_LEGEND_SERIES:
             continue
         if ma in df.columns and df[ma].notna().any():
             fig.add_trace(go.Scatter(
@@ -1899,11 +1903,6 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     if 'VIX1D>VIX' in df.columns:
         vix_signal_dates = df[df['VIX1D>VIX'] == 'BUY']['Date']
         if not vix_signal_dates.empty:
-            fig.add_trace(go.Scatter(
-                x=[None], y=[None], mode='lines', name='VIX1D > VIX',
-                line=dict(color='#2F80FF', width=2.1),
-                hoverinfo='skip',
-            ), row=1, col=1)
             for d in vix_signal_dates:
                 fig.add_vline(
                     x=d,
@@ -1921,6 +1920,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fig.add_trace(go.Scatter(
                 x=overlap['Date'], y=overlap['Close_x'],
                 mode='markers', name='RSI ∩ Puddle',
+                showlegend=False,
                 marker=dict(symbol='circle', size=8, color='#2F80FF',
                             line=dict(width=1.5, color='white')),
             ), row=1, col=1)
@@ -1934,12 +1934,10 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             (55, 75, 'Greed',        'rgba(255,255,255,0.018)'),
             (75, 100, 'Extreme Greed', 'rgba(255,255,255,0.025)'),
         ]
-        for y0, y1, label, color in fg_zones:
+        for y0, y1, _, color in fg_zones:
             fig.add_hrect(
                 y0=y0, y1=y1,
                 fillcolor=color, line_width=0,
-                annotation_text=label, annotation_position='left',
-                annotation_font=dict(size=9, color='rgba(255,255,255,0.34)'),
                 row=2, col=1,
             )
         fig.add_trace(go.Scatter(
@@ -1947,6 +1945,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             mode='lines',
             line=dict(color='rgba(255,255,255,0.56)', width=2.1, shape='spline'),
             hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
+            showlegend=False,
         ), row=2, col=1)
         for level in [25, 45, 55, 75]:
             fig.add_hline(y=level, line=dict(color='rgba(255,255,255,0.075)', width=1, dash='dot'), row=2, col=1)
