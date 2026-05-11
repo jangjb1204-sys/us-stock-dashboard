@@ -1003,7 +1003,6 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        title=None,
         height=660,
     )
     for r in [1, 2, 3]:
@@ -1105,7 +1104,6 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
 
     fig.update_layout(
         **CHART_THEME,
-        title=None,
         height=590,
     )
     for r in [1, 2]:
