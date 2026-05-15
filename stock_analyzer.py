@@ -6,14 +6,24 @@ import requests
 import json
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
+from zoneinfo import ZoneInfo
 
 # --- 상수 정의 ---
 SEARCH_DAYS = 365 * 4
 DATE_FORMAT = '%Y-%m-%d'
+CENTRAL_TZ = ZoneInfo('America/Chicago')
 USER_AGENT = (
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
 )
+
+
+def central_now() -> datetime:
+    return datetime.now(CENTRAL_TZ)
+
+
+def central_today() -> pd.Timestamp:
+    return pd.Timestamp(central_now().date())
 
 TICKER_CONFIGS = {
     '^GSPC': 'S&P500',
@@ -40,7 +50,7 @@ def fetch_fear_and_greed_index(start_date: str) -> pd.DataFrame | None:
         data_list = data['fear_and_greed_historical']['data']
         df = pd.DataFrame([
             {
-                'Date': datetime.fromtimestamp(item['x'] / 1000).strftime(DATE_FORMAT),
+                'Date': datetime.fromtimestamp(item['x'] / 1000, CENTRAL_TZ).strftime(DATE_FORMAT),
                 'FG index': round(item['y']),
                 'rating': item.get('rating', 'N/A')
             }
@@ -108,7 +118,7 @@ def fetch_common_market_data(period: str = '2y') -> dict:
         for key, df in executor.map(fetch_market_series, market_specs):
             results[key] = df
 
-    start_date = (datetime.now() - timedelta(days=SEARCH_DAYS)).strftime(DATE_FORMAT)
+    start_date = (central_now() - timedelta(days=SEARCH_DAYS)).strftime(DATE_FORMAT)
     results['fg_data'] = fetch_fear_and_greed_index(start_date)
     return results
 
@@ -291,7 +301,7 @@ def process_stock_frame(data: pd.DataFrame, ticker: str, name: str, common_data:
     data = calculate_vix_skew_signals(data)
 
     if len(data) > delta:
-        data = data[data['Date'] >= (datetime.now() - timedelta(days=delta))]
+        data = data[data['Date'] >= central_today() - pd.Timedelta(days=delta)]
 
     data['Tick'] = ticker
 

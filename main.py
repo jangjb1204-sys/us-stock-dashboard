@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from datetime import datetime, timedelta
+from datetime import datetime
 from html import escape
 import time
 import uuid
@@ -18,6 +18,22 @@ from stock_analyzer import (
     process_stock_frame,
     fetch_ticker_display_name,
 )
+
+CENTRAL_TZ = ZoneInfo("America/Chicago")
+EASTERN_TZ = ZoneInfo("America/New_York")
+
+
+def central_now() -> datetime:
+    return datetime.now(CENTRAL_TZ)
+
+
+def central_today() -> pd.Timestamp:
+    return pd.Timestamp(central_now().date())
+
+
+def central_timestamp_label() -> str:
+    return central_now().strftime("%Y-%m-%d %H:%M:%S CT")
+
 
 # ── 페이지 설정 ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -1794,7 +1810,12 @@ def get_view_stats():
     return state['total_views'], len(state['sessions'])
 
 def is_us_market_open(now: datetime | None = None) -> bool:
-    eastern_now = now or datetime.now(ZoneInfo("America/New_York"))
+    if now is None:
+        eastern_now = datetime.now(EASTERN_TZ)
+    elif now.tzinfo is None:
+        eastern_now = now.replace(tzinfo=CENTRAL_TZ).astimezone(EASTERN_TZ)
+    else:
+        eastern_now = now.astimezone(EASTERN_TZ)
     market_open = eastern_now.replace(hour=9, minute=30, second=0, microsecond=0)
     market_close = eastern_now.replace(hour=16, minute=0, second=0, microsecond=0)
     return eastern_now.weekday() < 5 and market_open <= eastern_now <= market_close
@@ -1804,7 +1825,7 @@ def is_us_market_open(now: datetime | None = None) -> bool:
 def load_common_data(period: str) -> dict:
     return {
         'data': fetch_common_market_data(period=period),
-        'loaded_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'loaded_at': central_timestamp_label(),
     }
 
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -1815,12 +1836,12 @@ def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key
         common_data = common_future.result()
         stock_data = stock_future.result()
     data = process_stock_frame(stock_data, ticker, name, common_data, delta=DELTA_OPTIONS["4Y"])
-    return data, datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return data, central_timestamp_label()
 
 def filter_by_delta(df: pd.DataFrame, delta: int) -> pd.DataFrame:
     if df.empty or len(df) <= delta:
         return df
-    cutoff = datetime.now() - timedelta(days=delta)
+    cutoff = central_today() - pd.Timedelta(days=delta)
     return df[df['Date'] >= cutoff].reset_index(drop=True)
 
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -2468,7 +2489,7 @@ def treasury_status(value):
 
 
 def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str):
-    updated_short = updated_at[11:16] if len(updated_at) >= 16 else updated_at
+    updated_short = f"{updated_at[11:16]} CT" if len(updated_at) >= 19 else updated_at
     container.markdown(
         f"""
         <div class="app-hero">
@@ -2683,7 +2704,7 @@ with tab3:
     st.download_button(
         label="Download CSV",
         data=csv.to_csv(index=False, encoding='utf-8-sig'),
-        file_name=f"{selected_name}_{datetime.now().strftime('%Y%m%d')}.csv",
+        file_name=f"{selected_name}_{central_now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
     )
 
