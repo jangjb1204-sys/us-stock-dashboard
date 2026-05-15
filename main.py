@@ -1894,7 +1894,7 @@ CHART_THEME = dict(
         font=dict(size=8, color='rgba(255,255,255,0.42)'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=48, r=12, t=34, b=28),
+    margin=dict(l=12, r=12, t=34, b=28),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.035)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
@@ -2010,10 +2010,10 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             showticklabels=(r == 3),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
-            automargin=True,
+            automargin=False,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=True,
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
         )
 
@@ -2112,10 +2112,10 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             showticklabels=(r == 2),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
-            automargin=True,
+            automargin=False,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=True,
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
         )
 
