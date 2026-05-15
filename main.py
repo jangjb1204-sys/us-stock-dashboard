@@ -1480,19 +1480,19 @@ st.markdown("""
     div[data-testid="stPlotlyChart"] {
         border-radius: 0;
         overflow: hidden;
-        background: #080B10;
+        background: #05070d;
         border: 0;
         margin-top: 0.95rem;
     }
     div[data-testid="stPlotlyChart"] .legend text {
-        fill: rgba(255,255,255,0.42) !important;
-        font-size: 9px !important;
-        font-weight: 450 !important;
+        fill: #d7dce5 !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
     }
     div[data-testid="stPlotlyChart"] .xtick text,
     div[data-testid="stPlotlyChart"] .ytick text {
-        fill: rgba(255,255,255,0.36) !important;
-        font-size: 9px !important;
+        fill: rgba(245,245,247,0.50) !important;
+        font-size: 10px !important;
     }
     @media (max-width: 640px) {
         .block-container {
@@ -1875,17 +1875,20 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
-    plot_bgcolor='#070B11',
-    paper_bgcolor='#070B11',
-    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.42)', size=9),
+    plot_bgcolor='#05070d',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font=dict(family='DM Sans, -apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='#d7dce5', size=11),
     legend=dict(
-        orientation='h', yanchor='bottom', y=1.01, xanchor='right', x=1,
-        font=dict(size=8, color='rgba(255,255,255,0.42)'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
+        orientation='h', yanchor='bottom', y=1.03, xanchor='right', x=1,
+        font=dict(size=11, color='#d7dce5'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=32, r=4, t=34, b=48),
+    margin=dict(l=44, r=12, t=34, b=28),
 )
-GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.035)', zeroline=False)
+X_GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.055)', zeroline=False)
+Y_GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.075)', zeroline=False)
+X_TICK_FONT = dict(color='rgba(245,245,247,0.54)', size=10)
+Y_TICK_FONT = dict(color='rgba(245,245,247,0.46)', size=10)
 MAIN_CHART_HEIGHT = 460
 SIGNAL_CHART_HEIGHT = 460
 
@@ -1929,7 +1932,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     date_axis = get_date_axis(df)
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True,
-        row_heights=[0.60, 0.20, 0.20],
+        row_heights=[0.68, 0.16, 0.16],
         vertical_spacing=0.025,
     )
 
@@ -1970,8 +1973,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=2, col=1)
         fig.update_yaxes(
             title_text='RSI', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
-            title=dict(font=dict(color='rgba(255,255,255,0.36)', size=9), standoff=2),
+            tickfont=Y_TICK_FONT,
+            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
         )
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
@@ -1984,8 +1987,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(
             title_text='VIX', row=3, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
-            title=dict(font=dict(color='rgba(255,255,255,0.36)', size=9), standoff=2),
+            tickfont=Y_TICK_FONT,
+            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
         )
 
     fig.update_layout(
@@ -1995,15 +1998,15 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     )
     for r in [1, 2, 3]:
         fig.update_xaxes(
-            **GRID, **date_axis, row=r, col=1,
+            **X_GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 3),
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+            tickfont=X_TICK_FONT,
             fixedrange=True,
-            automargin=False,
+            automargin=True,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=False,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+            **Y_GRID, row=r, col=1, fixedrange=True, automargin=True,
+            tickfont=Y_TICK_FONT,
         )
 
     return fig
@@ -2064,7 +2067,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fg_zones = [
             (0, 25,  'Extreme Fear', 'rgba(255,255,255,0.025)'),
             (25, 45, 'Fear',         'rgba(255,255,255,0.018)'),
-            (45, 55, 'Neutral',      'rgba(47,128,255,0.045)'),
+            (45, 55, 'Neutral',      'rgba(255,255,255,0.012)'),
             (55, 75, 'Greed',        'rgba(255,255,255,0.018)'),
             (75, 100, 'Extreme Greed', 'rgba(255,255,255,0.025)'),
         ]
@@ -2086,8 +2089,8 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=2, col=1)
         fig.update_yaxes(
             title_text='F&G', range=[0, 100], row=2, col=1,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
-            title=dict(font=dict(color='rgba(255,255,255,0.36)', size=9), standoff=2),
+            tickfont=Y_TICK_FONT,
+            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
         )
 
     fig.update_layout(
@@ -2097,15 +2100,15 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     )
     for r in [1, 2]:
         fig.update_xaxes(
-            **GRID, **date_axis, row=r, col=1,
+            **X_GRID, **date_axis, row=r, col=1,
             showticklabels=(r == 2),
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+            tickfont=X_TICK_FONT,
             fixedrange=True,
-            automargin=False,
+            automargin=True,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=False,
-            tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
+            **Y_GRID, row=r, col=1, fixedrange=True, automargin=True,
+            tickfont=Y_TICK_FONT,
         )
 
     return fig
