@@ -1480,19 +1480,19 @@ st.markdown("""
     div[data-testid="stPlotlyChart"] {
         border-radius: 0;
         overflow: hidden;
-        background: #080B10;
+        background: #05070d;
         border: 0;
         margin-top: 0.95rem;
     }
     div[data-testid="stPlotlyChart"] .legend text {
-        fill: rgba(255,255,255,0.42) !important;
-        font-size: 9px !important;
-        font-weight: 450 !important;
+        fill: #d7dce5 !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
     }
     div[data-testid="stPlotlyChart"] .xtick text,
     div[data-testid="stPlotlyChart"] .ytick text {
-        fill: rgba(255,255,255,0.36) !important;
-        font-size: 9px !important;
+        fill: rgba(245,245,247,0.50) !important;
+        font-size: 10px !important;
     }
     @media (max-width: 640px) {
         .block-container {
@@ -1656,12 +1656,8 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
         div[data-testid="stPlotlyChart"] {
-            width: calc(100vw - 1.64rem) !important;
-            max-width: calc(100vw - 1.64rem) !important;
-            height: 400px !important;
-            min-height: 400px !important;
-            max-height: 400px !important;
-            margin-left: calc(0.82rem - 20px) !important;
+            width: calc(100vw - 40px) !important;
+            min-height: 390px !important;
             margin-top: 0.85rem !important;
             margin-bottom: 2rem !important;
             overflow: hidden !important;
@@ -1670,20 +1666,13 @@ st.markdown("""
             -webkit-user-select: none;
             user-select: none;
         }
-        div[data-testid="stPlotlyChart"] > div {
-            height: 400px !important;
-            min-height: 400px !important;
-            max-height: 400px !important;
-        }
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
         div[data-testid="stPlotlyChart"] .main-svg,
         div[data-testid="stPlotlyChart"] .svg-container,
         div[data-testid="stPlotlyChart"] .draglayer,
         div[data-testid="stPlotlyChart"] .nsewdrag {
-            height: 400px !important;
-            min-height: 400px !important;
-            max-height: 400px !important;
+            min-height: 390px !important;
             touch-action: pan-y !important;
             -webkit-user-select: none;
             user-select: none;
@@ -1886,17 +1875,17 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
 
 # ── 차트 공통 테마 ─────────────────────────────────────────────────────────────
 CHART_THEME = dict(
-    plot_bgcolor='#070B11',
-    paper_bgcolor='#070B11',
-    font=dict(family='-apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='rgba(255,255,255,0.42)', size=9),
+    plot_bgcolor='#05070d',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font=dict(family='DM Sans, -apple-system, BlinkMacSystemFont, Inter, Pretendard, sans-serif', color='#d7dce5', size=11),
     legend=dict(
         orientation='h', yanchor='bottom', y=1.01, xanchor='right', x=1,
-        font=dict(size=8, color='rgba(255,255,255,0.42)'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
+        font=dict(size=11, color='#d7dce5'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=48, r=12, t=34, b=28),
+    margin=dict(l=44, r=12, t=34, b=28),
 )
-GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.035)', zeroline=False)
+GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.055)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
 SIGNAL_CHART_HEIGHT = 460
 
@@ -1940,7 +1929,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     date_axis = get_date_axis(df)
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True,
-        row_heights=[0.68, 0.16, 0.16],
+        row_heights=[0.60, 0.20, 0.20],
         vertical_spacing=0.025,
     )
 
@@ -2075,7 +2064,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         fg_zones = [
             (0, 25,  'Extreme Fear', 'rgba(255,255,255,0.025)'),
             (25, 45, 'Fear',         'rgba(255,255,255,0.018)'),
-            (45, 55, 'Neutral',      'rgba(47,128,255,0.045)'),
+            (45, 55, 'Neutral',      'rgba(255,255,255,0.012)'),
             (55, 75, 'Greed',        'rgba(255,255,255,0.018)'),
             (75, 100, 'Extreme Greed', 'rgba(255,255,255,0.025)'),
         ]
