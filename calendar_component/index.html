@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      color: #f5f5f7;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .calendar-shell { width:100%; max-width:100%; overflow:hidden; }
+    .calendar-head { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:12px; margin:.2rem 0 .9rem; }
+    .calendar-title { color:#f5f5f7; font-size:1.08rem; font-weight:760; text-align:center; min-width:0; }
+    .calendar-nav, .calendar-day { display:flex; align-items:center; justify-content:center; min-height:36px; border-radius:999px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.035); color:#f5f5f7; font-size:.78rem; font-weight:720; text-decoration:none; cursor:pointer; box-sizing:border-box; }
+    .calendar-nav.disabled { opacity:.34; pointer-events:none; }
+    .calendar-grid-static { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-bottom:.45rem; max-width:100%; }
+    .calendar-dow { color:#777b84; text-align:center; font-size:.68rem; font-weight:760; letter-spacing:.05em; text-transform:uppercase; padding:.25rem 0; }
+    .calendar-empty { min-height:46px; border:1px solid rgba(255,255,255,.045); border-radius:15px; background:rgba(255,255,255,.012); color:rgba(245,245,247,.16); display:flex; align-items:center; justify-content:center; font-family:'DM Mono', monospace; font-size:.8rem; box-sizing:border-box; }
+    .calendar-empty.out { opacity:.28; }
+    .calendar-day { min-height:46px; border-radius:15px; font-family:'DM Sans', sans-serif; }
+    .calendar-day.selected { background:#d8dde6; color:#111318; border-color:#d8dde6; }
+    @media (max-width:640px){
+      .calendar-shell{margin-left:-.1rem;margin-right:-.1rem;}
+      .calendar-head{grid-template-columns:38px minmax(0,1fr) 38px; gap:6px; margin:.1rem 0 .55rem;}
+      .calendar-title{font-size:.98rem;}
+      .calendar-nav{min-height:34px; padding:0; font-size:.95rem;}
+      .calendar-grid-static{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; margin-bottom:.28rem;}
+      .calendar-dow{font-size:.58rem; letter-spacing:0; padding:.16rem 0;}
+      .calendar-empty,.calendar-day{min-height:34px; border-radius:10px; font-size:.72rem; padding:0;}
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const Streamlit = {
+      ready() {
+        window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
+      },
+      setFrameHeight(height) {
+        window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height }, "*");
+      },
+      setComponentValue(value) {
+        window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value, dataType: "json" }, "*");
+      }
+    };
+
+    let currentArgs = null;
+
+    function resizeFrame() {
+      Streamlit.setFrameHeight(document.documentElement.scrollHeight);
+    }
+
+    function choose(date, month) {
+      document.querySelectorAll(".calendar-day.selected").forEach((el) => el.classList.remove("selected"));
+      const next = document.querySelector(`[data-date="${date}"]`);
+      if (next) {
+        next.classList.add("selected");
+      }
+      Streamlit.setComponentValue({ date, month, nonce: Date.now() });
+    }
+
+    function render(args) {
+      currentArgs = args || currentArgs || {};
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const header = days.map((day) => `<div class="calendar-dow">${day}</div>`).join("");
+      const rows = (currentArgs.weeks || []).map((week) => {
+        const cells = week.map((day) => {
+          if (day.available) {
+            const selected = day.date === currentArgs.selected_date ? " selected" : "";
+            return `<button class="calendar-day${selected}" type="button" data-date="${day.date}" data-month="${currentArgs.current_month}">${day.label}</button>`;
+          }
+          const out = day.in_month ? "" : " out";
+          return `<div class="calendar-empty${out}">${day.in_month ? day.label : ""}</div>`;
+        }).join("");
+        return `<div class="calendar-grid-static">${cells}</div>`;
+      }).join("");
+
+      const prevClass = currentArgs.prev_month ? "calendar-nav" : "calendar-nav disabled";
+      const nextClass = currentArgs.next_month ? "calendar-nav" : "calendar-nav disabled";
+      document.getElementById("root").innerHTML = `
+        <div class="calendar-shell">
+          <div class="calendar-head">
+            <button class="${prevClass}" type="button" data-month="${currentArgs.prev_month || ""}" aria-label="Previous month">‹</button>
+            <div class="calendar-title">${currentArgs.title || ""}</div>
+            <button class="${nextClass}" type="button" data-month="${currentArgs.next_month || ""}" aria-label="Next month">›</button>
+          </div>
+          <div class="calendar-grid-static">${header}</div>
+          ${rows}
+        </div>
+      `;
+
+      document.querySelectorAll(".calendar-day").forEach((button) => {
+        button.addEventListener("click", () => choose(button.dataset.date, button.dataset.month));
+      });
+      document.querySelectorAll(".calendar-nav:not(.disabled)").forEach((button) => {
+        button.addEventListener("click", () => choose(currentArgs.selected_date, button.dataset.month));
+      });
+      resizeFrame();
+    }
+
+    window.addEventListener("message", (event) => {
+      if (event.data.type !== "streamlit:render") {
+        return;
+      }
+      render(event.data.args);
+    });
+
+    window.addEventListener("resize", resizeFrame);
+    Streamlit.ready();
+  </script>
+</body>
+</html>

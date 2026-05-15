@@ -43,6 +43,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+if st.query_params.get("dashboard") == "puddle":
+    from puddle_signal_dashboard import main as render_puddle_dashboard
+
+    render_puddle_dashboard()
+    st.stop()
+
 # ── 스타일 ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -138,6 +144,10 @@ st.markdown("""
         letter-spacing: 0;
         color: #f7fbff !important;
         text-shadow: 0 12px 34px rgba(0,0,0,0.28);
+    }
+    .app-hero h1 a {
+        color: inherit !important;
+        text-decoration: none !important;
     }
     .hero-title {
         position: relative;
@@ -2503,7 +2513,7 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
             <div>
               <div class="hero-title">
                 <span class="market-status-dot {market_dot_class}"></span>
-                <h1>US Market Signals</h1>
+                <h1><a href="?dashboard=puddle" target="_self">US Market Signals</a></h1>
               </div>
               <div class="hero-meta">
                 <span class="updated-mark">{escape(updated_short)}</span>
