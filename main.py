@@ -1656,15 +1656,23 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
         div[data-testid="stPlotlyChart"] {
-            width: calc(100vw - 40px) !important;
-            min-height: 390px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 300px !important;
+            min-height: 300px !important;
+            max-height: 300px !important;
             margin-top: 0.85rem !important;
             margin-bottom: 2rem !important;
-            overflow: hidden !important;
+            overflow: visible !important;
             touch-action: pan-y !important;
             overscroll-behavior: contain;
             -webkit-user-select: none;
             user-select: none;
+        }
+        div[data-testid="stPlotlyChart"] > div {
+            height: 300px !important;
+            min-height: 300px !important;
+            max-height: 300px !important;
         }
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
@@ -1672,7 +1680,9 @@ st.markdown("""
         div[data-testid="stPlotlyChart"] .svg-container,
         div[data-testid="stPlotlyChart"] .draglayer,
         div[data-testid="stPlotlyChart"] .nsewdrag {
-            min-height: 390px !important;
+            height: 300px !important;
+            min-height: 300px !important;
+            max-height: 300px !important;
             touch-action: pan-y !important;
             -webkit-user-select: none;
             user-select: none;
