@@ -1656,7 +1656,9 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
         div[data-testid="stPlotlyChart"] {
-            width: calc(100vw - 40px) !important;
+            width: calc(100vw - 1.64rem) !important;
+            max-width: calc(100vw - 1.64rem) !important;
+            margin-left: calc(0.82rem - 20px) !important;
             min-height: 390px !important;
             margin-top: 0.85rem !important;
             margin-bottom: 2rem !important;
@@ -1920,11 +1922,12 @@ def get_date_axis(df: pd.DataFrame) -> dict:
         if not tick_dates or tick != tick_dates[-1]:
             tick_dates.append(tick)
 
+    right_pad = pd.Timedelta(days=max(2, min(14, span_days * 0.035)))
     return dict(
         tickmode='array',
         tickvals=tick_dates,
         ticktext=[d.strftime(label_format) for d in tick_dates],
-        range=[dates.iloc[0], dates.iloc[-1]],
+        range=[dates.iloc[0], dates.iloc[-1] + right_pad],
     )
 
 # ── 캔들스틱 차트 ─────────────────────────────────────────────────────────────
