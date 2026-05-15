@@ -1658,9 +1658,9 @@ st.markdown("""
         div[data-testid="stPlotlyChart"] {
             width: calc(100vw - 1.64rem) !important;
             max-width: calc(100vw - 1.64rem) !important;
-            height: 500px !important;
-            min-height: 500px !important;
-            max-height: 500px !important;
+            height: 400px !important;
+            min-height: 400px !important;
+            max-height: 400px !important;
             margin-left: calc(0.82rem - 20px) !important;
             margin-top: 0.85rem !important;
             margin-bottom: 2rem !important;
@@ -1671,9 +1671,9 @@ st.markdown("""
             user-select: none;
         }
         div[data-testid="stPlotlyChart"] > div {
-            height: 500px !important;
-            min-height: 500px !important;
-            max-height: 500px !important;
+            height: 400px !important;
+            min-height: 400px !important;
+            max-height: 400px !important;
         }
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
@@ -1681,9 +1681,9 @@ st.markdown("""
         div[data-testid="stPlotlyChart"] .svg-container,
         div[data-testid="stPlotlyChart"] .draglayer,
         div[data-testid="stPlotlyChart"] .nsewdrag {
-            height: 500px !important;
-            min-height: 500px !important;
-            max-height: 500px !important;
+            height: 400px !important;
+            min-height: 400px !important;
+            max-height: 400px !important;
             touch-action: pan-y !important;
             -webkit-user-select: none;
             user-select: none;
@@ -1940,7 +1940,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     date_axis = get_date_axis(df)
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True,
-        row_heights=[0.60, 0.20, 0.20],
+        row_heights=[0.68, 0.16, 0.16],
         vertical_spacing=0.025,
     )
 
@@ -2010,10 +2010,10 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             showticklabels=(r == 3),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
-            automargin=True,
+            automargin=False,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=True,
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
         )
 
@@ -2112,10 +2112,10 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             showticklabels=(r == 2),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
-            automargin=True,
+            automargin=False,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=True,
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
         )
 
