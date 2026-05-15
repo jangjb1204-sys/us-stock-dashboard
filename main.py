@@ -1656,24 +1656,23 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
         div[data-testid="stPlotlyChart"] {
-            width: calc(100vw - 1.64rem) !important;
-            max-width: calc(100vw - 1.64rem) !important;
-            height: 500px !important;
-            min-height: 500px !important;
-            max-height: 500px !important;
-            margin-left: calc(0.82rem - 20px) !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 560px !important;
+            min-height: 560px !important;
+            max-height: 560px !important;
             margin-top: 0.85rem !important;
             margin-bottom: 2rem !important;
-            overflow: hidden !important;
+            overflow: visible !important;
             touch-action: pan-y !important;
             overscroll-behavior: contain;
             -webkit-user-select: none;
             user-select: none;
         }
         div[data-testid="stPlotlyChart"] > div {
-            height: 500px !important;
-            min-height: 500px !important;
-            max-height: 500px !important;
+            height: 560px !important;
+            min-height: 560px !important;
+            max-height: 560px !important;
         }
         div[data-testid="stPlotlyChart"] .js-plotly-plot,
         div[data-testid="stPlotlyChart"] .plotly,
@@ -1681,9 +1680,9 @@ st.markdown("""
         div[data-testid="stPlotlyChart"] .svg-container,
         div[data-testid="stPlotlyChart"] .draglayer,
         div[data-testid="stPlotlyChart"] .nsewdrag {
-            height: 500px !important;
-            min-height: 500px !important;
-            max-height: 500px !important;
+            height: 560px !important;
+            min-height: 560px !important;
+            max-height: 560px !important;
             touch-action: pan-y !important;
             -webkit-user-select: none;
             user-select: none;
@@ -1894,7 +1893,7 @@ CHART_THEME = dict(
         font=dict(size=8, color='rgba(255,255,255,0.42)'), bgcolor='rgba(0,0,0,0)', bordercolor='rgba(0,0,0,0)',
     ),
     xaxis_rangeslider_visible=False,
-    margin=dict(l=12, r=12, t=34, b=28),
+    margin=dict(l=32, r=4, t=34, b=48),
 )
 GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.035)', zeroline=False)
 MAIN_CHART_HEIGHT = 460
@@ -2010,10 +2009,10 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             showticklabels=(r == 3),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
-            automargin=True,
+            automargin=False,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=True,
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
         )
 
@@ -2112,10 +2111,10 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
             showticklabels=(r == 2),
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
             fixedrange=True,
-            automargin=True,
+            automargin=False,
         )
         fig.update_yaxes(
-            **GRID, row=r, col=1, fixedrange=True, automargin=True,
+            **GRID, row=r, col=1, fixedrange=True, automargin=False,
             tickfont=dict(color='rgba(255,255,255,0.38)', size=8),
         )
 
