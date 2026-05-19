@@ -711,7 +711,7 @@ def main() -> None:
         current_month = selected_date.replace(day=1)
 
     selected_row = file_df[file_df["date"] == selected_date].iloc[-1]
-    df = load_scan_csv(selected_row["path"], int(selected_row.get("mtime_ns", 0)))
+    df = load_scan_csv(str(selected_row["path"]), selected_row.get("mtime_ns"))
 
     scan_time = "--"
     for timestamp_col in ["scan_timestamp_ct", "scan_timestamp_utc"]:
