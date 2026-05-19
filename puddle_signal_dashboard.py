@@ -771,7 +771,10 @@ def main() -> None:
     if "asset_type" in filtered.columns:
         filtered = filtered[filtered["asset_type"] == type_filter]
     if "signal" in filtered.columns:
-        filtered = filtered[filtered["signal"] == signal_filter]
+        if signal_filter == "Puddle":
+            filtered = filtered[filtered.get("puddle", pd.Series(dtype=str)).apply(has_text_signal)]
+        else:
+            filtered = filtered[filtered["signal"] == signal_filter]
 
     st.markdown("<div class='panel-title'><span class='chev'>›</span><span>Signal List</span></div>", unsafe_allow_html=True)
     clicked_ticker, _ = parse_signal_table_value(st.session_state.get("signal_table_picker"))
