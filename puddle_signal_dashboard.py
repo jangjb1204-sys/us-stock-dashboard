@@ -687,11 +687,9 @@ def main() -> None:
         try:
             selected_date = pd.to_datetime(query_date).date()
         except Exception:
-            selected_date = st.session_state.get("selected_scan_date", latest_date)
-    elif "selected_scan_date" not in st.session_state:
-        selected_date = latest_date
+            selected_date = latest_date
     else:
-        selected_date = st.session_state.selected_scan_date
+        selected_date = latest_date
     if selected_date not in set(file_df["date"].tolist()):
         selected_date = latest_date
         st.session_state.selected_scan_date = latest_date
