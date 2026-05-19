@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from calendar import Calendar, month_name
 from html import escape
+from io import StringIO
 from pathlib import Path
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -15,6 +16,7 @@ import streamlit.components.v1 as components
 
 APP_DIR = Path(__file__).resolve().parent
 SCAN_DIR = APP_DIR / "signal_scans"
+REMOTE_SCAN_API_URL = "https://api.github.com/repos/jangjb1204-sys/puddle-signal-dashboard/contents/signal_scans?ref=main"
 THREADS_URL = "https://www.threads.net/@30s_tech_j"
 CENTRAL_TZ = ZoneInfo("America/Chicago")
 CACHE_TTL_SECONDS = 60
@@ -148,6 +150,38 @@ div[data-testid="stDownloadButton"] button { min-height:44px!important; font-siz
 
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
 def list_scan_files() -> pd.DataFrame:
+    remote_rows = []
+    try:
+        response = requests.get(
+            REMOTE_SCAN_API_URL,
+            headers={"Accept": "application/vnd.github+json", "User-Agent": "30s-tech-j-streamlit"},
+            timeout=12,
+        )
+        response.raise_for_status()
+        for item in response.json():
+            filename = str(item.get("name", ""))
+            if not filename.startswith("signal_scan_") or not filename.endswith(".csv"):
+                continue
+            raw = filename.removeprefix("signal_scan_").removesuffix(".csv")
+            try:
+                scan_date = pd.to_datetime(raw, format="%Y%m%d").date()
+            except Exception:
+                continue
+            download_url = item.get("download_url")
+            if download_url:
+                remote_rows.append(
+                    {
+                        "date": scan_date,
+                        "path": download_url,
+                        "filename": filename,
+                        "mtime_ns": item.get("sha", ""),
+                    }
+                )
+        if remote_rows:
+            return pd.DataFrame(remote_rows).sort_values("date")
+    except Exception:
+        pass
+
     rows = []
     if not SCAN_DIR.exists():
         return pd.DataFrame(columns=["date", "path", "filename"])
@@ -163,7 +197,12 @@ def list_scan_files() -> pd.DataFrame:
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
 def load_scan_csv(path: str, mtime_ns: int | None = None) -> pd.DataFrame:
     try:
-        df = pd.read_csv(path)
+        if path.startswith("http://") or path.startswith("https://"):
+            response = requests.get(path, headers={"User-Agent": "30s-tech-j-streamlit"}, timeout=12)
+            response.raise_for_status()
+            df = pd.read_csv(StringIO(response.text))
+        else:
+            df = pd.read_csv(path)
     except Exception:
         return pd.DataFrame()
     for col in ["price", "price_change_pct", "close", "change_pct", "rsi"]:
