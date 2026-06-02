@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from calendar import Calendar, month_name
 from html import escape
 from io import StringIO
@@ -16,6 +17,7 @@ import streamlit.components.v1 as components
 
 APP_DIR = Path(__file__).resolve().parent
 SCAN_DIR = APP_DIR / "signal_scans"
+REMOTE_SCAN_INDEX_URL = "https://raw.githubusercontent.com/jangjb1204-sys/puddle-signal-dashboard/main/signal_scans/index.json"
 REMOTE_SCAN_API_URL = "https://api.github.com/repos/jangjb1204-sys/puddle-signal-dashboard/contents/signal_scans?ref=main"
 THREADS_URL = "https://www.threads.net/@30s_tech_j"
 CENTRAL_TZ = ZoneInfo("America/Chicago")
@@ -150,6 +152,31 @@ div[data-testid="stDownloadButton"] button { min-height:44px!important; font-siz
 
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
 def list_scan_files() -> pd.DataFrame:
+    index_rows = []
+    try:
+        response = requests.get(REMOTE_SCAN_INDEX_URL, headers={"User-Agent": "30s-tech-j-streamlit"}, timeout=12)
+        response.raise_for_status()
+        for item in json.loads(response.text):
+            try:
+                scan_date = pd.to_datetime(item.get("date"), format="%Y-%m-%d").date()
+            except Exception:
+                continue
+            path = item.get("url")
+            filename = item.get("filename")
+            if path and filename:
+                index_rows.append(
+                    {
+                        "date": scan_date,
+                        "path": path,
+                        "filename": filename,
+                        "mtime_ns": item.get("mtime_ns", ""),
+                    }
+                )
+        if index_rows:
+            return pd.DataFrame(index_rows).sort_values("date")
+    except Exception:
+        pass
+
     remote_rows = []
     try:
         response = requests.get(
