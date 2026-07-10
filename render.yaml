@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: 30s-tech-j
+    runtime: python
+    plan: free
+    branch: render-native-migration
+    autoDeploy: true
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: streamlit run main.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
+    healthCheckPath: /_stcore/health
