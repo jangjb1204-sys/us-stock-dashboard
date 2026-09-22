@@ -1,8 +1,13 @@
-streamlit>=1.35.0
-yfinance>=0.2.40
+# Upper bounds guard against a breaking major release silently landing on the
+# next deploy. None of these exclude a version that currently resolves, so this
+# is a safety net rather than a version change.
+# pandas is deliberately left unbounded to avoid forcing a downgrade of whatever
+# is already running in production.
+streamlit>=1.35.0,<2.0.0
+yfinance>=0.2.40,<0.3.0
 pandas>=2.0.0
-numpy>=1.26.0
-plotly>=5.22.0
-requests>=2.31.0
-openpyxl>=3.1.0
-kaleido>=0.2.1
+numpy>=1.26.0,<3.0.0
+plotly>=5.22.0,<7.0.0
+requests>=2.31.0,<3.0.0
+openpyxl>=3.1.0,<4.0.0
+kaleido>=0.2.1,<0.5.0

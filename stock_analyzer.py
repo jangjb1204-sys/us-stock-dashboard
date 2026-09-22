@@ -2,15 +2,23 @@ import pandas as pd
 pd.set_option('future.no_silent_downcasting', True)
 import yfinance as yf
 from datetime import datetime, timedelta
+import logging
 import requests
 import json
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from zoneinfo import ZoneInfo
 
+# Data fetches fail silently by design (the UI just shows N/A rather than
+# breaking), but the reason is logged so an outage or an upstream API change is
+# diagnosable from the server logs instead of invisible.
+logger = logging.getLogger(__name__)
+
 # --- 상수 정의 ---
 SEARCH_DAYS = 365 * 4
 DATE_FORMAT = '%Y-%m-%d'
+# Look-back window (trading days) for the rolling 2-sigma volatility band.
+VOLATILITY_WINDOW = 20
 CENTRAL_TZ = ZoneInfo('America/Chicago')
 USER_AGENT = (
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -45,6 +53,7 @@ def fetch_fear_and_greed_index(start_date: str) -> pd.DataFrame | None:
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code != 200:
+            logger.warning('Fear & Greed fetch returned HTTP %s', response.status_code)
             return None
         data = json.loads(response.text)
         data_list = data['fear_and_greed_historical']['data']
@@ -60,6 +69,7 @@ def fetch_fear_and_greed_index(start_date: str) -> pd.DataFrame | None:
         df = df.sort_values('Date').drop_duplicates('Date', keep='first')
         return df
     except Exception:
+        logger.exception('Fear & Greed fetch failed')
         return None
 
 
@@ -83,6 +93,7 @@ def fetch_common_market_data(period: str = '2y') -> dict:
             threads=True,
         )
     except Exception:
+        logger.exception('Batch download of market indices failed (%s)', symbols)
         raw = pd.DataFrame()
 
     def normalize_market_frame(ticker_sym: str, col_name: str) -> pd.DataFrame:
@@ -112,6 +123,7 @@ def fetch_common_market_data(period: str = '2y') -> dict:
             df[col_name] = df[col_name].round(2)
             return key, df
         except Exception:
+            logger.exception('Failed to fetch market series %s (%s)', key, ticker_sym)
             return key, pd.DataFrame()
 
     with ThreadPoolExecutor(max_workers=len(market_specs)) as executor:
@@ -126,11 +138,17 @@ def fetch_common_market_data(period: str = '2y') -> dict:
 def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
     try:
         stock = yf.Ticker(ticker)
-        data = stock.history(period=period).reset_index()
+        # auto_adjust is set explicitly to stay consistent with
+        # fetch_batch_stock_data (used for the market summary table). Leaving it
+        # to yfinance's default made the single-ticker view and the summary
+        # table disagree on price for dividend-paying ETFs, and that default has
+        # changed between yfinance releases.
+        data = stock.history(period=period, auto_adjust=False).reset_index()
         if not data.empty:
             data['Date'] = pd.to_datetime(data['Date'].dt.date)
         return data
     except Exception:
+        logger.exception('Price history fetch failed for %s', ticker)
         return pd.DataFrame()
 
 
@@ -140,6 +158,7 @@ def fetch_ticker_display_name(ticker: str) -> str:
         name = info.get('longName') or info.get('shortName') or info.get('displayName')
         return str(name).strip() if name else ticker
     except Exception:
+        logger.warning('Display-name lookup failed for %s', ticker, exc_info=True)
         return ticker
 
 
@@ -154,6 +173,7 @@ def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.Data
             threads=True,
         )
     except Exception:
+        logger.exception('Batch price download failed (%s)', tickers)
         return {ticker: pd.DataFrame() for ticker in tickers}
 
     results = {}
@@ -171,6 +191,7 @@ def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.Data
             data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None).dt.normalize()
             results[ticker] = data
         except Exception:
+            logger.exception('Failed to normalize batch data for %s', ticker)
             results[ticker] = pd.DataFrame()
     return results
 
@@ -181,12 +202,33 @@ def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.Data
 # Keep this as the single source of truth for indicator/signal logic —
 # don't add a second copy in another file.
 def calculate_rsi(data: pd.DataFrame, window: int = 14) -> pd.Series:
-    if len(data) < window:
+    """Relative Strength Index using Wilder's smoothing (the standard).
+
+    Wilder's RSI is what TradingView, Yahoo Finance and most charting
+    platforms display, so values here line up with what you'd see there.
+    (A simple rolling mean instead of the EMA below gives "Cutler's RSI",
+    which can differ by 20+ points and would desync the 20/30/60
+    thresholds this dashboard's signals are built on.)
+    """
+    if len(data) <= window:
         return pd.Series([np.nan] * len(data), index=data.index)
     delta = data['Close'].diff()
-    gain = delta.where(delta > 0, 0).rolling(window=window).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
-    rs = gain / loss
+    gain = delta.clip(lower=0)
+    loss = (-delta).clip(lower=0)
+
+    def wilder_average(series: pd.Series) -> pd.Series:
+        # Wilder seeds the average with the simple mean of the first `window`
+        # changes, then smooths recursively. ewm(alpha=1/window, adjust=False)
+        # is that same recursion, so seeding position `window` and blanking
+        # everything before it reproduces Wilder's values exactly.
+        seeded = series.copy()
+        seeded.iloc[:window] = np.nan
+        seeded.iloc[window] = series.iloc[1:window + 1].mean()
+        return seeded.ewm(alpha=1 / window, adjust=False).mean()
+
+    avg_gain = wilder_average(gain)
+    avg_loss = wilder_average(loss)
+    rs = avg_gain / avg_loss
     return (100 - (100 / (1 + rs))).round(2)
 
 
@@ -231,12 +273,17 @@ def generate_fg_rsi_signals(data: pd.DataFrame) -> pd.DataFrame:
         rsi = row['RSI']
         fg_idx = row.get('FG index', -1)
         has_fg = not pd.isna(fg_idx) and fg_idx != -1
+        # Order matters: the RSI thresholds overlap (<=20 is also <=30), so the
+        # most extreme tier must be tested first. Checking <=30 before <=20
+        # made '3x BUY' unreachable via RSI entirely.
+        # The market-wide F&G index intentionally takes priority: a greedy
+        # market yields 'BUY STOP' even when a single ticker is oversold.
         if rsi >= 60 or (has_fg and 51 <= fg_idx <= 100):
             return 'BUY STOP'
-        elif rsi <= 30 or (has_fg and 26 <= fg_idx <= 50):
-            return '2x BUY'
         elif rsi <= 20 or (has_fg and 0 <= fg_idx <= 25):
             return '3x BUY'
+        elif rsi <= 30 or (has_fg and 26 <= fg_idx <= 50):
+            return '2x BUY'
         return '1x BUY'
     data['FG/RSI signal'] = data.apply(apply_rules, axis=1)
     return data
@@ -307,8 +354,14 @@ def process_stock_frame(data: pd.DataFrame, ticker: str, name: str, common_data:
 
     data[['Close', 'Open', 'High', 'Low']] = data[['Close', 'Open', 'High', 'Low']].round(2)
     data['Change(%)'] = (data['Close'].pct_change() * 100).round(2)
+    # Rolling 2-sigma band: each row reflects volatility over the preceding
+    # VOLATILITY_WINDOW trading days. (Previously this was a single whole-series
+    # std copied onto every row, so the column never varied by date and ignored
+    # the range the user had selected.)
     log_returns = np.log(data['Close'] / data['Close'].shift(1))
-    data['2sigma(%)'] = round(log_returns.std() * 100 * 2, 1)
+    data['2sigma(%)'] = (
+        log_returns.rolling(window=VOLATILITY_WINDOW).std() * 100 * 2
+    ).round(1)
 
     data = calculate_moving_averages(data)
     data['RSI'] = calculate_rsi(data)

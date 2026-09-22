@@ -8,7 +8,6 @@ from html import escape
 import time
 import uuid
 from zoneinfo import ZoneInfo
-from concurrent.futures import ThreadPoolExecutor
 
 from stock_analyzer import (
     TICKER_CONFIGS,
@@ -1842,11 +1841,12 @@ def load_common_data(period: str) -> dict:
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_ticker_data(ticker: str, name: str, period: str, delta: int, _cache_key: str) -> tuple[pd.DataFrame, str]:
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        common_future = executor.submit(fetch_common_market_data, period)
-        stock_future = executor.submit(fetch_stock_data, ticker, period)
-        common_data = common_future.result()
-        stock_data = stock_future.result()
+    # Reuse the cached market-wide series (VIX / VIX1D / SKEW / 10Y / F&G)
+    # instead of re-fetching them for every ticker. These are identical for all
+    # tickers, so the previous per-ticker fetch meant five redundant network
+    # round-trips each time the selection changed.
+    common_data = load_common_data(period)['data']
+    stock_data = fetch_stock_data(ticker, period)
     data = process_stock_frame(stock_data, ticker, name, common_data, delta=DELTA_OPTIONS["4Y"])
     return data, central_timestamp_label()
 
