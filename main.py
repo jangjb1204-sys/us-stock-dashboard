@@ -1702,6 +1702,79 @@ st.markdown("""
             font-size: 0.76rem;
         }
     }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       LAYOUT REFINEMENTS
+       Appended last on purpose: the rules above this point are defined twice
+       in this stylesheet (an older copy and a newer one), so the only way to
+       reliably win the cascade is to come after both. Keep additions here.
+       ══════════════════════════════════════════════════════════════════════ */
+
+    /* The radio "pills" still drew their radio dot: the rule that hid it lived
+       only in the first (overridden) copy of the stylesheet, and it targeted
+       label > div:first-child, which newer Streamlit turned into a visually
+       hidden <span> wrapping the input. Target the dot itself instead. */
+    div[data-testid="stRadio"] label[data-testid="stRadioOption"] > div > div:first-child:not([data-testid]) {
+        display: none !important;
+    }
+    div[data-testid="stRadio"] label[data-testid="stRadioOption"] > div {
+        gap: 0 !important;
+    }
+
+    /* Section titles, replacing "### Signal Feed" so headings share one style. */
+    .section-heading {
+        margin: 1.35rem 0 0.6rem;
+        color: rgba(255,255,255,0.92);
+        font-size: 0.96rem;
+        font-weight: 680;
+        letter-spacing: 0.01em;
+    }
+
+    /* Five metrics (RSI/VIX/F&G/SKEW/10Y) on one row instead of 4 + 1 orphan. */
+    .summary-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        column-gap: 26px !important;
+        row-gap: 16px !important;
+    }
+    .summary-row { padding-top: 18px !important; }
+
+    /* Signal feed: one scannable row per signal. */
+    .signal-feed { margin: 0.4rem 0 1.4rem !important; }
+    .signal-entry {
+        display: grid !important;
+        grid-template-columns: 52px 78px 128px minmax(0, 1fr);
+        align-items: baseline;
+        gap: 14px;
+        padding: 9px 0 !important;
+    }
+    .signal-entry .signal-date { margin: 0 !important; }
+    .signal-entry .signal-detail { margin: 0 !important; font-size: 0.83rem; }
+    .signal-entry .signal-title { font-size: 0.9rem; }
+
+    /* Tighter vertical rhythm: the page ran 2,485px tall with large dead gaps. */
+    .block-container { padding-top: 0.9rem !important; padding-bottom: 1.6rem !important; }
+    .block-container hr {
+        margin: 1.1rem 0 !important;
+        border-color: rgba(255,255,255,0.06);
+    }
+    .glass-table-wrap { margin-bottom: 0.4rem; }
+
+    @media (max-width: 640px) {
+        /* Four metric columns do not fit a phone; two stay readable. */
+        .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            column-gap: 18px !important;
+        }
+        /* Stack the signal row: action + date on top, type + detail beneath. */
+        .signal-entry {
+            grid-template-columns: 48px minmax(0, 1fr);
+            row-gap: 3px;
+            padding: 11px 0 !important;
+        }
+        .signal-entry .signal-title { grid-column: 2; }
+        .signal-entry .signal-detail { grid-column: 2; }
+        .section-heading { margin: 1.1rem 0 0.5rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1719,27 +1792,40 @@ MA_COLORS = {
 PRICE_LEGEND_SERIES = {'MA20', 'MA60', 'MA120'}
 
 # ── 숫자 포맷 헬퍼 ─────────────────────────────────────────────────────────────
+def finite_float(value):
+    """Coerce to float, returning None for anything missing or non-finite.
+
+    float(NaN) succeeds, so a plain try/except let NaN through and rendered as
+    the literal string "nan" in the metric cards (SKEW showed this whenever the
+    index had no quote for the latest session). Every formatter and every
+    is-not-None check below depends on NaN collapsing to None here.
+    """
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if np.isfinite(result) else None
+
 def fmt_price(v):
-    try: return f"${float(v):.2f}"
-    except: return "N/A"
+    f = finite_float(v)
+    return f"${f:.2f}" if f is not None else "N/A"
 
 def fmt_pct(v, sign=False):
-    try:
-        f = float(v)
-        return f"{f:+.2f}%" if sign else f"{f:.2f}%"
-    except: return "N/A"
+    f = finite_float(v)
+    if f is None:
+        return "N/A"
+    return f"{f:+.2f}%" if sign else f"{f:.2f}%"
 
 def fmt_1f(v):
-    try: return f"{float(v):.1f}"
-    except: return "N/A"
+    f = finite_float(v)
+    return f"{f:.1f}" if f is not None else "N/A"
 
 def fmt_int(v):
-    try: return f"{int(float(v)):,}"
-    except: return "N/A"
+    f = finite_float(v)
+    return f"{int(f):,}" if f is not None else "N/A"
 
 def safe_float(val):
-    try: return float(val)
-    except: return None
+    return finite_float(val)
 
 def normalize_ticker(value: str) -> str:
     ticker = value.strip().upper().replace(" ", "")
@@ -2270,7 +2356,7 @@ def table_cell_class(col: str, value) -> str:
         pass
     return ' '.join(c for c in classes if c)
 
-def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 520, newest_first: bool = False):
+def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int | None = 520, newest_first: bool = False):
     existing = [col for col in columns if col in df.columns]
     if not existing:
         return
@@ -2301,9 +2387,12 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 52
             cells.append(f"<td{class_attr}>{escape(format_table_value(col, value))}</td>")
         body_rows.append(f"<tr class='{' '.join(row_classes)}'>{''.join(cells)}</tr>")
 
+    # height_px=None lets the table size to its rows instead of introducing a
+    # nested scrollbar inside the page.
+    height_style = f' style="max-height:{height_px}px"' if height_px else ''
     st.markdown(
         f"""
-        <div class="glass-table-wrap" style="max-height:{height_px}px">
+        <div class="glass-table-wrap"{height_style}>
           <table class="glass-table">
             <thead><tr>{header}</tr></thead>
             <tbody>{''.join(body_rows)}</tbody>
@@ -2316,23 +2405,27 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int = 52
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
-    with st.expander("Market Overview (Saved Tickers)", expanded=False):
-        if not st.session_state.get("market_overview_loaded", False):
-            if st.button("Load Market Overview", use_container_width=True):
-                st.session_state.market_overview_loaded = True
-                st.rerun()
-        else:
-            with st.spinner("Loading Market Overview..."):
-                summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
+    # Rendered directly rather than behind an expander plus a "Load" button.
+    # This table compares every saved ticker at a glance, which is the densest
+    # view in the app; two clicks and a spinner were hiding the main payload.
+    # load_market_summary_rows is cached (30 min), so repeat visits are instant.
+    with st.spinner("Loading market overview..."):
+        summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
-            if not summary_df.empty:
-                render_glass_table(
-                    summary_df,
-                    ['Name', 'Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal', 'Puddle'],
-                    height_px=420,
-                )
-            else:
-                st.info("Market overview data is not available yet.")
+    if summary_df.empty:
+        st.info("Market overview data is not available yet.")
+        return
+
+    columns = ['Name', 'Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal']
+    # Puddle is empty for most tickers most days; only spend a column on it when
+    # at least one ticker actually carries a signal.
+    # astype(str) first: if every ticker's Puddle is NaN the column comes back
+    # as float64 and the .str accessor would raise.
+    if 'Puddle' in summary_df.columns and summary_df['Puddle'].astype(str).str.contains(r'[a-zA-Z]', na=False).any():
+        columns.append('Puddle')
+
+    st.markdown("<div class='section-heading'>Market Overview</div>", unsafe_allow_html=True)
+    render_glass_table(summary_df, columns, height_px=None)
 
 
 def render_signal_cards(df: pd.DataFrame):
@@ -2384,16 +2477,15 @@ def render_signal_cards(df: pd.DataFrame):
 
     signal_rows = sorted(signal_rows, key=lambda item: item[0], reverse=True)[:10]
     if signal_rows:
+        # One row per signal (action / date / type / detail) instead of a
+        # four-line stacked card, so ten signals read as a scannable list rather
+        # than filling two screens.
         body = ''.join(
             f"<div class='signal-entry'>"
-            f"<div class='signal-main'>"
             f"<div class='signal-action {escape(tone)}'>{escape(action)}</div>"
-            f"<div class='signal-copy'>"
             f"<div class='signal-date'>{escape(date)}</div>"
             f"<div class='signal-title'>{escape(title)}</div>"
             f"<div class='signal-detail'>{escape(detail)}</div>"
-            f"</div>"
-            f"</div>"
             f"</div>"
             for _, date, action, tone, title, detail in signal_rows
         )
@@ -2522,8 +2614,6 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
             <div class="viewer-pill">
               <span class="viewer-dot"></span>
               <span>Watching <strong>{active_viewers:,}</strong></span>
-              <span>·</span>
-              <span>Total <strong>{total_views:,}</strong></span>
             </div>
           </div>
         </div>
@@ -2540,12 +2630,23 @@ market_open = is_us_market_open()
 market_dot_class = "open" if market_open else "closed"
 hero_slot = st.empty()
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")
-delta_label = st.radio(
-    "Range",
-    options=list(DELTA_OPTIONS.keys()),
-    index=list(DELTA_OPTIONS.keys()).index("180D"),
-    horizontal=True,
-)
+
+# Range and Search share one row: Range only needs about a third of the width,
+# and pairing them keeps the whole control block to two rows instead of three.
+range_col, search_col = st.columns([1.1, 1])
+with range_col:
+    delta_label = st.radio(
+        "Range",
+        options=list(DELTA_OPTIONS.keys()),
+        index=list(DELTA_OPTIONS.keys()).index("180D"),
+        horizontal=True,
+    )
+with search_col:
+    raw_custom_ticker = st.text_input(
+        "Search",
+        placeholder="US stock / ETF ticker, e.g. AAPL, NVDA, VOO",
+        key="direct_ticker_query",
+    )
 delta = DELTA_OPTIONS[delta_label]
 
 
@@ -2553,26 +2654,20 @@ delta = DELTA_OPTIONS[delta_label]
 period = DATA_PERIOD
 cache_key = f"{period}_{delta}"
 
-focus_preset, focus_custom = st.columns([1, 1])
-with focus_preset:
-    saved_default = st.session_state.get("saved_ticker_radio") or st.session_state.get("saved_ticker_select")
-    if saved_default not in ticker_options:
-        saved_default = ticker_options[0]
-    preset_ticker = st.radio(
-        "Saved Tickers",
-        ticker_options,
-        index=ticker_options.index(saved_default),
-        format_func=ticker_name,
-        horizontal=True,
-        key="saved_ticker_radio",
-        on_change=clear_direct_ticker_input,
-    )
-with focus_custom:
-    raw_custom_ticker = st.text_input(
-        "Search",
-        placeholder="US stock / ETF ticker, e.g. AAPL, NVDA, VOO",
-        key="direct_ticker_query",
-    )
+# Full width so the ten tickers wrap into two rows on desktop and two on mobile,
+# rather than three rows squeezed into a half-width column.
+saved_default = st.session_state.get("saved_ticker_radio") or st.session_state.get("saved_ticker_select")
+if saved_default not in ticker_options:
+    saved_default = ticker_options[0]
+preset_ticker = st.radio(
+    "Saved Tickers",
+    ticker_options,
+    index=ticker_options.index(saved_default),
+    format_func=ticker_name,
+    horizontal=True,
+    key="saved_ticker_radio",
+    on_change=clear_direct_ticker_input,
+)
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
 if raw_custom_ticker.strip() and not custom_ticker:
@@ -2679,13 +2774,10 @@ render_risk_metrics([
     },
 ])
 
-# ── 최근 신호 ──────────────────────────────────────────────────────────────────
-st.markdown("### Signal Feed")
-render_signal_cards(df)
-
-st.markdown("")
-
 # ── 탭 ────────────────────────────────────────────────────────────────────────
+# The chart sits directly under the price block: it is the reason people open a
+# market dashboard, and it previously started ~1,800px down the page, below the
+# signal feed, so it was two full scrolls out of view on a laptop.
 tab1, tab2, tab3 = st.tabs(["Chart", "Signals", "Metrics"])
 
 with tab1:
@@ -2723,6 +2815,10 @@ with tab3:
         file_name=f"{selected_name}_{central_now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
     )
+
+# ── 최근 신호 ──────────────────────────────────────────────────────────────────
+st.markdown("<div class='section-heading'>Signal Feed</div>", unsafe_allow_html=True)
+render_signal_cards(df)
 
 st.markdown(
     """
