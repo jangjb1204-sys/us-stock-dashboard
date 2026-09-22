@@ -176,6 +176,10 @@ def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.Data
 
 
 # --- 기술적 지표 계산 ---
+# NOTE: main.py and puddle_signal_dashboard.py both import calculate_rsi,
+# calculate_moving_averages and generate_puddle_signals from this module.
+# Keep this as the single source of truth for indicator/signal logic —
+# don't add a second copy in another file.
 def calculate_rsi(data: pd.DataFrame, window: int = 14) -> pd.Series:
     if len(data) < window:
         return pd.Series([np.nan] * len(data), index=data.index)
@@ -199,6 +203,7 @@ def calculate_stochastic_slow(data: pd.DataFrame, n: int = 14, m: int = 3, t: in
 
 
 def calculate_moving_averages(data: pd.DataFrame, windows: list = [20, 60, 120, 200]) -> pd.DataFrame:
+    data = data.copy()
     for window in windows:
         data[f'MA{window}'] = data['Close'].rolling(window=window).mean().round(2) if len(data) >= window else np.nan
     return data
@@ -238,15 +243,33 @@ def generate_fg_rsi_signals(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def generate_puddle_signals(data: pd.DataFrame) -> pd.DataFrame:
+    """Detect MA/RSI breakdown ("puddle") signals.
+
+    Canonical implementation — also used by puddle_signal_dashboard.py.
+    Do not fork a second copy of this logic; import it from here instead.
+    """
+    data = data.copy()
     alerts = ['']
     for i in range(1, len(data)):
         row, prev = data.iloc[i], data.iloc[i - 1]
         conditions = {
-            1: (not pd.isna(row.get('MA20')) and row['Close'] < row['MA20'] and prev['Close'] >= prev.get('MA20', np.nan)),
-            2: (not pd.isna(row.get('MA60')) and row['Close'] < row['MA60'] and prev['Close'] >= prev.get('MA60', np.nan)),
-            3: (not pd.isna(row.get('MA120')) and row['Close'] < row['MA120'] and prev['Close'] >= prev.get('MA120', np.nan)),
-            4: (not pd.isna(row.get('MA200')) and row['Close'] < row['MA200'] and
-                not pd.isna(row.get('RSI')) and row['RSI'] < 30)
+            1: (
+                pd.notna(row.get('MA20')) and pd.notna(prev.get('MA20'))
+                and row['Close'] < row['MA20'] and prev['Close'] >= prev['MA20']
+            ),
+            2: (
+                pd.notna(row.get('MA60')) and pd.notna(prev.get('MA60'))
+                and row['Close'] < row['MA60'] and prev['Close'] >= prev['MA60']
+            ),
+            3: (
+                pd.notna(row.get('MA120')) and pd.notna(prev.get('MA120'))
+                and row['Close'] < row['MA120'] and prev['Close'] >= prev['MA120']
+            ),
+            4: (
+                pd.notna(row.get('MA200')) and pd.notna(prev.get('MA200'))
+                and row['Close'] < row['MA200'] and prev['Close'] >= prev['MA200']
+                and pd.notna(row.get('RSI')) and row['RSI'] < 30
+            ),
         }
         timings = [k for k, v in conditions.items() if v]
         alerts.append({

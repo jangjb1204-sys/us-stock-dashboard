@@ -14,6 +14,12 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
+from stock_analyzer import (
+    calculate_moving_averages,
+    calculate_rsi,
+    generate_puddle_signals,
+)
+
 
 APP_DIR = Path(__file__).resolve().parent
 SCAN_DIR = APP_DIR / "signal_scans"
@@ -341,65 +347,6 @@ def fetch_yahoo_chart(symbol: str, period: str = "2y") -> pd.DataFrame:
     for col in ["Open", "High", "Low", "Close", "Volume"]:
         data[col] = pd.to_numeric(data[col], errors="coerce")
     return normalize_date_column(data)
-
-def calculate_rsi(data: pd.DataFrame, window: int = 14) -> pd.Series:
-    if len(data) < window:
-        return pd.Series([pd.NA] * len(data), index=data.index, dtype="float64")
-    delta = data["Close"].diff()
-    gain = delta.where(delta > 0, 0).rolling(window=window).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
-    rs = gain / loss
-    return (100 - (100 / (1 + rs))).round(2)
-
-def calculate_moving_averages(data: pd.DataFrame, windows: list[int] | None = None) -> pd.DataFrame:
-    data = data.copy()
-    for window in windows or [20, 60, 120, 200]:
-        data[f"MA{window}"] = data["Close"].rolling(window=window).mean().round(2) if len(data) >= window else pd.NA
-    return data
-
-def generate_puddle_signals(data: pd.DataFrame) -> pd.DataFrame:
-    data = data.copy()
-    alerts = [""]
-    for index in range(1, len(data)):
-        row = data.iloc[index]
-        prev = data.iloc[index - 1]
-        conditions = {
-            1: (
-                pd.notna(row.get("MA20"))
-                and pd.notna(prev.get("MA20"))
-                and row["Close"] < row["MA20"]
-                and prev["Close"] >= prev.get("MA20", pd.NA)
-            ),
-            2: (
-                pd.notna(row.get("MA60"))
-                and pd.notna(prev.get("MA60"))
-                and row["Close"] < row["MA60"]
-                and prev["Close"] >= prev.get("MA60", pd.NA)
-            ),
-            3: (
-                pd.notna(row.get("MA120"))
-                and pd.notna(prev.get("MA120"))
-                and row["Close"] < row["MA120"]
-                and prev["Close"] >= prev.get("MA120", pd.NA)
-            ),
-            4: (
-                pd.notna(row.get("MA200"))
-                and pd.notna(prev.get("MA200"))
-                and row["Close"] < row["MA200"]
-                and prev["Close"] >= prev.get("MA200", pd.NA)
-                and pd.notna(row.get("RSI"))
-                and row["RSI"] < 30
-            ),
-        }
-        timings = [stage for stage, matched in conditions.items() if matched]
-        alerts.append({
-            4: "4th: MA200, RSI<=30, 100% cash, 40d",
-            3: "3rd: MA120, 50% cash, 5d",
-            2: "2nd: MA60, 50% cash, 5d",
-            1: "1st: MA20, 10% cash",
-        }.get(max(timings), "") if timings else "")
-    data["Puddle"] = alerts
-    return data
 
 @st.cache_data(show_spinner=False, ttl=CHART_CACHE_TTL_SECONDS)
 def fetch_market_overlay(period: str = "2y") -> pd.DataFrame:
