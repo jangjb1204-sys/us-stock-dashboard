@@ -1873,11 +1873,17 @@ def load_ticker_display_name(ticker: str) -> str:
         return TICKER_CONFIGS[ticker]
     return fetch_ticker_display_name(ticker)
 
-def has_rsi_puddle_signal(rsi, puddle) -> bool:
+def has_rsi_puddle_signal(value) -> bool:
+    """True when the combined "RSI & Puddle" signal is active for a row.
+
+    `value` is that row's precomputed RSI_Puddle_Signal column
+    (stock_analyzer.add_rsi_puddle_signal): RSI <= 30 while a Puddle
+    breakdown from up to RSI_PUDDLE_LOOKBACK_DAYS trading days ago is still
+    "fresh" — not only on the exact day it fires. See stock_analyzer.py for
+    why a same-day-only match doesn't work.
+    """
     try:
-        rsi_val = float(rsi)
-        puddle_text = str(puddle) if pd.notna(puddle) else ''
-        return rsi_val <= 30 and any(ch.isalpha() for ch in puddle_text)
+        return pd.notna(value) and bool(value)
     except Exception:
         return False
 
@@ -2149,13 +2155,11 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
                     col=1,
                 )
 
-    if 'RSI' in df.columns and 'Puddle' in df.columns:
-        oversold  = df[df['RSI'] <= 30]
-        puddle_df = df[df['Puddle'].str.contains(r'[a-zA-Z]', na=False)]
-        overlap   = pd.merge(oversold, puddle_df, on='Date', how='inner')
+    if 'RSI_Puddle_Signal' in df.columns:
+        overlap = df[df['RSI_Puddle_Signal'].apply(has_rsi_puddle_signal)]
         if not overlap.empty:
             fig.add_trace(go.Scatter(
-                x=overlap['Date'], y=overlap['Close_x'],
+                x=overlap['Date'], y=overlap['Close'],
                 mode='markers', name='RSI & Puddle',
                 marker=dict(symbol='circle', size=8, color='#2F80FF',
                             line=dict(width=1.5, color='white')),
@@ -2241,15 +2245,14 @@ def style_table(df: pd.DataFrame):
         ci  = si('Change(%)')
         sci = si('2sigma(%)')
         ri  = si('RSI')
-        pi  = si('Puddle')
 
         def bg_prefix(style):
             return f"{style}; " if style.startswith('background') else ''
 
         # 라인 차트의 RSI ∩ Puddle 동그라미와 같은 조건
-        if ri >= 0 and pi >= 0:
+        if ri >= 0 and 'RSI_Puddle_Signal' in df.columns:
             try:
-                if has_rsi_puddle_signal(row.iloc[ri], row.iloc[pi]):
+                if has_rsi_puddle_signal(df.loc[row.name, 'RSI_Puddle_Signal']):
                     styles = ['background-color: rgba(188,140,255,0.20)'] * len(styles)
             except: pass
 
@@ -2360,7 +2363,11 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int | No
     existing = [col for col in columns if col in df.columns]
     if not existing:
         return
-    view = df[existing].copy()
+    # RSI_Puddle_Signal drives row highlighting but isn't a display column
+    # requested by the caller, so it's pulled in separately and never added
+    # to `existing` (which is what actually gets rendered as <td> cells).
+    signal_col = 'RSI_Puddle_Signal' if 'RSI_Puddle_Signal' in df.columns and 'RSI_Puddle_Signal' not in existing else None
+    view = df[existing + ([signal_col] if signal_col else [])].copy()
     if newest_first and 'Date' in view.columns:
         view['Date'] = pd.to_datetime(view['Date'])
         view = view.sort_values('Date', ascending=False)
@@ -2369,7 +2376,7 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int | No
     body_rows = []
     for _, row in view.iterrows():
         row_classes = []
-        if {'RSI', 'Puddle'}.issubset(view.columns) and has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')):
+        if signal_col and has_rsi_puddle_signal(row.get(signal_col)):
             row_classes.append('signal-row')
         try:
             if {'Change(%)', '2sigma(%)'}.issubset(view.columns):
@@ -2453,16 +2460,22 @@ def render_signal_cards(df: pd.DataFrame):
         recent_rows(df[df['VIX1D>VIX'] == 'BUY']),
     ) if 'VIX1D>VIX' in df.columns else []
 
-    if {'Date', 'RSI', 'Puddle'}.issubset(df.columns):
+    if {'Date', 'RSI', 'RSI_Puddle_Signal'}.issubset(df.columns):
         rsi_puddle_rows = recent_rows(df[
-            df.apply(lambda row: has_rsi_puddle_signal(row.get('RSI'), row.get('Puddle')), axis=1)
+            df['RSI_Puddle_Signal'].apply(has_rsi_puddle_signal)
         ])
         rsi_puddle_items = []
         for _, row in rsi_puddle_rows.iterrows():
             date = pd.to_datetime(row['Date']).strftime('%y.%m.%d')
             rsi = safe_float(row.get('RSI'))
             rsi_text = f"RSI {rsi:.1f}" if rsi is not None else "RSI —"
-            puddle = str(row.get('Puddle', '')) if pd.notna(row.get('Puddle')) else ''
+            # Puddle_Recent (which breakdown made this "fresh") rather than
+            # Puddle (that day's own column, often blank — the breakdown
+            # itself may have fired several days earlier).
+            puddle_label = row.get('Puddle_Recent')
+            if not (pd.notna(puddle_label) and str(puddle_label)):
+                puddle_label = row.get('Puddle', '')
+            puddle = str(puddle_label) if pd.notna(puddle_label) else ''
             rsi_puddle_items.append((date, f"{rsi_text} · {puddle}"))
     else:
         rsi_puddle_items = []

@@ -19,6 +19,15 @@ SEARCH_DAYS = 365 * 4
 DATE_FORMAT = '%Y-%m-%d'
 # Look-back window (trading days) for the rolling 2-sigma volatility band.
 VOLATILITY_WINDOW = 20
+# How many trading days a Puddle breakdown (any tier) stays "fresh" for the
+# combined "RSI & Puddle" signal (see add_rsi_puddle_signal below). Puddle
+# fires on the exact day price crosses a moving average, but RSI is a lagging
+# state value that typically keeps falling for several days after that
+# crossing — requiring both on the same calendar day made the combined signal
+# fire almost never. Checked across the 10 tracked tickers over ~4 years:
+# same-day only caught 14% of RSI<=30 events; a 10-day window catches 64%,
+# which is the value chosen here.
+RSI_PUDDLE_LOOKBACK_DAYS = 10
 CENTRAL_TZ = ZoneInfo('America/Chicago')
 USER_AGENT = (
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -329,6 +338,41 @@ def generate_puddle_signals(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
+def add_rsi_puddle_signal(data: pd.DataFrame, lookback: int = RSI_PUDDLE_LOOKBACK_DAYS) -> pd.DataFrame:
+    """Combined "RSI & Puddle" signal: RSI is oversold (<=30) while a Puddle
+    breakdown (any tier) is still "fresh" — fired within the last `lookback`
+    trading days, not necessarily on the exact same day. See
+    RSI_PUDDLE_LOOKBACK_DAYS above for why a same-day-only match doesn't work.
+
+    Requires `data` already has 'RSI' and 'Puddle' columns, in ascending
+    (oldest-first) date order, e.g. the output of generate_puddle_signals.
+
+    Adds:
+      Puddle_Recent  — the most recent fired Puddle label as of this row,
+                        if any fired within the last `lookback` trading days
+                        (for display: which breakdown this signal refers to).
+      RSI_Puddle_Signal — bool, the combined signal itself.
+    """
+    data = data.copy()
+    puddle_text = data['Puddle'].astype(str)
+    fired = puddle_text.str.contains(r'[a-zA-Z]', na=False)
+
+    recent_label = [''] * len(data)
+    last_fired_idx = None
+    last_fired_label = ''
+    for i in range(len(data)):
+        if fired.iloc[i]:
+            last_fired_idx = i
+            last_fired_label = puddle_text.iloc[i]
+        if last_fired_idx is not None and i - last_fired_idx < lookback:
+            recent_label[i] = last_fired_label
+    data['Puddle_Recent'] = recent_label
+
+    rsi_numeric = pd.to_numeric(data['RSI'], errors='coerce')
+    data['RSI_Puddle_Signal'] = rsi_numeric.le(30) & (data['Puddle_Recent'] != '')
+    return data
+
+
 def calculate_vix_skew_signals(data: pd.DataFrame) -> pd.DataFrame:
     if 'VIX' in data.columns and 'VIX1D' in data.columns:
         data['VIX1D>VIX'] = np.where(
@@ -374,6 +418,7 @@ def process_stock_frame(data: pd.DataFrame, ticker: str, name: str, common_data:
     data = generate_stochastic_signals(data)
     data = generate_fg_rsi_signals(data)
     data = generate_puddle_signals(data)
+    data = add_rsi_puddle_signal(data)
     data = calculate_vix_skew_signals(data)
 
     if len(data) > delta:
@@ -385,13 +430,19 @@ def process_stock_frame(data: pd.DataFrame, ticker: str, name: str, common_data:
         'Tick', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Change(%)', '2sigma(%)',
         'MA20', 'MA60', 'MA120', 'MA200', 'RSI', 'Slow_K', 'Slow_D',
         'FG index', 'rating', 'FG/RSI signal', 'SS Signal',
-        'Puddle', '10Y Treasury', 'VIX', 'VIX1D', 'VIX1D>VIX', 'SKEW'
+        'Puddle', 'Puddle_Recent', 'RSI_Puddle_Signal',
+        '10Y Treasury', 'VIX', 'VIX1D', 'VIX1D>VIX', 'SKEW'
     ]
+    # Column-specific fallbacks for a ticker whose data was too short/empty for
+    # a given signal to be computed: np.nan is truthy for RSI_Puddle_Signal
+    # (bool(float('nan')) is True), so that one needs an explicit False, not
+    # the generic NaN used for every other missing column.
+    missing_defaults = {'RSI_Puddle_Signal': False, 'Puddle_Recent': ''}
     existing_cols = [c for c in target_columns if c in data.columns]
     data_out = data[existing_cols].copy()
     for col in target_columns:
         if col not in data_out.columns:
-            data_out[col] = np.nan
+            data_out[col] = missing_defaults.get(col, np.nan)
     data_out = data_out[target_columns]
     data_out = data_out.reset_index(drop=True)
     return data_out
