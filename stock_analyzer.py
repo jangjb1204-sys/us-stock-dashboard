@@ -48,7 +48,7 @@ TICKER_CONFIGS = {
     'SSO': 'SSO',
     'QLD': 'QLD',
     'SOXL': 'SOXL',
-    'KORU': 'KORU',
+    'BITX': 'BITX',
     'SLV': 'SILVER',
     'GLD': 'GOLD',
     'BTGD': 'BTGD',

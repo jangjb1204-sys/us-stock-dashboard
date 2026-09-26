@@ -1970,6 +1970,9 @@ def load_market_summary_rows(period: str, delta: int, _cache_key: str, extra_tic
                 'RSI':           safe_float(lat.get('RSI')),
                 'FG/RSI signal': lat.get('FG/RSI signal', ''),
                 'Puddle':        lat.get('Puddle', ''),
+                # Not displayed as a column; drives row highlighting in
+                # render_glass_table and the collapsed-header summary.
+                'RSI_Puddle_Signal': has_rsi_puddle_signal(lat.get('RSI_Puddle_Signal')),
             })
         except Exception:
             continue
@@ -2411,10 +2414,30 @@ def render_glass_table(df: pd.DataFrame, columns: list[str], height_px: int | No
 
 
 # ── 전체 종목 요약 ─────────────────────────────────────────────────────────────
+def market_summary_label(summary_df: pd.DataFrame) -> str:
+    """Expander header: names the tickers carrying a signal today, so the
+    useful part of the table is visible without opening it.
+    e.g. "Market Overview · TESLA 3rd · SOXL RSI & Puddle"."""
+    parts = []
+    for _, row in summary_df.iterrows():
+        name = str(row.get('Name', ''))
+        if has_rsi_puddle_signal(row.get('RSI_Puddle_Signal')):
+            parts.append(f"{name} RSI & Puddle")
+            continue
+        puddle = row.get('Puddle')
+        puddle = str(puddle) if pd.notna(puddle) else ''
+        if any(ch.isalpha() for ch in puddle):
+            # "2nd: MA60, 50% cash, 5d" -> "2nd"
+            parts.append(f"{name} {puddle.split(':', 1)[0].strip()}")
+    return " · ".join(["Market Overview", *parts])
+
+
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
-    # Rendered directly rather than behind an expander plus a "Load" button.
-    # This table compares every saved ticker at a glance, which is the densest
-    # view in the app; two clicks and a spinner were hiding the main payload.
+    # Collapsed by default so the selected ticker's price and chart sit near
+    # the top of the page; the header line still lists which tickers have a
+    # signal today, which is the main thing this table is checked for. One
+    # click opens it (no separate "Load" button, which the old version had).
+    # Data is loaded up front because the header depends on it;
     # load_market_summary_rows is cached (30 min), so repeat visits are instant.
     with st.spinner("Loading market overview..."):
         summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
@@ -2431,8 +2454,8 @@ def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers
     if 'Puddle' in summary_df.columns and summary_df['Puddle'].astype(str).str.contains(r'[a-zA-Z]', na=False).any():
         columns.append('Puddle')
 
-    st.markdown("<div class='section-heading'>Market Overview</div>", unsafe_allow_html=True)
-    render_glass_table(summary_df, columns, height_px=None)
+    with st.expander(market_summary_label(summary_df), expanded=False):
+        render_glass_table(summary_df, columns, height_px=None)
 
 
 def render_signal_cards(df: pd.DataFrame):
