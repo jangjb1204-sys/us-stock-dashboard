@@ -35,17 +35,24 @@ def central_timestamp_label() -> str:
 
 
 # ── 페이지 설정 ────────────────────────────────────────────────────────────────
+dashboard_param = st.query_params.get("dashboard")
 st.set_page_config(
-    page_title="US Market Signals",
+    page_title="Korea Market Signals" if dashboard_param == "korea" else "US Market Signals",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-if st.query_params.get("dashboard") == "puddle":
+if dashboard_param == "puddle":
     from puddle_signal_dashboard import main as render_puddle_dashboard
 
     render_puddle_dashboard()
+    st.stop()
+
+if dashboard_param == "korea":
+    from korea_market_dashboard import main as render_korea_dashboard
+
+    render_korea_dashboard()
     st.stop()
 
 # ── 스타일 ─────────────────────────────────────────────────────────────────────
@@ -1108,6 +1115,29 @@ st.markdown("""
         animation: none !important;
         opacity: 0.75;
     }
+    .hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .market-switch {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 13px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.04);
+        color: rgba(255,255,255,0.78) !important;
+        font-size: 0.78rem;
+        font-weight: 650;
+        text-decoration: none !important;
+        white-space: nowrap;
+    }
+    .market-switch:hover {
+        background: rgba(255,255,255,0.08);
+        color: #F2F5F8 !important;
+    }
     .market-status-dot.open {
         background: #3FB950 !important;
         box-shadow: none !important;
@@ -1538,6 +1568,9 @@ st.markdown("""
         .viewer-pill {
             width: auto !important;
             justify-content: flex-start !important;
+        }
+        .hero-actions {
+            gap: 12px;
         }
         .section-label {
             margin: 1.5rem 0 0.68rem !important;
@@ -2647,9 +2680,12 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
                 <span class="updated-mark">{escape(updated_short)}</span>
               </div>
             </div>
-            <div class="viewer-pill">
-              <span class="viewer-dot"></span>
-              <span>Watching <strong>{active_viewers:,}</strong></span>
+            <div class="hero-actions">
+              <a class="market-switch" href="?dashboard=korea" target="_self">🇰🇷 KOSPI · KOSDAQ →</a>
+              <div class="viewer-pill">
+                <span class="viewer-dot"></span>
+                <span>Watching <strong>{active_viewers:,}</strong></span>
+              </div>
             </div>
           </div>
         </div>
