@@ -26,8 +26,10 @@ requests to a coarser interval.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+from html import unescape
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
@@ -55,11 +57,15 @@ SIGNAL_EMOJI = {"green": "🟢", "yellow": "🟡", "red": "🔴"}
 
 
 # ── Data ───────────────────────────────────────────────────────────────────────
+class SymbolNotFound(LookupError):
+    """Yahoo has no chart for this symbol."""
+
+
 def kst_today() -> date:
     return datetime.now(KST).date()
 
 
-def _fetch_chunk(symbol: str, start: datetime, end: datetime, session: requests.Session | None = None) -> pd.DataFrame:
+def _fetch_chunk(symbol: str, start: datetime, end: datetime, session: requests.Session | None = None) -> tuple[pd.DataFrame, dict]:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(symbol, safe='')}"
     params = {
         "period1": int(start.timestamp()),
@@ -69,12 +75,17 @@ def _fetch_chunk(symbol: str, start: datetime, end: datetime, session: requests.
     }
     getter = session.get if session is not None else requests.get
     response = getter(url, params=params, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+    if response.status_code == 404:
+        raise SymbolNotFound(symbol)
     response.raise_for_status()
     result = (response.json().get("chart", {}).get("result") or [None])[0]
-    if not result or not result.get("timestamp"):
-        return pd.DataFrame(columns=["Date", "Close"])
+    empty = pd.DataFrame(columns=["Date", "Close"])
+    if not result:
+        return empty, {}
+    meta = result.get("meta", {}) or {}
+    if not result.get("timestamp"):
+        return empty, meta
 
-    meta = result.get("meta", {})
     granularity = meta.get("dataGranularity")
     if granularity and granularity != "1d":
         raise ValueError(f"Yahoo returned {granularity} data for {symbol}; expected daily")
@@ -87,27 +98,49 @@ def _fetch_chunk(symbol: str, start: datetime, end: datetime, session: requests.
         "Date": pd.to_datetime(timestamps, unit="s").normalize(),
         "Close": pd.to_numeric(pd.Series(closes[: len(timestamps)]), errors="coerce"),
     })
-    return frame.dropna(subset=["Close"])
+    return frame.dropna(subset=["Close"]), meta
+
+
+def fetch_history(symbol: str, start_year: int, now: datetime | None = None) -> tuple[pd.DataFrame, dict]:
+    """Daily closes (Korean trading dates, oldest first) plus Yahoo's meta.
+
+    Fetches the most recent CHUNK_YEARS first, then walks back only as far as
+    the symbol's first trade date, so a stock listed last year costs one
+    request. Raises SymbolNotFound when Yahoo doesn't know the symbol.
+    """
+    now = now or datetime.now(timezone.utc)
+    end = now + timedelta(days=3)
+    floor = datetime(start_year, 1, 1, tzinfo=timezone.utc)
+    frames, meta = [], {}
+    with requests.Session() as session:
+        first = True
+        while end > floor:
+            start = max(floor, datetime(end.year - CHUNK_YEARS, 1, 1, tzinfo=timezone.utc))
+            try:
+                frame, chunk_meta = _fetch_chunk(symbol, start, end, session)
+            except SymbolNotFound:
+                if first:
+                    raise
+                break  # nothing older
+            except Exception:
+                if first:
+                    raise
+                break  # keep what we have rather than fail on old history
+            if first:
+                meta = chunk_meta
+                first = False
+            frames.append(frame)
+            first_trade = meta.get("firstTradeDate")
+            if first_trade is not None and start.timestamp() <= first_trade:
+                break
+            end = start
+    if not frames:
+        return pd.DataFrame(columns=["Date", "Close"]), meta
+    return clean_daily(pd.concat(frames, ignore_index=True)), meta
 
 
 def fetch_daily_closes(symbol: str, start_year: int, now: datetime | None = None) -> pd.DataFrame:
-    """Daily closes indexed by Korean trading date, oldest first."""
-    now = now or datetime.now(timezone.utc)
-    end_limit = now + timedelta(days=3)
-    frames = []
-    with requests.Session() as session:
-        year = start_year
-        while True:
-            start = datetime(year, 1, 1, tzinfo=timezone.utc)
-            if start > end_limit:
-                break
-            end = min(datetime(year + CHUNK_YEARS, 1, 1, tzinfo=timezone.utc), end_limit)
-            frames.append(_fetch_chunk(symbol, start, end, session))
-            year += CHUNK_YEARS
-    if not frames:
-        return pd.DataFrame(columns=["Date", "Close"])
-    data = pd.concat(frames, ignore_index=True)
-    return clean_daily(data)
+    return fetch_history(symbol, start_year, now)[0]
 
 
 def clean_daily(data: pd.DataFrame) -> pd.DataFrame:
@@ -117,6 +150,89 @@ def clean_daily(data: pd.DataFrame) -> pd.DataFrame:
     data = data.dropna(subset=["Close"])
     data = data.drop_duplicates("Date", keep="last").sort_values("Date").reset_index(drop=True)
     return data
+
+
+# ── KRX listing & search ───────────────────────────────────────────────────────
+KIND_LIST_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do"
+KIND_MARKETS = {"stockMkt": "KOSPI", "kosdaqMkt": "KOSDAQ"}
+MARKET_SUFFIX = {"KOSPI": ".KS", "KOSDAQ": ".KQ"}
+MARKET_LABEL = {"KOSPI": "코스피", "KOSDAQ": "코스닥"}
+LISTING_COLUMNS = ["code", "name", "market", "industry", "listed"]
+STOCK_START_YEAR = 2001
+
+_TR = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S | re.I)
+_TD = re.compile(r"<td[^>]*>(.*?)</td>", re.S | re.I)
+_TAG = re.compile(r"<[^>]+>")
+CODE_PATTERN = re.compile(r"^[0-9][0-9A-Z]{5}$")
+
+
+def parse_kind_html(html: str, market: str) -> pd.DataFrame:
+    """Rows of KIND's 상장법인목록 download: 회사명, 시장구분, 종목코드, 업종, 주요제품, 상장일, ..."""
+    rows = []
+    for tr in _TR.findall(html):
+        cells = [unescape(_TAG.sub("", c)).strip() for c in _TD.findall(tr)]
+        cells = [" ".join(c.split()) for c in cells]
+        if len(cells) < 6 or not CODE_PATTERN.match(cells[2].upper()):
+            continue
+        rows.append({"code": cells[2].upper(), "name": cells[0], "market": market,
+                     "industry": cells[3], "listed": cells[5]})
+    # KIND repeats some companies verbatim; one row per code.
+    return pd.DataFrame(rows, columns=LISTING_COLUMNS).drop_duplicates("code").reset_index(drop=True)
+
+
+def fetch_krx_listing() -> pd.DataFrame:
+    frames = []
+    with requests.Session() as session:
+        for market_type, market in KIND_MARKETS.items():
+            response = session.get(
+                KIND_LIST_URL,
+                params={"method": "download", "searchType": "13", "marketType": market_type},
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=20,
+            )
+            response.raise_for_status()
+            frame = parse_kind_html(response.content.decode("euc-kr", errors="replace"), market)
+            if frame.empty:
+                raise ValueError(f"KIND returned no rows for {market}")
+            frames.append(frame)
+    return pd.concat(frames, ignore_index=True).drop_duplicates("code").reset_index(drop=True)
+
+
+def load_listing_csv(path) -> pd.DataFrame:
+    frame = pd.read_csv(path, dtype=str).fillna("")
+    return frame[LISTING_COLUMNS].drop_duplicates("code").reset_index(drop=True)
+
+
+def normalize_text(text: str) -> str:
+    return "".join(str(text).split()).lower()
+
+
+def search_listing(listing: pd.DataFrame, query: str, limit: int = 30) -> pd.DataFrame:
+    """Code match first, then names: exact, starts-with, contains (shorter names first)."""
+    q = normalize_text(query)
+    if not q or listing.empty:
+        return listing.iloc[0:0]
+    codes = listing["code"].str.lower()
+    names = listing["name"].map(normalize_text)
+    rank = pd.Series(99, index=listing.index)
+    rank[names.str.contains(q, regex=False)] = 3
+    rank[names.str.startswith(q)] = 2
+    rank[names == q] = 1
+    rank[codes.str.startswith(q)] = rank[codes.str.startswith(q)].clip(upper=2)
+    rank[codes == q] = 0
+    hits = listing.assign(_rank=rank, _len=names.str.len())
+    hits = hits[hits["_rank"] < 99].sort_values(["_rank", "_len", "name"])
+    return hits.drop(columns=["_rank", "_len"]).head(limit)
+
+
+def yahoo_candidates(code: str, market: str | None) -> list[str]:
+    """Yahoo symbols to try for a KRX code. Yahoo also answers the wrong suffix,
+    so a known market's suffix goes first and the other is only a fallback."""
+    code = code.upper()
+    if market in MARKET_SUFFIX:
+        first = MARKET_SUFFIX[market]
+        return [code + first] + [code + s for s in MARKET_SUFFIX.values() if s != first]
+    return [code + ".KS", code + ".KQ"]
 
 
 # ── Indicators ─────────────────────────────────────────────────────────────────
@@ -225,13 +341,18 @@ class IndexStatus:
         return "빨간불", self.red_below, down
 
 
-def current_status(key: str, daily: pd.DataFrame, today: date | None = None) -> IndexStatus:
+class HistoryTooShort(ValueError):
+    """Fewer than 10 confirmed months or 60 trading days."""
+
+
+def current_status(key: str, daily: pd.DataFrame, today: date | None = None, label: str | None = None) -> IndexStatus:
     today = today or kst_today()
-    cfg = INDEXES[key]
+    if label is None:
+        label = INDEXES[key]["label"] if key in INDEXES else key
     daily = add_disparity(daily)
     monthly = monthly_signals(daily, today).dropna(subset=["Signal"])
-    if monthly.empty:
-        raise ValueError(f"not enough monthly history for {key}")
+    if monthly.empty or len(daily) < DEV_WINDOW:
+        raise HistoryTooShort(f"not enough history for {key}")
 
     confirmed = monthly.iloc[-1]
     last = daily.iloc[-1]
@@ -259,7 +380,7 @@ def current_status(key: str, daily: pd.DataFrame, today: date | None = None) -> 
 
     return IndexStatus(
         key=key,
-        label=cfg["label"],
+        label=label,
         last_date=last["Date"],
         last_close=last_close,
         confirmed_month=confirmed["Month"],

@@ -2743,7 +2743,7 @@ preset_ticker = st.radio(
 
 custom_ticker = normalize_ticker(raw_custom_ticker)
 if raw_custom_ticker.strip() and not custom_ticker:
-    st.caption("Korean-listed stocks and ETFs are excluded from this dashboard.")
+    st.caption("Korean-listed stocks and ETFs are on the 🇰🇷 KOSPI · KOSDAQ page (link at the top).")
 
 if custom_ticker:
     selected_ticker = custom_ticker

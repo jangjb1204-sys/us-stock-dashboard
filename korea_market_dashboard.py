@@ -6,8 +6,10 @@ korea_signal_engine.py; this file only fetches (cached) and draws.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, timedelta
 from html import escape
+from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -18,6 +20,7 @@ import korea_signal_engine as engine
 
 THREADS_URL = "https://www.threads.net/@30s_tech_j"
 CACHE_TTL_SECONDS = 60 * 60 * 3
+LISTING_PATH = Path(__file__).resolve().parent / "korea_stock_list.csv"
 
 SIGNAL_COLOR = {"green": "#34c77b", "yellow": "#f0c35a", "red": "#ff6b7a"}
 PLOT_CONFIG = {"displayModeBar": False, "responsive": True, "scrollZoom": False, "doubleClick": False}
@@ -51,6 +54,7 @@ html, body, [class*="css"], .stApp {
 .kr-banner.warn { border-color:rgba(240,195,90,.35); background:rgba(240,195,90,.08); color:#f6dc9c; }
 .kr-banner.ok { border-color:rgba(52,199,123,.30); background:rgba(52,199,123,.07); color:#a9ebc7; }
 .kr-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:1.6rem; }
+.kr-cards.single { grid-template-columns:minmax(0,1fr); max-width:620px; margin-bottom:1rem; }
 .kr-card { border:1px solid rgba(255,255,255,.08); border-radius:22px; padding:20px 22px; background:rgba(255,255,255,.025); }
 .kr-card .top { display:flex; justify-content:space-between; align-items:center; color:#8e8e93; font-size:.78rem; font-weight:720; letter-spacing:.05em; text-transform:uppercase; }
 .kr-card .weight { margin-top:.7rem; font-family:'DM Mono', monospace; font-size:2.7rem; line-height:1; color:#f5f5f7; }
@@ -96,16 +100,44 @@ button[data-baseweb="tab"] p { font-weight:700!important; }
 
 
 # ── Data (cached) ──────────────────────────────────────────────────────────────
+# day_key (the KST date) is part of every cache key so each new day refetches.
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
+def load_history(symbol: str, start_year: int, day_key: str) -> tuple[pd.DataFrame, dict]:
+    return engine.fetch_history(symbol, start_year)
+
+
 def load_daily(key: str, day_key: str) -> pd.DataFrame:
-    # day_key (KST date) is part of the cache key so each new day refetches.
     cfg = engine.INDEXES[key]
-    return engine.fetch_daily_closes(cfg["symbol"], cfg["start_year"])
+    return load_history(cfg["symbol"], cfg["start_year"], day_key)[0]
+
+
+@st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
+def load_listing(day_key: str) -> tuple[pd.DataFrame, bool]:
+    """KRX's list of KOSPI/KOSDAQ companies; (listing, is_live). Falls back to
+    the copy shipped in the repo when KIND can't be reached."""
+    try:
+        return engine.fetch_krx_listing(), True
+    except Exception:
+        return engine.load_listing_csv(LISTING_PATH), False
 
 
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
-def load_backtests(key: str, day_key: str) -> dict:
-    daily = load_daily(key, day_key)
+def load_stock(code: str, market: str, day_key: str) -> dict | None:
+    """First Yahoo symbol for this KRX code that has data, or None."""
+    for symbol in engine.yahoo_candidates(code, market or None):
+        try:
+            daily, meta = load_history(symbol, engine.STOCK_START_YEAR, day_key)
+        except engine.SymbolNotFound:
+            continue
+        if not daily.empty:
+            return {"symbol": symbol, "daily": daily,
+                    "yahoo_name": meta.get("shortName") or meta.get("longName") or code}
+    return None
+
+
+@st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
+def load_backtests(symbol: str, start_year: int, day_key: str) -> dict:
+    daily = load_history(symbol, start_year, day_key)[0]
     return {
         "overlay": engine.run_backtest(daily, engine.DEV_THRESHOLD),
         "base": engine.run_backtest(daily, None),
@@ -123,6 +155,11 @@ def fmt_pct(value: float | None, digits: int = 1, sign: bool = True) -> str:
     if value is None or pd.isna(value):
         return "N/A"
     return f"{value:+.{digits}f}%" if sign else f"{value:.{digits}f}%"
+
+
+def price_digits(key: str) -> int:
+    """Index levels keep two decimals; stock prices are whole won."""
+    return 2 if key in engine.INDEXES else 0
 
 
 def weight_text(weight: float) -> str:
@@ -175,7 +212,8 @@ def _style(fig: go.Figure, height: int) -> go.Figure:
     return fig
 
 
-def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years: int = 6) -> go.Figure:
+def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years: int = 6, digits: int = 2) -> go.Figure:
+    yfmt = f"%{{y:,.{digits}f}}"
     cutoff = status.confirmed_month - 12 * years
     data = monthly[monthly["Month"] >= cutoff].copy()
     x = data["Month"].dt.to_timestamp(how="end").dt.normalize()
@@ -183,13 +221,13 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines",
                              line={"color": "#f5f5f7", "width": 2},
-                             hovertemplate="%{x|%Y-%m}<br>월말 종가 %{y:,.2f}<extra></extra>"))
+                             hovertemplate="%{x|%Y-%m}<br>월말 종가 " + yfmt + "<extra></extra>"))
     fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines",
                              line={"color": "#5aa6ff", "width": 1.6, "dash": "dot"},
-                             hovertemplate="5개월선 %{y:,.2f}<extra></extra>"))
+                             hovertemplate="5개월선 " + yfmt + "<extra></extra>"))
     fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines",
                              line={"color": "#b58cff", "width": 1.6, "dash": "dot"},
-                             hovertemplate="10개월선 %{y:,.2f}<extra></extra>"))
+                             hovertemplate="10개월선 " + yfmt + "<extra></extra>"))
     for sig in ("green", "yellow", "red"):
         part = data[data["Signal"] == sig]
         if part.empty:
@@ -205,7 +243,7 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     fig.add_trace(go.Scatter(
         x=[status.last_date], y=[status.last_close], name="이번 달(진행 중)", mode="markers",
         marker={"size": 10, "color": "rgba(0,0,0,0)", "line": {"width": 2, "color": SIGNAL_COLOR[status.live_signal]}},
-        hovertemplate="이번 달 최근 종가 %{y:,.2f}<extra></extra>",
+        hovertemplate="이번 달 최근 종가 " + yfmt + "<extra></extra>",
     ))
     fig.add_hline(y=status.green_above, line={"color": SIGNAL_COLOR["green"], "width": 1, "dash": "dash"},
                   annotation_text=f"초록불 기준 {status.green_above:,.0f}", annotation_position="top left",
@@ -218,7 +256,8 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     return fig
 
 
-def build_disparity_chart(daily: pd.DataFrame, years: int = 3) -> go.Figure:
+def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
+    yfmt = f"%{{y:,.{digits}f}}"
     data = engine.add_disparity(daily)
     data = data[data["Date"] >= data["Date"].iloc[-1] - pd.DateOffset(years=years)]
     hot = data[data["Disparity"] >= engine.DEV_THRESHOLD]
@@ -226,13 +265,13 @@ def build_disparity_chart(daily: pd.DataFrame, years: int = 3) -> go.Figure:
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.62, 0.38], vertical_spacing=0.05)
     fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="종가", mode="lines",
                              line={"color": "#f5f5f7", "width": 1.8},
-                             hovertemplate="%{x|%Y-%m-%d}<br>종가 %{y:,.2f}<extra></extra>"), row=1, col=1)
+                             hovertemplate="%{x|%Y-%m-%d}<br>종가 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=data["Date"], y=data["MA60"], name="60일 평균", mode="lines",
                              line={"color": "#f0c35a", "width": 1.3, "dash": "dot"},
-                             hovertemplate="60일 평균 %{y:,.2f}<extra></extra>"), row=1, col=1)
+                             hovertemplate="60일 평균 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=hot["Date"], y=hot["Close"], name=f"이격도 {engine.DEV_THRESHOLD:.0f}↑ (과열)",
                              mode="markers", marker={"size": 6, "color": SIGNAL_COLOR["red"]},
-                             hovertemplate="과열 %{y:,.2f}<extra></extra>"), row=1, col=1)
+                             hovertemplate="과열 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=data["Date"], y=data["Disparity"], name="60일 이격도", mode="lines",
                              line={"color": "#5aa6ff", "width": 1.6},
                              hovertemplate="이격도 %{y:.1f}<extra></extra>"), row=2, col=1)
@@ -284,7 +323,7 @@ def render_hero(updated: str) -> None:
     )
 
 
-def render_index_card(status: engine.IndexStatus) -> str:
+def render_index_card(status: engine.IndexStatus, tag: str | None = None) -> str:
     chips = [signal_chip(status.signal, "5개월선 ")]
     disp = fmt_num(status.disparity, 1)
     if status.overlay_active:
@@ -294,7 +333,7 @@ def render_index_card(status: engine.IndexStatus) -> str:
     cash = 1 - status.final_weight
     return f"""
       <div class="kr-card">
-        <div class="top"><span>{escape(status.label)} {escape(status.key)}</span><span>{month_label(status.confirmed_month)} 확정</span></div>
+        <div class="top"><span>{escape(status.label)} {escape(status.key)}{escape(" · " + tag) if tag else ""}</span><span>{month_label(status.confirmed_month)} 확정</span></div>
         <div class="weight">{weight_text(status.final_weight)}<small>주식 · 현금 {weight_text(cash)}</small></div>
         <div class="sub">{''.join(chips)}</div>
       </div>
@@ -324,16 +363,17 @@ def render_banners(statuses: list[engine.IndexStatus], monthly_by_key: dict, tod
 
 def render_detail(status: engine.IndexStatus, today: date) -> None:
     which, price, move = status.nearest_boundary
+    d = price_digits(status.key)
     left = weekdays_left_in_month(today)
     urgency = " (월말까지 평일 5일 이내!)" if 0 < left <= 5 else ""
     trigger = status.disparity_trigger
     trigger_move = (trigger / status.last_close - 1) * 100 if trigger else None
 
     items = [
-        ("최근 종가", fmt_num(status.last_close), status.last_date.strftime("%Y-%m-%d")),
-        ("이달 말 초록불 기준", f"≥ {fmt_num(status.green_above)}", f"최근 종가 대비 {fmt_pct((status.green_above / status.last_close - 1) * 100)}"),
-        ("이달 말 빨간불 기준", f"< {fmt_num(status.red_below)}", f"최근 종가 대비 {fmt_pct((status.red_below / status.last_close - 1) * 100)}"),
-        ("과열(이격도 120) 가격", fmt_num(trigger), f"오늘 이 가격 이상이면 비중 한 단계↓ ({fmt_pct(trigger_move)})"),
+        ("최근 종가", fmt_num(status.last_close, d), status.last_date.strftime("%Y-%m-%d")),
+        ("이달 말 초록불 기준", f"≥ {fmt_num(status.green_above, d)}", f"최근 종가 대비 {fmt_pct((status.green_above / status.last_close - 1) * 100)}"),
+        ("이달 말 빨간불 기준", f"< {fmt_num(status.red_below, d)}", f"최근 종가 대비 {fmt_pct((status.red_below / status.last_close - 1) * 100)}"),
+        ("과열(이격도 120) 가격", fmt_num(trigger, d), f"오늘 이 가격 이상이면 비중 한 단계↓ ({fmt_pct(trigger_move)})"),
     ]
     st.markdown(
         "<div class='kr-grid'>" + "".join(
@@ -344,8 +384,8 @@ def render_detail(status: engine.IndexStatus, today: date) -> None:
     )
 
     live = f"{engine.SIGNAL_EMOJI[status.live_signal]} {engine.SIGNAL_LABEL[status.live_signal]}"
-    base_note = (f"지난달 말({month_label(status.confirmed_month)}) 종가 {fmt_num(status.confirmed_close)}가 "
-                 f"5개월선 {fmt_num(status.ma5)} / 10개월선 {fmt_num(status.ma10)}과 비교돼 "
+    base_note = (f"지난달 말({month_label(status.confirmed_month)}) 종가 {fmt_num(status.confirmed_close, d)}가 "
+                 f"5개월선 {fmt_num(status.ma5, d)} / 10개월선 {fmt_num(status.ma10, d)}과 비교돼 "
                  f"<b>{engine.SIGNAL_LABEL[status.signal]}</b>(기본 비중 {weight_text(status.base_weight)})입니다.")
     if status.overlay_active:
         overlay_note = f" 지금 60일 이격도가 {fmt_num(status.disparity, 1)}로 과열이라 한 단계 낮춘 <b>{weight_text(status.final_weight)}</b>가 권장 비중이에요."
@@ -375,7 +415,7 @@ def render_backtest_table(backtests: dict) -> None:
           <thead><tr><th>방식</th><th>연 수익률</th><th>최대 낙폭</th><th>누적</th><th>비중 변경</th></tr></thead>
           <tbody>{body}</tbody>
         </table></div>
-        <div class="kr-note">{over['start']:%Y-%m-%d} ~ {over['end']:%Y-%m-%d} ({over['years']:.1f}년) · 가격지수 기준(배당 제외) ·
+        <div class="kr-note">{over['start']:%Y-%m-%d} ~ {over['end']:%Y-%m-%d} ({over['years']:.1f}년) · 가격 기준(배당 제외) ·
         현금 이자 0% · 비중 바꿀 때 0.1% 비용 · 신호가 난 날 종가로 매매했다고 가정.
         과거에 이랬다고 앞으로도 그렇다는 보장은 없어요.</div>
         """,
@@ -383,11 +423,11 @@ def render_backtest_table(backtests: dict) -> None:
     )
 
 
-def render_history_table(monthly: pd.DataFrame) -> None:
+def render_history_table(monthly: pd.DataFrame, digits: int = 2) -> None:
     recent = monthly.dropna(subset=["Signal"]).iloc[::-1].head(12)
     body = "".join(
         f"<tr><td>{row.Month.year}-{row.Month.month:02d}</td>"
-        f"<td class='num'>{row.Close:,.2f}</td><td class='num'>{row.MA5:,.2f}</td><td class='num'>{row.MA10:,.2f}</td>"
+        f"<td class='num'>{row.Close:,.{digits}f}</td><td class='num'>{row.MA5:,.{digits}f}</td><td class='num'>{row.MA10:,.{digits}f}</td>"
         f"<td>{signal_chip(row.Signal)}</td><td class='num'>{weight_text(row.Weight)}</td></tr>"
         for row in recent.itertuples()
     )
@@ -419,12 +459,79 @@ def render_rule() -> None:
             코스피 2004~·코스닥 2001~ 일봉으로 검증해 보니, 5개월선이 뼈대 역할을 했고
             이격도는 130·125보다 120일 때 수익률과 낙폭이 함께 좋아졌어요(코스닥은 역대 130을 한 번도 넘지 않음).
             RSI 70을 더하면 너무 자주 발동해 코스피 수익률이 크게 깎여서 뺐어요.<br><br>
+            <b>개별 종목</b> 검색한 종목에도 같은 계산을 그대로 적용해요. 규칙 자체는 지수로 검증했으니 종목마다 백테스트 결과를 같이 보세요.
+            종목 목록은 KRX(KIND) 상장법인 목록을 쓰고, 목록에 없는 ETF 등은 6자리 코드로 찾을 수 있어요.<br><br>
             <b>한계</b> 한 달 안에 몰아치는 급락은 월간 신호로 피할 수 없고, 헛신호도 있어요.
             과거 데이터로 만든 규칙을 기계적으로 계산한 결과이며 투자 권유가 아닙니다.
             </div>
             """,
             unsafe_allow_html=True,
         )
+
+
+# ── Search ─────────────────────────────────────────────────────────────────────
+@dataclass
+class Target:
+    """Whatever the detail section is showing: an index or a searched stock."""
+    status: engine.IndexStatus
+    daily: pd.DataFrame
+    monthly: pd.DataFrame
+    symbol: str
+    start_year: int
+    market: str | None = None
+
+    @property
+    def is_stock(self) -> bool:
+        return self.status.key not in engine.INDEXES
+
+
+def market_text(market: str | None) -> str:
+    return engine.MARKET_LABEL.get(market or "", "코드로 조회")
+
+
+def resolve_search(query: str, today: date, day_key: str) -> Target | None:
+    """Turn the search box into a stock Target, showing any message itself."""
+    q = query.strip()
+    listing, live = load_listing(day_key)
+    hits = engine.search_listing(listing, q)
+    code = q.upper().replace(" ", "")
+
+    if hits.empty:
+        if not engine.CODE_PATTERN.match(code):
+            hint = "" if live else " (KRX 목록을 지금 못 받아 저장된 목록으로 찾았어요 — 최근 상장 종목은 종목코드로 검색해 주세요.)"
+            st.info(f"'{q}'에 맞는 코스피·코스닥 종목이 없어요. ETF는 6자리 종목코드로 검색할 수 있어요(예: 069500).{hint}")
+            return None
+        pick = {"code": code, "name": "", "market": ""}
+    elif len(hits) == 1:
+        pick = hits.iloc[0].to_dict()
+    else:
+        label = f"검색 결과 {len(hits)}개" + (" · 더 있으면 이름을 더 입력해 주세요" if len(hits) >= 30 else "")
+        idx = st.selectbox(
+            label, list(hits.index), index=None, placeholder="종목을 골라 주세요",
+            format_func=lambda i: f"{hits.at[i, 'name']} · {hits.at[i, 'code']} · {market_text(hits.at[i, 'market'])}",
+            key=f"kr_pick_{engine.normalize_text(q)}",
+        )
+        if idx is None:
+            return None
+        pick = hits.loc[idx].to_dict()
+
+    with st.spinner(f"{pick['name'] or pick['code']} 데이터를 불러오는 중..."):
+        try:
+            found = load_stock(pick["code"], pick.get("market") or "", day_key)
+        except Exception:
+            found = None
+    if found is None:
+        st.warning(f"{pick['name'] or pick['code']} 시세를 지금 찾을 수 없어요.")
+        return None
+
+    name = pick["name"] or found["yahoo_name"]
+    try:
+        status = engine.current_status(pick["code"], found["daily"], today, label=name)
+    except engine.HistoryTooShort:
+        st.info(f"{name}은(는) 상장한 지 얼마 안 돼서 아직 계산할 수 없어요. 월말 종가 10개월치와 60거래일이 쌓여야 해요.")
+        return None
+    monthly = engine.monthly_signals(found["daily"], today).dropna(subset=["Signal"])
+    return Target(status, found["daily"], monthly, found["symbol"], engine.STOCK_START_YEAR, pick.get("market") or None)
 
 
 # ── Page ───────────────────────────────────────────────────────────────────────
@@ -458,22 +565,42 @@ def main() -> None:
     st.markdown("<div class='kr-cards'>" + "".join(render_index_card(s) for s in statuses.values()) + "</div>",
                 unsafe_allow_html=True)
 
-    options = list(statuses.keys())
-    selected = st.radio("지수", options, horizontal=True, key="kr_index",
-                        format_func=lambda k: f"{engine.INDEXES[k]['label']} {k}")
-    status, daily, monthly = statuses[selected], dailies[selected], monthly_by_key[selected]
+    st.markdown("<div class='kr-section'>종목 검색</div>", unsafe_allow_html=True)
+    query = st.text_input(
+        "종목 검색", key="kr_query", label_visibility="collapsed",
+        placeholder="코스피·코스닥 종목 이름 또는 코드 · 예: 삼성전자, 005930, 에코프로비엠",
+    )
+    target = resolve_search(query, today, day_key) if query.strip() else None
 
+    if target is not None:
+        st.markdown("<div class='kr-cards single'>" + render_index_card(target.status, market_text(target.market)) + "</div>",
+                    unsafe_allow_html=True)
+        st.markdown(
+            "<div class='kr-banner'>ℹ️ 이 규칙은 코스피·코스닥 <b>지수</b>로 검증했어요. 개별 종목은 훨씬 크게 움직여서 "
+            "같은 규칙이 잘 맞는다는 보장이 없으니, 아래 <b>백테스트</b> 탭에서 이 종목 결과를 꼭 같이 보세요. "
+            "검색창을 비우면 지수로 돌아가요.</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        options = list(statuses.keys())
+        selected = st.radio("지수", options, horizontal=True, key="kr_index",
+                            format_func=lambda k: f"{engine.INDEXES[k]['label']} {k}")
+        cfg = engine.INDEXES[selected]
+        target = Target(statuses[selected], dailies[selected], monthly_by_key[selected], cfg["symbol"], cfg["start_year"], selected)
+
+    status, daily, monthly = target.status, target.daily, target.monthly
+    digits = price_digits(status.key)
     st.markdown(f"<div class='kr-section'>{escape(status.label)} · 이번 달 체크</div>", unsafe_allow_html=True)
     render_detail(status, today)
 
     tab_month, tab_disp, tab_bt, tab_hist = st.tabs(["월봉 신호", "이격도", "백테스트", "기록"])
     with tab_month:
-        st.plotly_chart(build_monthly_chart(monthly, status), use_container_width=True, config=PLOT_CONFIG)
+        st.plotly_chart(build_monthly_chart(monthly, status, digits=digits), use_container_width=True, config=PLOT_CONFIG)
     with tab_disp:
-        st.plotly_chart(build_disparity_chart(daily), use_container_width=True, config=PLOT_CONFIG)
+        st.plotly_chart(build_disparity_chart(daily, digits=digits), use_container_width=True, config=PLOT_CONFIG)
     with tab_bt:
         try:
-            backtests = load_backtests(selected, day_key)
+            backtests = load_backtests(target.symbol, target.start_year, day_key)
         except Exception:
             backtests = None
             st.info("백테스트를 계산하지 못했어요.")
@@ -481,14 +608,14 @@ def main() -> None:
             st.plotly_chart(build_backtest_chart(backtests), use_container_width=True, config=PLOT_CONFIG)
             render_backtest_table(backtests)
     with tab_hist:
-        render_history_table(monthly)
+        render_history_table(monthly, digits)
         export = monthly.copy()
         export["Month"] = export["Month"].astype(str)
         export["Date"] = pd.to_datetime(export["Date"]).dt.strftime("%Y-%m-%d")
         st.download_button(
             label="월별 신호 CSV 다운로드",
             data=export.to_csv(index=False, encoding="utf-8-sig"),
-            file_name=f"{selected}_monthly_signals_{today:%Y%m%d}.csv",
+            file_name=f"{status.key}_monthly_signals_{today:%Y%m%d}.csv",
             mime="text/csv",
         )
 
