@@ -14,6 +14,7 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
+import ui_theme as ui
 from stock_analyzer import (
     calculate_moving_averages,
     calculate_rsi,
@@ -25,136 +26,59 @@ APP_DIR = Path(__file__).resolve().parent
 SCAN_DIR = APP_DIR / "signal_scans"
 REMOTE_SCAN_INDEX_URL = "https://raw.githubusercontent.com/jangjb1204-sys/puddle-signal-dashboard/main/signal_scans/index.json"
 REMOTE_SCAN_API_URL = "https://api.github.com/repos/jangjb1204-sys/puddle-signal-dashboard/contents/signal_scans?ref=main"
-THREADS_URL = "https://www.threads.net/@30s_tech_j"
 CENTRAL_TZ = ZoneInfo("America/Chicago")
 CACHE_TTL_SECONDS = 60
 CHART_CACHE_TTL_SECONDS = 60 * 60 * 6
 calendar_component = components.declare_component("puddle_calendar", path=str(APP_DIR / "calendar_component"))
 signal_table_component = components.declare_component("puddle_signal_table", path=str(APP_DIR / "signal_table_component"))
 
-CSS = """
+# Page-only pieces; the shared look (background, fonts, header, pills, tabs,
+# buttons, stats row, footer) comes from ui_theme.BASE_CSS.
+CSS = ui.html(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
-html, body, [class*="css"], .stApp {
-    font-family: 'DM Sans', sans-serif !important;
-    background: #03050a !important;
-    color: #f5f5f7 !important;
-}
-.stApp::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 12% 0%, rgba(40,92,160,0.18), transparent 30%),
-        radial-gradient(circle at 88% 2%, rgba(50,105,190,0.10), transparent 28%),
-        linear-gradient(180deg, rgba(255,255,255,0.02), transparent 38%);
-    opacity: .9;
-}
-#MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], [data-testid="stHeader"], [data-testid="collapsedControl"] { display:none!important; visibility:hidden!important; height:0!important; }
-.block-container { max-width: 1380px; padding: 4.6rem 3.2rem 3rem !important; position: relative; z-index: 1; }
-.hero { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:2.7rem; }
-.title-wrap h1 { margin:0; font-size:2.95rem; line-height:1.04; font-weight:760; letter-spacing:-0.055em; color:#f5f5f7; }
-.title-wrap h1 a { color: inherit !important; text-decoration: none !important; }
-.title-row { display:flex; align-items:center; gap:14px; }
-.status-dot { width:9px; height:9px; border-radius:999px; background:#63f29d; box-shadow:0 0 18px rgba(99,242,157,.42); }
-.updated { margin-top:2.1rem; color:#8e8e93; font-size:.76rem; font-weight:760; letter-spacing:.06em; text-transform:uppercase; }
-.updated strong { margin-left:8px; color:#b7bcc7; font-family:'DM Mono', monospace; font-weight:500; }
-.top-stats { display:flex; align-items:center; gap:12px; color:#8e8e93; font-size:.82rem; margin-top:.35rem; white-space:nowrap; }
-.blue-dot { width:8px; height:8px; border-radius:999px; background:#2f70dc; box-shadow:0 0 16px rgba(47,112,220,.45); }
-.top-stats strong { color:#f5f5f7; }
-.section-label { color:#8e8e93; font-size:.78rem; font-weight:760; letter-spacing:.055em; text-transform:uppercase; margin:1.9rem 0 .85rem; }
-.divider { height:1px; background:rgba(255,255,255,.08); margin:2.2rem 0 2rem; }
-.summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin-top:1.1rem; }
-.summary-item { border-top:1px solid rgba(255,255,255,.08); padding-top:1.35rem; min-height:105px; }
-.summary-item .label { color:#8e8e93; font-size:.75rem; font-weight:760; letter-spacing:.055em; text-transform:uppercase; }
-.summary-item .value { margin-top:.5rem; font-family:'DM Mono', monospace; font-size:2.05rem; color:#f5f5f7; line-height:1; }
-.summary-item .hint { margin-top:.5rem; color:#777b84; font-size:.82rem; }
-.panel-title { display:flex; align-items:center; gap:12px; color:#f5f5f7; font-weight:760; font-size:1.05rem; margin:1.3rem 0 .9rem; }
-.chev { color:#f5f5f7; font-size:1.4rem; line-height:1; }
-.stage-strip { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:1rem 0 1.4rem; }
-.stage { border:1px solid rgba(255,255,255,.075); border-radius:22px; padding:16px 17px; background:rgba(255,255,255,.022); }
-.stage .name { color:#e9ebef; font-weight:760; font-size:.95rem; }
-.stage .count { margin-top:.45rem; font-family:'DM Mono', monospace; color:#f5f5f7; font-size:1.45rem; }
-.stage .desc { margin-top:.35rem; color:#777b84; font-size:.78rem; }
-.calendar-shell { width:100%; max-width:100%; overflow:hidden; }
-.calendar-head { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:12px; margin:.2rem 0 .9rem; }
-.calendar-title { color:#f5f5f7; font-size:1.08rem; font-weight:760; text-align:center; min-width:0; }
-.calendar-nav, .calendar-day { display:flex; align-items:center; justify-content:center; min-height:36px; border-radius:999px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.035); color:#f5f5f7!important; font-size:.78rem; font-weight:720; text-decoration:none!important; }
-.calendar-nav.disabled { opacity:.34; pointer-events:none; }
-.calendar-grid-static { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-bottom:.45rem; max-width:100%; }
-.calendar-dow { color:#777b84; text-align:center; font-size:.68rem; font-weight:760; letter-spacing:.05em; text-transform:uppercase; padding:.25rem 0; }
-.calendar-empty { min-height:46px; border:1px solid rgba(255,255,255,.045); border-radius:15px; background:rgba(255,255,255,.012); color:rgba(245,245,247,.16); display:flex; align-items:center; justify-content:center; font-family:'DM Mono', monospace; font-size:.8rem; }
-.calendar-empty.out { opacity:.28; }
-.calendar-day { min-height:46px; border-radius:15px; font-family:'DM Sans', sans-serif; }
-.calendar-day.selected { background:#d8dde6; color:#111318!important; border-color:#d8dde6; }
-.filter-label { color:#777b84; font-size:.72rem; font-weight:760; letter-spacing:.05em; text-transform:uppercase; margin:0 0 .42rem .15rem; }
-.stButton > button, div[data-testid="stDownloadButton"] button { border-radius:999px!important; border:1px solid rgba(255,255,255,.08)!important; background:rgba(255,255,255,.035)!important; color:#f5f5f7!important; min-height:36px!important; padding:0 13px!important; font-size:.78rem!important; font-weight:720!important; font-family:'DM Sans', sans-serif!important; }
-.stButton > button[kind="primary"] { background:#d8dde6!important; color:#111318!important; border-color:#d8dde6!important; }
-div[data-testid="stDownloadButton"] button { min-height:44px!important; font-size:.82rem!important; margin-top:.8rem!important; }
-.signal-table-wrap { margin-top: 1rem; border-top:1px solid rgba(255,255,255,.08); padding-top:1.2rem; overflow-x:auto; }
-.signal-table { width:100%; border-collapse:collapse; min-width:980px; font-family:'DM Sans', sans-serif; }
-.signal-table thead th { padding:13px 14px; text-align:left; color:#8e8e93; font-size:.72rem; font-weight:760; letter-spacing:.055em; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.075); background:#05070d; }
-.signal-table tbody td { padding:14px; color:#e9ebef; font-size:.88rem; font-weight:560; border-bottom:1px solid rgba(255,255,255,.055); background:#05070d; vertical-align:middle; }
-.signal-table tbody tr:hover td { background:#0b0f18; }
-.signal-table .ticker { font-family:'DM Mono', monospace; color:#f5f5f7; font-weight:500; }
-.signal-table .num { font-family:'DM Mono', monospace; color:#d7dce5; font-weight:500; white-space:nowrap; }
-.signal-table .muted { color:#8e8e93; }
-.signal-badge { display:inline-flex; align-items:center; border-radius:999px; padding:5px 10px; font-size:.76rem; font-weight:760; border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.045); color:#e9ebef; white-space:nowrap; }
-.signal-badge.strong { background:rgba(255,107,122,.12); color:#ffb6bf; border-color:rgba(255,107,122,.22); }
-.type-badge { color:#9fb6d9; font-size:.78rem; font-weight:720; }
-.puddle-text { color:#b7bcc7; min-width:220px; max-width:330px; line-height:1.34; }
-.signal-chart-header { margin-top:1rem; border-top:1px solid rgba(255,255,255,.08); padding-top:1.2rem; }
-.signal-chart-title { color:#f5f5f7; font-size:1.05rem; font-weight:760; }
-.signal-chart-subtitle { margin-top:.25rem; color:#8e8e93; font-size:.72rem; font-weight:760; letter-spacing:.05em; text-transform:uppercase; }
-.signal-chart-note { color:#8e8e93; padding:1rem 0 .2rem; font-size:.86rem; }
-.empty-note { color:#8e8e93; padding:1.2rem 0; }
-.creator-footer { margin:2.8rem 0 .4rem; }
-.creator-footer a { color:rgba(245,245,247,.34); font-family:'DM Sans', sans-serif; font-size:1rem; font-weight:650; text-decoration:none!important; }
-.creator-footer a:hover { color:rgba(245,245,247,.58); }
-@media (max-width:900px){ .block-container{padding:3.4rem 1.5rem 2.4rem!important;} .hero{display:block;} .top-stats{margin-top:1.2rem;} .summary-grid,.stage-strip{grid-template-columns:repeat(2,minmax(0,1fr));} .title-wrap h1{font-size:2.45rem;} }
-@media (max-width:640px){
-    .block-container{padding:3.05rem .82rem 2.1rem!important;}
-    .summary-grid,.stage-strip{grid-template-columns:1fr;}
-    .title-wrap h1{font-size:2.05rem;}
-    .calendar-shell{margin-left:-.1rem;margin-right:-.1rem;}
-    .calendar-head{grid-template-columns:38px minmax(0,1fr) 38px; gap:6px; margin:.1rem 0 .55rem;}
-    .calendar-title{font-size:.98rem;}
-    .calendar-nav{min-height:34px; padding:0; font-size:.95rem;}
-    .calendar-grid-static{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; margin-bottom:.28rem;}
-    .calendar-dow{font-size:.58rem; letter-spacing:0; padding:.16rem 0;}
-    .calendar-empty,.calendar-day{min-height:34px; border-radius:10px; font-size:.72rem; padding:0;}
+.panel-title {{ display:flex; align-items:center; gap:10px; color:{ui.TEXT}; font-weight:650; font-size:1.02rem; margin:2.2rem 0 .9rem; }}
+.chev {{ color:{ui.FAINT}; font-size:1.3rem; line-height:1; }}
+.stage-strip {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:.4rem 0 1.4rem; }}
+.stage {{ border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:14px 16px; background:rgba(255,255,255,.035); }}
+.stage .name {{ color:rgba(255,255,255,.82); font-weight:620; font-size:.86rem; }}
+.stage .count {{ margin-top:.4rem; font-variant-numeric:tabular-nums; color:{ui.TEXT}; font-size:1.26rem; font-weight:620; }}
+.stage .desc {{ margin-top:.3rem; color:rgba(255,255,255,.46); font-size:.78rem; }}
+.calendar-shell {{ width:100%; max-width:100%; overflow:hidden; }}
+.calendar-head {{ display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:12px; margin:.2rem 0 .9rem; }}
+.calendar-title {{ color:{ui.TEXT}; font-size:1.02rem; font-weight:650; text-align:center; min-width:0; }}
+.calendar-nav, .calendar-day {{ display:flex; align-items:center; justify-content:center; min-height:36px; border-radius:999px; border:1px solid rgba(255,255,255,.05); background:rgba(255,255,255,.035); color:{ui.TEXT}!important; font-size:.78rem; font-weight:620; text-decoration:none!important; }}
+.calendar-nav.disabled {{ opacity:.34; pointer-events:none; }}
+.calendar-grid-static {{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-bottom:.45rem; max-width:100%; }}
+.calendar-dow {{ color:rgba(255,255,255,.46); text-align:center; font-size:12px; font-weight:500; letter-spacing:.035em; text-transform:uppercase; padding:.25rem 0; }}
+.calendar-empty {{ min-height:46px; border:1px solid rgba(255,255,255,.035); border-radius:12px; background:rgba(255,255,255,.012); color:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:.8rem; }}
+.calendar-empty.out {{ opacity:.28; }}
+.calendar-day {{ min-height:46px; border-radius:12px; }}
+.calendar-day.selected {{ background:rgba(242,245,248,.76); color:{ui.BG}!important; border-color:rgba(242,245,248,.54); }}
+.filter-label {{ color:rgba(255,255,255,.46); font-size:12px; font-weight:500; letter-spacing:.035em; text-transform:uppercase; margin:0 0 .42rem .15rem; }}
+.divider {{ height:1px; background:rgba(255,255,255,.055); margin:2.15rem 0 1.6rem; }}
+.signal-chart-header {{ margin-top:1.4rem; padding-top:1.2rem; border-top:1px solid {ui.LINE}; }}
+.signal-chart-title {{ color:{ui.TEXT}; font-size:1.02rem; font-weight:650; }}
+.signal-chart-subtitle {{ margin-top:.25rem; color:rgba(255,255,255,.46); font-size:12px; font-weight:500; letter-spacing:.035em; text-transform:uppercase; }}
+.signal-chart-note, .empty-note {{ color:rgba(255,255,255,.46); padding:1rem 0 .2rem; font-size:.86rem; }}
+div[data-testid="stDownloadButton"] {{ margin-top:1rem; }}
+@media (max-width:900px) {{ .stage-strip {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }}
+@media (max-width:640px) {{
+    .stage-strip {{ grid-template-columns:1fr; }}
+    .calendar-head {{ grid-template-columns:38px minmax(0,1fr) 38px; gap:6px; margin:.1rem 0 .55rem; }}
+    .calendar-grid-static {{ gap:4px; margin-bottom:.28rem; }}
+    .calendar-dow {{ font-size:.58rem; letter-spacing:0; padding:.16rem 0; }}
+    .calendar-empty, .calendar-day {{ min-height:34px; border-radius:10px; font-size:.72rem; padding:0; }}
     div[data-testid="stElementContainer"]:has(div[data-testid="stPlotlyChart"]),
-    .element-container:has(div[data-testid="stPlotlyChart"]){
-        height:300px!important;
-        min-height:300px!important;
-        max-height:300px!important;
-        margin-bottom:.15rem!important;
-        overflow:hidden!important;
-    }
-    div[data-testid="stPlotlyChart"]{
-        height:300px!important;
-        min-height:300px!important;
-        max-height:300px!important;
-        margin-bottom:0!important;
-        padding-bottom:0!important;
-        overflow:hidden!important;
-    }
-    div[data-testid="stDownloadButton"]{margin-top:0!important;}
-    div[data-testid="stDownloadButton"] button{margin-top:0!important;}
-    .creator-footer{margin:.45rem 0 .15rem;}
+    .element-container:has(div[data-testid="stPlotlyChart"]),
+    div[data-testid="stPlotlyChart"],
     div[data-testid="stPlotlyChart"] > div,
     div[data-testid="stPlotlyChart"] .js-plotly-plot,
     div[data-testid="stPlotlyChart"] .plot-container,
     div[data-testid="stPlotlyChart"] .svg-container,
-    div[data-testid="stPlotlyChart"] .main-svg{
-        height:300px!important;
-        min-height:300px!important;
-        max-height:300px!important;
-    }
-}
+    div[data-testid="stPlotlyChart"] .main-svg {{ height:300px!important; min-height:300px!important; max-height:300px!important; overflow:hidden!important; }}
+}}
 </style>
-"""
+""")
 
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
 def list_scan_files() -> pd.DataFrame:
@@ -451,9 +375,7 @@ def build_signal_chart(data: pd.DataFrame, ticker: str) -> go.Figure:
         title={"text": ""},
         height=430,
         margin={"l": 12, "r": 12, "t": 34, "b": 28},
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="#05070d",
-        font={"family": "DM Sans, sans-serif", "color": "#d7dce5", "size": 11},
+        **ui.PLOT_LAYOUT,
         legend={
             "orientation": "h",
             "yanchor": "bottom",
@@ -644,11 +566,14 @@ def chip_filter(label: str, options: list[str], key: str) -> str:
     return st.session_state[key]
 
 def main() -> None:
+    st.markdown(ui.BASE_CSS, unsafe_allow_html=True)
     st.markdown(CSS, unsafe_allow_html=True)
+    st.markdown(ui.nav_html("puddle"), unsafe_allow_html=True)
     file_df = list_scan_files()
     if file_df.empty:
-        st.markdown("<div class='title-wrap'><h1><a href='?dashboard=us' target='_self'>Puddle Signal Scanner</a></h1></div>", unsafe_allow_html=True)
+        st.markdown(ui.hero_html("Puddle Signal Scanner", dot="closed", self_key="puddle"), unsafe_allow_html=True)
         st.info("signal_scans 폴더에 CSV가 아직 없습니다.")
+        st.markdown(ui.footer_html(), unsafe_allow_html=True)
         return
 
     latest_date = file_df["date"].max()
@@ -700,24 +625,19 @@ def main() -> None:
     stocks = int((df.get("asset_type") == "Stock").sum()) if not df.empty and "asset_type" in df.columns else 0
     etfs = int((df.get("asset_type") == "ETF").sum()) if not df.empty and "asset_type" in df.columns else 0
 
-    st.markdown(f"""
-    <div class='hero'>
-      <div class='title-wrap'>
-        <div class='title-row'><span class='status-dot'></span><h1><a href='?dashboard=us' target='_self'>Puddle Signal Scanner</a></h1></div>
-        <div class='updated'>UPDATED <strong>{scan_time}</strong></div>
-      </div>
-      <div class='top-stats'><span class='blue-dot'></span><span>Selected <strong>{selected_date}</strong></span><span>·</span><span>Total <strong>{total}</strong></span></div>
-    </div>
-    """, unsafe_allow_html=True)
+    right = (f"<span class='tj-dot'></span><span>Selected <strong>{escape(str(selected_date))}</strong></span>"
+             f"<span>·</span><span>Total <strong>{total}</strong></span>")
+    st.markdown(ui.hero_html("Puddle Signal Scanner", scan_time, dot="open", right=right, self_key="puddle"),
+                unsafe_allow_html=True)
 
-    st.markdown("<div class='section-label'>Saved dates</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tj-label'>Saved dates</div>", unsafe_allow_html=True)
     render_calendar_component(current_month, selected_date, available_dates, month_options)
 
-    st.markdown("<div class='summary-grid'>" +
-        f"<div class='summary-item'><div class='label'>Signals</div><div class='value'>{total}</div><div class='hint'>Puddle + RSI & Puddle</div></div>" +
-        f"<div class='summary-item'><div class='label'>RSI & Puddle</div><div class='value'>{rsi_puddle}</div><div class='hint'>stronger warning</div></div>" +
-        f"<div class='summary-item'><div class='label'>Stocks</div><div class='value'>{stocks}</div><div class='hint'>S&P500 + NASDAQ100</div></div>" +
-        f"<div class='summary-item'><div class='label'>ETFs</div><div class='value'>{etfs}</div><div class='hint'>representative set</div></div>" +
+    st.markdown("<div class='tj-stats' style='margin-top:1.4rem'>" +
+        f"<div class='tj-stat'><div class='label'>Signals</div><div class='value'>{total}</div><div class='note'>Puddle + RSI &amp; Puddle</div></div>" +
+        f"<div class='tj-stat'><div class='label'>RSI &amp; Puddle</div><div class='value tj-red'>{rsi_puddle}</div><div class='note'>stronger warning</div></div>" +
+        f"<div class='tj-stat'><div class='label'>Stocks</div><div class='value'>{stocks}</div><div class='note'>S&amp;P500 + NASDAQ100</div></div>" +
+        f"<div class='tj-stat'><div class='label'>ETFs</div><div class='value'>{etfs}</div><div class='note'>representative set</div></div>" +
         "</div>", unsafe_allow_html=True)
 
     if not df.empty:
@@ -732,7 +652,7 @@ def main() -> None:
             "</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-label'>Filter</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tj-label'>Filter</div>", unsafe_allow_html=True)
     filter_cols = st.columns([1.2, 1.8, 3.4])
     with filter_cols[0]:
         type_filter = chip_filter("Type", ["Stock", "ETF"], "type_filter")
@@ -761,7 +681,7 @@ def main() -> None:
             str(chart_row.get("company_name", "")),
         )
     st.download_button("Download selected CSV", data=filtered.drop(columns=["_stage"], errors="ignore").to_csv(index=False).encode("utf-8"), file_name=selected_row["filename"], mime="text/csv", use_container_width=True)
-    st.markdown(f"<div class='creator-footer'><a href='{THREADS_URL}' target='_blank' rel='noopener'>by 30s_tech_j</a></div>", unsafe_allow_html=True)
+    st.markdown(ui.footer_html(), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()

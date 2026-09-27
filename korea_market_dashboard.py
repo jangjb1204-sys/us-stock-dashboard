@@ -17,87 +17,32 @@ import streamlit as st
 from plotly.subplots import make_subplots
 
 import korea_signal_engine as engine
+import ui_theme as ui
 
-THREADS_URL = "https://www.threads.net/@30s_tech_j"
 CACHE_TTL_SECONDS = 60 * 60 * 3
 LISTING_PATH = Path(__file__).resolve().parent / "korea_stock_list.csv"
 
-SIGNAL_COLOR = {"green": "#34c77b", "yellow": "#f0c35a", "red": "#ff6b7a"}
+SIGNAL_COLOR = {"green": ui.GREEN, "yellow": ui.YELLOW, "red": ui.RED}
+MA5_COLOR, MA10_COLOR = "#5aa6ff", "#b58cff"
 PLOT_CONFIG = {"displayModeBar": False, "responsive": True, "scrollZoom": False, "doubleClick": False}
 
-CSS = """
+# Page-only pieces; everything else comes from ui_theme.BASE_CSS.
+PAGE_CSS = ui.html(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
-html, body, [class*="css"], .stApp {
-    font-family: 'DM Sans', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
-    background: #03050a !important;
-    color: #f5f5f7 !important;
-}
-.stApp::before {
-    content: ""; position: fixed; inset: 0; pointer-events: none;
-    background:
-        radial-gradient(circle at 12% 0%, rgba(40,92,160,0.18), transparent 30%),
-        radial-gradient(circle at 88% 2%, rgba(50,105,190,0.10), transparent 28%);
-}
-#MainMenu, header, footer, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], [data-testid="stHeader"], [data-testid="collapsedControl"], [data-testid="stSidebar"] { display:none!important; }
-.block-container { max-width: 1240px; padding: 3.6rem 2.6rem 3rem !important; position: relative; z-index: 1; }
-.kr-hero { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:2.2rem; }
-.kr-hero h1 { margin:0; font-size:2.6rem; line-height:1.05; font-weight:720; letter-spacing:-0.04em; color:#f5f5f7; }
-.kr-hero h1 a { color:inherit!important; text-decoration:none!important; }
-.kr-title-row { display:flex; align-items:center; gap:13px; }
-.kr-dot { width:9px; height:9px; border-radius:999px; background:#2F80FF; box-shadow:0 0 16px rgba(47,128,255,.45); }
-.kr-meta { margin-top:.7rem; color:#8e8e93; font-size:.8rem; }
-.kr-meta strong { color:#b7bcc7; font-family:'DM Mono', monospace; font-weight:500; }
-.kr-switch { display:inline-flex; align-items:center; gap:8px; margin-top:.4rem; padding:8px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.035); color:#d7dce5!important; font-size:.8rem; font-weight:650; text-decoration:none!important; white-space:nowrap; }
-.kr-switch:hover { background:rgba(255,255,255,.07); }
-.kr-banner { border-radius:16px; padding:12px 16px; margin:0 0 1rem; font-size:.92rem; font-weight:600; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:#e9ebef; }
-.kr-banner.warn { border-color:rgba(240,195,90,.35); background:rgba(240,195,90,.08); color:#f6dc9c; }
-.kr-banner.ok { border-color:rgba(52,199,123,.30); background:rgba(52,199,123,.07); color:#a9ebc7; }
-.kr-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:1.6rem; }
-.kr-cards.single { grid-template-columns:minmax(0,1fr); max-width:620px; margin-bottom:1rem; }
-.kr-card { border:1px solid rgba(255,255,255,.08); border-radius:22px; padding:20px 22px; background:rgba(255,255,255,.025); }
-.kr-card .top { display:flex; justify-content:space-between; align-items:center; color:#8e8e93; font-size:.78rem; font-weight:720; letter-spacing:.05em; text-transform:uppercase; }
-.kr-card .weight { margin-top:.7rem; font-family:'DM Mono', monospace; font-size:2.7rem; line-height:1; color:#f5f5f7; }
-.kr-card .weight small { font-family:'DM Sans', sans-serif; font-size:.95rem; color:#8e8e93; margin-left:8px; }
-.kr-card .sub { margin-top:.8rem; display:flex; flex-wrap:wrap; gap:8px; }
-.chip { display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:5px 11px; font-size:.78rem; font-weight:700; border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.045); color:#e9ebef; white-space:nowrap; }
-.chip.green { background:rgba(52,199,123,.12); color:#a9ebc7; border-color:rgba(52,199,123,.28); }
-.chip.yellow { background:rgba(240,195,90,.12); color:#f6dc9c; border-color:rgba(240,195,90,.28); }
-.chip.red { background:rgba(255,107,122,.12); color:#ffb6bf; border-color:rgba(255,107,122,.26); }
-.chip.hot { background:rgba(255,107,122,.18); color:#ffd0d6; border-color:rgba(255,107,122,.38); }
-.kr-section { color:#8e8e93; font-size:.78rem; font-weight:720; letter-spacing:.055em; text-transform:uppercase; margin:1.8rem 0 .8rem; }
-.kr-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
-.kr-item { border-top:1px solid rgba(255,255,255,.08); padding-top:1.1rem; min-height:96px; }
-.kr-item .label { color:#8e8e93; font-size:.74rem; font-weight:720; letter-spacing:.04em; }
-.kr-item .value { margin-top:.45rem; font-family:'DM Mono', monospace; font-size:1.65rem; color:#f5f5f7; line-height:1.05; }
-.kr-item .hint { margin-top:.45rem; color:#8e8e93; font-size:.8rem; line-height:1.35; }
-.kr-sentence { margin:1.2rem 0 .2rem; color:#d7dce5; font-size:.96rem; line-height:1.55; }
-.kr-table-wrap { overflow-x:auto; border-top:1px solid rgba(255,255,255,.08); margin-top:.6rem; }
-.kr-table { width:100%; border-collapse:collapse; min-width:620px; }
-.kr-table th { padding:11px 12px; text-align:left; color:#8e8e93; font-size:.72rem; font-weight:720; letter-spacing:.04em; border-bottom:1px solid rgba(255,255,255,.075); }
-.kr-table td { padding:11px 12px; color:#e9ebef; font-size:.86rem; border-bottom:1px solid rgba(255,255,255,.05); }
-.kr-table td.num { font-family:'DM Mono', monospace; color:#d7dce5; white-space:nowrap; }
-.kr-table tr.best td { background:rgba(47,128,255,.07); }
-.kr-note { color:#8e8e93; font-size:.82rem; line-height:1.55; margin-top:.8rem; }
-.kr-rule { color:#c9ced8; font-size:.9rem; line-height:1.7; }
-.kr-rule b { color:#f5f5f7; }
-.kr-footer { margin:2.6rem 0 .4rem; }
-.kr-footer a { color:rgba(245,245,247,.34); font-size:1rem; font-weight:650; text-decoration:none!important; }
-div[role="radiogroup"] label { font-weight:650; }
-.stButton > button, div[data-testid="stDownloadButton"] button { border-radius:999px!important; border:1px solid rgba(255,255,255,.08)!important; background:rgba(255,255,255,.035)!important; color:#f5f5f7!important; font-weight:700!important; }
-button[data-baseweb="tab"] p { font-weight:700!important; }
-@media (max-width:900px){ .block-container{padding:2.8rem 1.3rem 2.2rem!important;} .kr-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .kr-hero h1{font-size:2.2rem;} }
-@media (max-width:640px){
-    .block-container{padding:2.4rem .85rem 2rem!important;}
-    .kr-hero{flex-direction:column; gap:10px; margin-bottom:1.5rem;}
-    .kr-hero h1{font-size:1.9rem;}
-    .kr-cards{grid-template-columns:1fr;}
-    .kr-card .weight{font-size:2.3rem;}
-    .kr-item .value{font-size:1.35rem;}
-}
+.kr-panels {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:44px; row-gap:22px; margin:0 0 .4rem; }}
+.kr-panels.single {{ grid-template-columns:minmax(0,1fr); max-width:560px; }}
+.kr-panel {{ padding-top:22px; border-top:1px solid {ui.LINE}; min-width:0; }}
+.kr-panel .top {{ display:flex; justify-content:space-between; gap:12px; color:{ui.MUTED}; font-size:12px; font-weight:560; text-transform:uppercase; letter-spacing:.04em; }}
+.kr-panel .weight {{ margin-top:.55rem; font-variant-numeric:tabular-nums; font-size:48px; font-weight:650; letter-spacing:-0.026em; line-height:1; color:{ui.TEXT}; }}
+.kr-panel .weight small {{ margin-left:10px; font-size:.95rem; font-weight:500; letter-spacing:0; color:rgba(255,255,255,.56); }}
+.kr-panel .chips {{ margin-top:.85rem; display:flex; flex-wrap:wrap; gap:6px; }}
+.kr-sentence {{ margin:1.3rem 0 1.6rem; color:rgba(255,255,255,.72); font-size:.92rem; line-height:1.65; }}
+.kr-sentence b {{ color:{ui.TEXT}; }}
+.kr-rule {{ color:rgba(255,255,255,.72); font-size:.88rem; line-height:1.7; }}
+.kr-rule b {{ color:{ui.TEXT}; }}
+@media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
-"""
-
+""")
 
 # ── Data (cached) ──────────────────────────────────────────────────────────────
 # day_key (the KST date) is part of every cache key so each new day refetches.
@@ -168,7 +113,7 @@ def weight_text(weight: float) -> str:
 
 def signal_chip(signal: str, prefix: str = "") -> str:
     label = f"{prefix}{engine.SIGNAL_EMOJI[signal]} {engine.SIGNAL_LABEL[signal]}"
-    return f"<span class='chip {signal}'>{escape(label)}</span>"
+    return f"<span class='tj-chip {signal}'>{escape(label)}</span>"
 
 
 def month_label(period: pd.Period) -> str:
@@ -198,17 +143,13 @@ def _style(fig: go.Figure, height: int) -> go.Figure:
     fig.update_layout(
         height=height,
         margin={"l": 10, "r": 10, "t": 36, "b": 24},
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="#05070d",
-        font={"family": "DM Sans, sans-serif", "color": "#d7dce5", "size": 11},
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1, "font": {"size": 11}},
         hovermode="x unified",
         dragmode=False,
+        **ui.PLOT_LAYOUT,
     )
-    fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.055)", zeroline=False, fixedrange=True,
-                     tickfont={"color": "rgba(245,245,247,0.54)", "size": 10})
-    fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.075)", zeroline=False, fixedrange=True,
-                     tickfont={"color": "rgba(245,245,247,0.46)", "size": 10})
+    fig.update_xaxes(fixedrange=True, tickfont={"color": "rgba(245,245,247,0.54)", "size": 10}, **ui.X_GRID)
+    fig.update_yaxes(fixedrange=True, tickfont={"color": "rgba(245,245,247,0.46)", "size": 10}, **ui.Y_GRID)
     return fig
 
 
@@ -223,10 +164,10 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
                              line={"color": "#f5f5f7", "width": 2},
                              hovertemplate="%{x|%Y-%m}<br>월말 종가 " + yfmt + "<extra></extra>"))
     fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines",
-                             line={"color": "#5aa6ff", "width": 1.6, "dash": "dot"},
+                             line={"color": MA5_COLOR, "width": 1.6, "dash": "dot"},
                              hovertemplate="5개월선 " + yfmt + "<extra></extra>"))
     fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines",
-                             line={"color": "#b58cff", "width": 1.6, "dash": "dot"},
+                             line={"color": MA10_COLOR, "width": 1.6, "dash": "dot"},
                              hovertemplate="10개월선 " + yfmt + "<extra></extra>"))
     for sig in ("green", "yellow", "red"):
         part = data[data["Signal"] == sig]
@@ -235,7 +176,7 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
         fig.add_trace(go.Scatter(
             x=part["Month"].dt.to_timestamp(how="end").dt.normalize(), y=part["Close"],
             name=engine.SIGNAL_LABEL[sig], mode="markers",
-            marker={"size": 8, "color": SIGNAL_COLOR[sig], "line": {"width": 1, "color": "#05070d"}},
+            marker={"size": 8, "color": SIGNAL_COLOR[sig], "line": {"width": 1, "color": ui.PLOT_BG}},
             hovertemplate=f"{engine.SIGNAL_LABEL[sig]}<extra></extra>",
         ))
 
@@ -267,13 +208,13 @@ def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) 
                              line={"color": "#f5f5f7", "width": 1.8},
                              hovertemplate="%{x|%Y-%m-%d}<br>종가 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=data["Date"], y=data["MA60"], name="60일 평균", mode="lines",
-                             line={"color": "#f0c35a", "width": 1.3, "dash": "dot"},
+                             line={"color": ui.YELLOW, "width": 1.3, "dash": "dot"},
                              hovertemplate="60일 평균 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=hot["Date"], y=hot["Close"], name=f"이격도 {engine.DEV_THRESHOLD:.0f}↑ (과열)",
                              mode="markers", marker={"size": 6, "color": SIGNAL_COLOR["red"]},
                              hovertemplate="과열 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=data["Date"], y=data["Disparity"], name="60일 이격도", mode="lines",
-                             line={"color": "#5aa6ff", "width": 1.6},
+                             line={"color": MA5_COLOR, "width": 1.6},
                              hovertemplate="이격도 %{y:.1f}<extra></extra>"), row=2, col=1)
     fig.add_hline(y=engine.DEV_THRESHOLD, line={"color": SIGNAL_COLOR["red"], "width": 1, "dash": "dash"}, row=2, col=1)
     fig.add_hline(y=100, line={"color": "rgba(255,255,255,0.25)", "width": 1}, row=2, col=1)
@@ -290,14 +231,14 @@ def build_backtest_chart(backtests: dict) -> go.Figure:
                              line={"color": "rgba(245,245,247,0.45)", "width": 1.4},
                              hovertemplate="그냥 보유 %{y:.2f}배<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=base["Date"], y=base["System"], name="5개월선만", mode="lines",
-                             line={"color": "#5aa6ff", "width": 1.5},
+                             line={"color": MA5_COLOR, "width": 1.5},
                              hovertemplate="5개월선만 %{y:.2f}배<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=over["Date"], y=over["System"], name=f"5개월선 + 이격도{engine.DEV_THRESHOLD:.0f}",
-                             mode="lines", line={"color": "#34c77b", "width": 2},
+                             mode="lines", line={"color": ui.GREEN, "width": 2},
                              hovertemplate="5개월선+이격도 %{y:.2f}배<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=over["Date"], y=over["Weight"] * 100, name="주식 비중(%)", mode="lines",
-                             line={"color": "#34c77b", "width": 1, "shape": "hv"}, fill="tozeroy",
-                             fillcolor="rgba(52,199,123,0.18)", showlegend=False,
+                             line={"color": ui.GREEN, "width": 1, "shape": "hv"}, fill="tozeroy",
+                             fillcolor="rgba(63,185,80,0.16)", showlegend=False,
                              hovertemplate="주식 비중 %{y:.0f}%<extra></extra>"), row=2, col=1)
     _style(fig, 520)
     fig.update_yaxes(type="log", row=1, col=1)
@@ -307,35 +248,24 @@ def build_backtest_chart(backtests: dict) -> go.Figure:
 
 
 # ── Sections ───────────────────────────────────────────────────────────────────
-def render_hero(updated: str) -> None:
-    st.markdown(
-        f"""
-        <div class="kr-hero">
-          <div>
-            <div class="kr-title-row"><span class="kr-dot"></span>
-              <h1><a href="?dashboard=korea" target="_self">Korea Market Signals</a></h1></div>
-            <div class="kr-meta">코스피 · 코스닥 주식/현금 비중 신호 · 기준 종가 <strong>{escape(updated)}</strong></div>
-          </div>
-          <a class="kr-switch" href="?dashboard=us" target="_self">🇺🇸 US Market Signals →</a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+def md(markup: str) -> None:
+    st.markdown(ui.html(markup), unsafe_allow_html=True)
 
 
-def render_index_card(status: engine.IndexStatus, tag: str | None = None) -> str:
+def index_panel(status: engine.IndexStatus, tag: str | None = None) -> str:
     chips = [signal_chip(status.signal, "5개월선 ")]
     disp = fmt_num(status.disparity, 1)
     if status.overlay_active:
-        chips.append(f"<span class='chip hot'>🔥 이격도 {disp} · 과열</span>")
+        chips.append(f"<span class='tj-chip red'>🔥 이격도 {disp} · 과열</span>")
     else:
-        chips.append(f"<span class='chip'>이격도 {disp}</span>")
+        chips.append(f"<span class='tj-chip'>이격도 {disp}</span>")
     cash = 1 - status.final_weight
+    name = f"{status.label} {status.key}" + (f" · {tag}" if tag else "")
     return f"""
-      <div class="kr-card">
-        <div class="top"><span>{escape(status.label)} {escape(status.key)}{escape(" · " + tag) if tag else ""}</span><span>{month_label(status.confirmed_month)} 확정</span></div>
+      <div class="kr-panel">
+        <div class="top"><span>{escape(name)}</span><span>{month_label(status.confirmed_month)} 확정</span></div>
         <div class="weight">{weight_text(status.final_weight)}<small>주식 · 현금 {weight_text(cash)}</small></div>
-        <div class="sub">{''.join(chips)}</div>
+        <div class="chips">{''.join(chips)}</div>
       </div>
     """
 
@@ -352,16 +282,14 @@ def render_banners(statuses: list[engine.IndexStatus], monthly_by_key: dict, tod
             else:
                 same.append(s.label)
         if changes:
-            st.markdown(f"<div class='kr-banner warn'>⚠️ 신호 변화: {escape(', '.join(changes))} — 오늘 주식 비중을 새 신호에 맞출 차례예요.</div>",
-                        unsafe_allow_html=True)
+            md(f"<div class='tj-note warn'>⚠️ 신호 변화: {escape(', '.join(changes))} — 오늘 주식 비중을 새 신호에 맞출 차례예요.</div>")
         if same:
-            st.markdown(f"<div class='kr-banner ok'>✅ {month_label(confirmed[0].confirmed_month)} 신호 확정: {escape(', '.join(same))} 그대로 유지</div>",
-                        unsafe_allow_html=True)
+            md(f"<div class='tj-note ok'>✅ {month_label(confirmed[0].confirmed_month)} 신호 확정: {escape(', '.join(same))} 그대로 유지</div>")
     if is_last_weekday_of_month(today):
-        st.markdown("<div class='kr-banner warn'>📌 오늘 종가로 다음 달 신호가 확정됩니다.</div>", unsafe_allow_html=True)
+        md("<div class='tj-note warn'>📌 오늘 종가로 다음 달 신호가 확정됩니다.</div>")
 
 
-def render_detail(status: engine.IndexStatus, today: date) -> None:
+def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None:
     which, price, move = status.nearest_boundary
     d = price_digits(status.key)
     left = weekdays_left_in_month(today)
@@ -369,19 +297,22 @@ def render_detail(status: engine.IndexStatus, today: date) -> None:
     trigger = status.disparity_trigger
     trigger_move = (trigger / status.last_close - 1) * 100 if trigger else None
 
+    md(f"""
+        <div class="tj-focus">
+          <div class="eyebrow">{escape(eyebrow)}</div>
+          <div class="name">{escape(status.label)}<span class="ticker">{escape(status.key)}</span></div>
+        </div>
+    """)
     items = [
-        ("최근 종가", fmt_num(status.last_close, d), status.last_date.strftime("%Y-%m-%d")),
-        ("이달 말 초록불 기준", f"≥ {fmt_num(status.green_above, d)}", f"최근 종가 대비 {fmt_pct((status.green_above / status.last_close - 1) * 100)}"),
-        ("이달 말 빨간불 기준", f"< {fmt_num(status.red_below, d)}", f"최근 종가 대비 {fmt_pct((status.red_below / status.last_close - 1) * 100)}"),
-        ("과열(이격도 120) 가격", fmt_num(trigger, d), f"오늘 이 가격 이상이면 비중 한 단계↓ ({fmt_pct(trigger_move)})"),
+        ("최근 종가", fmt_num(status.last_close, d), status.last_date.strftime("%Y-%m-%d"), ""),
+        ("이달 말 초록불 기준", f"≥ {fmt_num(status.green_above, d)}", f"최근 종가 대비 {fmt_pct((status.green_above / status.last_close - 1) * 100)}", "tj-green"),
+        ("이달 말 빨간불 기준", f"< {fmt_num(status.red_below, d)}", f"최근 종가 대비 {fmt_pct((status.red_below / status.last_close - 1) * 100)}", "tj-red"),
+        (f"과열(이격도 {engine.DEV_THRESHOLD:.0f}) 가격", fmt_num(trigger, d), f"오늘 이 가격 이상이면 비중 한 단계↓ ({fmt_pct(trigger_move)})", ""),
     ]
-    st.markdown(
-        "<div class='kr-grid'>" + "".join(
-            f"<div class='kr-item'><div class='label'>{escape(label)}</div><div class='value'>{escape(value)}</div><div class='hint'>{escape(hint)}</div></div>"
-            for label, value, hint in items
-        ) + "</div>",
-        unsafe_allow_html=True,
-    )
+    md("<div class='tj-stats'>" + "".join(
+        f"<div class='tj-stat'><div class='label'>{escape(label)}</div><div class='value {cls}'>{escape(value)}</div><div class='note'>{escape(note)}</div></div>"
+        for label, value, note, cls in items
+    ) + "</div>")
 
     live = f"{engine.SIGNAL_EMOJI[status.live_signal]} {engine.SIGNAL_LABEL[status.live_signal]}"
     base_note = (f"지난달 말({month_label(status.confirmed_month)}) 종가 {fmt_num(status.confirmed_close, d)}가 "
@@ -390,9 +321,9 @@ def render_detail(status: engine.IndexStatus, today: date) -> None:
     if status.overlay_active:
         overlay_note = f" 지금 60일 이격도가 {fmt_num(status.disparity, 1)}로 과열이라 한 단계 낮춘 <b>{weight_text(status.final_weight)}</b>가 권장 비중이에요."
     else:
-        overlay_note = f" 60일 이격도 {fmt_num(status.disparity, 1)}는 과열 기준(120) 아래라 비중을 더 줄이지 않아요."
+        overlay_note = f" 60일 이격도 {fmt_num(status.disparity, 1)}는 과열 기준({engine.DEV_THRESHOLD:.0f}) 아래라 비중을 더 줄이지 않아요."
     live_note = f" 지금 수준으로 이달이 끝나면 {live}이고, {which}로 바뀌려면 {fmt_pct(move)} 움직여야 해요{urgency}."
-    st.markdown(f"<div class='kr-sentence'>{base_note}{overlay_note}{live_note}</div>", unsafe_allow_html=True)
+    md(f"<div class='kr-sentence'>{base_note}{overlay_note}{live_note}</div>")
 
 
 def render_backtest_table(backtests: dict) -> None:
@@ -409,17 +340,16 @@ def render_backtest_table(backtests: dict) -> None:
         f"<td class='num'>{stats['total'] + 1:,.2f}배</td><td class='num'>{trades}</td></tr>"
         for name, stats, trades, best in rows
     )
-    st.markdown(
+    md(
         f"""
-        <div class="kr-table-wrap"><table class="kr-table">
+        <div class="tj-table-wrap"><table class="tj-table">
           <thead><tr><th>방식</th><th>연 수익률</th><th>최대 낙폭</th><th>누적</th><th>비중 변경</th></tr></thead>
           <tbody>{body}</tbody>
         </table></div>
-        <div class="kr-note">{over['start']:%Y-%m-%d} ~ {over['end']:%Y-%m-%d} ({over['years']:.1f}년) · 가격 기준(배당 제외) ·
+        <div class="tj-caption">{over['start']:%Y-%m-%d} ~ {over['end']:%Y-%m-%d} ({over['years']:.1f}년) · 가격 기준(배당 제외) ·
         현금 이자 0% · 비중 바꿀 때 0.1% 비용 · 신호가 난 날 종가로 매매했다고 가정.
         과거에 이랬다고 앞으로도 그렇다는 보장은 없어요.</div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
@@ -431,21 +361,20 @@ def render_history_table(monthly: pd.DataFrame, digits: int = 2) -> None:
         f"<td>{signal_chip(row.Signal)}</td><td class='num'>{weight_text(row.Weight)}</td></tr>"
         for row in recent.itertuples()
     )
-    st.markdown(
+    md(
         f"""
-        <div class="kr-table-wrap"><table class="kr-table">
+        <div class="tj-table-wrap"><table class="tj-table">
           <thead><tr><th>월</th><th>월말 종가</th><th>5개월선</th><th>10개월선</th><th>신호</th><th>기본 비중</th></tr></thead>
           <tbody>{body}</tbody>
         </table></div>
-        <div class="kr-note">최근 12개월 · 전체 기록은 CSV로 받을 수 있어요. 기본 비중은 다음 달 한 달 동안 적용돼요. 달 중간에 60일 이격도가 120 이상이 되면 그동안만 한 단계 더 낮춥니다.</div>
-        """,
-        unsafe_allow_html=True,
+        <div class="tj-caption">최근 12개월 · 전체 기록은 CSV로 받을 수 있어요. 기본 비중은 다음 달 한 달 동안 적용돼요. 달 중간에 60일 이격도가 120 이상이 되면 그동안만 한 단계 더 낮춥니다.</div>
+        """
     )
 
 
 def render_rule() -> None:
     with st.expander("규칙 설명 (어떻게 계산하나요?)"):
-        st.markdown(
+        md(
             f"""
             <div class="kr-rule">
             <b>1. 기본 비중 — 5개월선·10개월선</b><br>
@@ -464,8 +393,7 @@ def render_rule() -> None:
             <b>한계</b> 한 달 안에 몰아치는 급락은 월간 신호로 피할 수 없고, 헛신호도 있어요.
             과거 데이터로 만든 규칙을 기계적으로 계산한 결과이며 투자 권유가 아닙니다.
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
@@ -536,9 +464,15 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
 
 # ── Page ───────────────────────────────────────────────────────────────────────
 def main() -> None:
-    st.markdown(CSS, unsafe_allow_html=True)
     today = engine.kst_today()
     day_key = today.isoformat()
+
+    st.markdown(ui.BASE_CSS, unsafe_allow_html=True)
+    st.markdown(PAGE_CSS, unsafe_allow_html=True)
+    st.markdown(ui.nav_html("korea"), unsafe_allow_html=True)
+    hero_slot = st.empty()
+    hero_slot.markdown(ui.hero_html("Korea Market Signals", "loading", self_key="korea",
+                                    extra_meta="코스피 · 코스닥 주식/현금 비중"), unsafe_allow_html=True)
 
     dailies, statuses, monthly_by_key, errors = {}, {}, {}, []
     with st.spinner("코스피·코스닥 데이터를 불러오는 중..."):
@@ -554,7 +488,12 @@ def main() -> None:
                 errors.append(engine.INDEXES[key]["label"])
 
     updated = max((s.last_date for s in statuses.values()), default=None)
-    render_hero(updated.strftime("%Y-%m-%d") if updated is not None else "불러오기 실패")
+    hero_slot.markdown(ui.hero_html(
+        "Korea Market Signals",
+        f"{updated:%Y-%m-%d} 종가" if updated is not None else "불러오기 실패",
+        dot="live" if statuses else "closed", self_key="korea",
+        extra_meta="코스피 · 코스닥 주식/현금 비중",
+    ), unsafe_allow_html=True)
 
     if errors:
         st.warning(f"{', '.join(errors)} 데이터를 지금 불러오지 못했어요. 잠시 후 새로고침해 주세요.")
@@ -562,10 +501,9 @@ def main() -> None:
         st.stop()
 
     render_banners(list(statuses.values()), monthly_by_key, today)
-    st.markdown("<div class='kr-cards'>" + "".join(render_index_card(s) for s in statuses.values()) + "</div>",
-                unsafe_allow_html=True)
+    md("<div class='kr-panels'>" + "".join(index_panel(s) for s in statuses.values()) + "</div>")
 
-    st.markdown("<div class='kr-section'>종목 검색</div>", unsafe_allow_html=True)
+    md("<div class='tj-label'>종목 검색</div>")
     query = st.text_input(
         "종목 검색", key="kr_query", label_visibility="collapsed",
         placeholder="코스피·코스닥 종목 이름 또는 코드 · 예: 삼성전자, 005930, 에코프로비엠",
@@ -573,25 +511,22 @@ def main() -> None:
     target = resolve_search(query, today, day_key) if query.strip() else None
 
     if target is not None:
-        st.markdown("<div class='kr-cards single'>" + render_index_card(target.status, market_text(target.market)) + "</div>",
-                    unsafe_allow_html=True)
-        st.markdown(
-            "<div class='kr-banner'>ℹ️ 이 규칙은 코스피·코스닥 <b>지수</b>로 검증했어요. 개별 종목은 훨씬 크게 움직여서 "
-            "같은 규칙이 잘 맞는다는 보장이 없으니, 아래 <b>백테스트</b> 탭에서 이 종목 결과를 꼭 같이 보세요. "
-            "검색창을 비우면 지수로 돌아가요.</div>",
-            unsafe_allow_html=True,
-        )
+        md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market)) + "</div>")
+        md("<div class='tj-note'>ℹ️ 이 규칙은 코스피·코스닥 <b>지수</b>로 검증했어요. 개별 종목은 훨씬 크게 움직여서 "
+           "같은 규칙이 잘 맞는다는 보장이 없으니, 아래 <b>백테스트</b> 탭에서 이 종목 결과를 꼭 같이 보세요. "
+           "검색창을 비우면 지수로 돌아가요.</div>")
+        eyebrow = f"이번 달 체크 · {market_text(target.market)} 종목"
     else:
         options = list(statuses.keys())
         selected = st.radio("지수", options, horizontal=True, key="kr_index",
                             format_func=lambda k: f"{engine.INDEXES[k]['label']} {k}")
         cfg = engine.INDEXES[selected]
         target = Target(statuses[selected], dailies[selected], monthly_by_key[selected], cfg["symbol"], cfg["start_year"], selected)
+        eyebrow = "이번 달 체크 · 지수"
 
     status, daily, monthly = target.status, target.daily, target.monthly
     digits = price_digits(status.key)
-    st.markdown(f"<div class='kr-section'>{escape(status.label)} · 이번 달 체크</div>", unsafe_allow_html=True)
-    render_detail(status, today)
+    render_detail(status, today, eyebrow)
 
     tab_month, tab_disp, tab_bt, tab_hist = st.tabs(["월봉 신호", "이격도", "백테스트", "기록"])
     with tab_month:
@@ -620,5 +555,4 @@ def main() -> None:
         )
 
     render_rule()
-    st.markdown(f"<div class='kr-footer'><a href='{THREADS_URL}' target='_blank' rel='noopener'>by 30s_tech_j</a></div>",
-                unsafe_allow_html=True)
+    st.markdown(ui.footer_html(), unsafe_allow_html=True)

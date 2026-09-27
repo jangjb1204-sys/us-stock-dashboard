@@ -9,6 +9,7 @@ import time
 import uuid
 from zoneinfo import ZoneInfo
 
+import ui_theme as ui
 from stock_analyzer import (
     TICKER_CONFIGS,
     fetch_batch_stock_data,
@@ -56,6 +57,8 @@ if dashboard_param == "korea":
     st.stop()
 
 # ── 스타일 ─────────────────────────────────────────────────────────────────────
+# Shared app look first; the US stylesheet below refines it for this page.
+st.markdown(ui.BASE_CSS, unsafe_allow_html=True)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -1115,29 +1118,6 @@ st.markdown("""
         animation: none !important;
         opacity: 0.75;
     }
-    .hero-actions {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-    .market-switch {
-        display: inline-flex;
-        align-items: center;
-        padding: 7px 13px;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: rgba(255,255,255,0.04);
-        color: rgba(255,255,255,0.78) !important;
-        font-size: 0.78rem;
-        font-weight: 650;
-        text-decoration: none !important;
-        white-space: nowrap;
-    }
-    .market-switch:hover {
-        background: rgba(255,255,255,0.08);
-        color: #F2F5F8 !important;
-    }
     .market-status-dot.open {
         background: #3FB950 !important;
         box-shadow: none !important;
@@ -1568,9 +1548,6 @@ st.markdown("""
         .viewer-pill {
             width: auto !important;
             justify-content: flex-start !important;
-        }
-        .hero-actions {
-            gap: 12px;
         }
         .section-label {
             margin: 1.5rem 0 0.68rem !important;
@@ -2668,28 +2645,13 @@ def treasury_status(value):
 def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str):
     updated_short = f"{updated_at[11:16]} CT" if len(updated_at) >= 19 else updated_at
     container.markdown(
-        f"""
-        <div class="app-hero">
-          <div class="hero-row">
-            <div>
-              <div class="hero-title">
-                <span class="market-status-dot {market_dot_class}"></span>
-                <h1><a href="?dashboard=puddle" target="_self">US Market Signals</a></h1>
-              </div>
-              <div class="hero-meta">
-                <span class="updated-mark">{escape(updated_short)}</span>
-              </div>
-            </div>
-            <div class="hero-actions">
-              <a class="market-switch" href="?dashboard=korea" target="_self">🇰🇷 KOSPI · KOSDAQ →</a>
-              <div class="viewer-pill">
-                <span class="viewer-dot"></span>
-                <span>Watching <strong>{active_viewers:,}</strong></span>
-              </div>
-            </div>
-          </div>
-        </div>
-        """,
+        ui.hero_html(
+            "US Market Signals",
+            updated_short,
+            dot="open" if market_dot_class == "open" else "closed",
+            right=ui.viewers_html(active_viewers),
+            self_key="us",
+        ),
         unsafe_allow_html=True,
     )
 
@@ -2700,6 +2662,7 @@ ticker_options = base_tickers
 total_views, active_viewers = get_view_stats()
 market_open = is_us_market_open()
 market_dot_class = "open" if market_open else "closed"
+st.markdown(ui.nav_html("us"), unsafe_allow_html=True)
 hero_slot = st.empty()
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")
 
@@ -2892,11 +2855,4 @@ with tab3:
 st.markdown("<div class='section-heading'>Signal Feed</div>", unsafe_allow_html=True)
 render_signal_cards(df)
 
-st.markdown(
-    """
-    <div class="product-signature">
-      by <a href="https://www.threads.net/@30s_tech_j" target="_blank" rel="noopener noreferrer">30s_tech_j</a>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+st.markdown(ui.footer_html(), unsafe_allow_html=True)

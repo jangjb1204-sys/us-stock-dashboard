@@ -4,25 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
+    /* Colors, font and shapes follow ui_theme.py (the shared app style). */
     html, body {
       margin: 0;
       padding: 0;
       background: transparent;
-      color: #f5f5f7;
-      font-family: 'DM Sans', sans-serif;
+      color: #F2F5F8;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "DM Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      font-variant-numeric: tabular-nums;
     }
     .calendar-shell { width:100%; max-width:100%; overflow:hidden; }
     .calendar-head { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:12px; margin:.2rem 0 .9rem; }
-    .calendar-title { color:#f5f5f7; font-size:1.08rem; font-weight:760; text-align:center; min-width:0; }
-    .calendar-nav, .calendar-day { display:flex; align-items:center; justify-content:center; min-height:36px; border-radius:999px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.035); color:#f5f5f7; font-size:.78rem; font-weight:720; text-decoration:none; cursor:pointer; box-sizing:border-box; }
+    .calendar-title { color:#F2F5F8; font-size:1.02rem; font-weight:650; text-align:center; min-width:0; }
+    .calendar-nav, .calendar-day { display:flex; align-items:center; justify-content:center; min-height:36px; border-radius:999px; border:1px solid rgba(255,255,255,.05); background:rgba(255,255,255,.035); color:#F2F5F8; font-size:.78rem; font-weight:620; text-decoration:none; cursor:pointer; box-sizing:border-box; }
+    .calendar-nav:hover, .calendar-day:hover { background:rgba(255,255,255,.065); }
     .calendar-nav.disabled { opacity:.34; pointer-events:none; }
     .calendar-grid-static { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-bottom:.45rem; max-width:100%; }
-    .calendar-dow { color:#777b84; text-align:center; font-size:.68rem; font-weight:760; letter-spacing:.05em; text-transform:uppercase; padding:.25rem 0; }
-    .calendar-empty { min-height:46px; border:1px solid rgba(255,255,255,.045); border-radius:15px; background:rgba(255,255,255,.012); color:rgba(245,245,247,.16); display:flex; align-items:center; justify-content:center; font-family:'DM Mono', monospace; font-size:.8rem; box-sizing:border-box; }
+    .calendar-dow { color:rgba(255,255,255,.46); text-align:center; font-size:12px; font-weight:500; letter-spacing:.035em; text-transform:uppercase; padding:.25rem 0; }
+    .calendar-empty { min-height:46px; border:1px solid rgba(255,255,255,.035); border-radius:12px; background:rgba(255,255,255,.012); color:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:.8rem; box-sizing:border-box; }
     .calendar-empty.out { opacity:.28; }
-    .calendar-day { min-height:46px; border-radius:15px; font-family:'DM Sans', sans-serif; }
-    .calendar-day.selected { background:#d8dde6; color:#111318; border-color:#d8dde6; }
+    .calendar-day { min-height:46px; border-radius:12px; }
+    .calendar-day.selected { background:rgba(242,245,248,.76); color:#05070B; border-color:rgba(242,245,248,.54); }
     @media (max-width:640px){
       .calendar-shell{margin-left:-.1rem;margin-right:-.1rem;}
       .calendar-head{grid-template-columns:38px minmax(0,1fr) 38px; gap:6px; margin:.1rem 0 .55rem;}
