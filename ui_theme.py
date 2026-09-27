@@ -37,7 +37,7 @@ FONT_STACK = '-apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "Apple S
 PAGES = [
     ("us", "미국 시장"),
     ("puddle", "Puddle 스캐너"),
-    ("korea", "코스피 · 코스닥"),
+    ("korea", "한국 시장"),
 ]
 KST = ZoneInfo("Asia/Seoul")
 KO_WEEKDAYS = "월화수목금토일"
