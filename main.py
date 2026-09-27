@@ -1819,10 +1819,11 @@ DATA_PERIOD = "4y"
 RECENT_TICKER_LIMIT = 12
 
 MA_COLORS = {
-    # One accent (MA20) and greys by lightness for the slower averages.
-    "MA20":  "#6EA8FF",
-    "MA60":  "#B4BAC4",
-    "MA120": "#6B7280",
+    # Muted blue / amber / mauve: tells the three averages apart (checked
+    # for color-blind separation on the dark chart) without loud colors.
+    "MA20":  "#4C8DF0",
+    "MA60":  "#BA852B",
+    "MA120": "#B8649E",
     "MA200": "#6B7280",
 }
 PRICE_LEGEND_SERIES = {'MA20', 'MA60', 'MA120'}
