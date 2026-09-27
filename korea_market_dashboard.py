@@ -30,6 +30,10 @@ SIGNAL_COLOR = {"green": ui.LEVEL_FULL, "yellow": ui.LEVEL_HALF, "red": ui.LEVEL
 # Same muted blue / amber as the US chart's MA20 / MA60, so the 10-month line
 # no longer looks like the grey month-end threshold lines.
 CLOSE_COLOR, MA5_COLOR, MA10_COLOR = ui.TEXT, "#4C8DF0", "#BA852B"
+# Month-end threshold lines: solid, told apart by color (validated with the
+# two averages; the averages are dotted, which is the secondary cue).
+LINE_FULL, LINE_NONE = "#46A36A", "#B862B0"
+RANGE_YEARS = {"1Y": 1, "2Y": 2, "5Y": 5, "10Y": 10}
 PLOT_CONFIG = {"displayModeBar": False, "responsive": True, "scrollZoom": False, "doubleClick": False}
 
 # Page-only pieces; everything else comes from ui_theme.BASE_CSS.
@@ -71,6 +75,8 @@ div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(
 .kr-bt {{ margin:-0.9rem 0 1.9rem; color:rgba(255,255,255,.46); font-size:.8rem; font-variant-numeric:tabular-nums; }}
 .kr-bt b {{ color:{ui.TEXT}; font-weight:600; }}
 .kr-bt .sep {{ margin:0 8px; color:rgba(255,255,255,.22); }}
+.st-key-kr_range div[role="radiogroup"] {{ margin-left:auto; }}
+.st-key-kr_range label[data-testid="stRadioOption"] {{ min-height:30px!important; height:30px!important; padding:0 10px!important; }}
 .kr-zone-foot b {{ color:{ui.TEXT}; font-weight:600; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
@@ -248,15 +254,15 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     sig_text = data["Signal"].map(lambda sgn: f"다음 달 {level_name(sgn)}")
     live_color = ui.TEXT
 
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.95, 0.05], vertical_spacing=0.025)
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.93, 0.07], vertical_spacing=0.03)
     seg_end = month_end + pd.Timedelta(days=25)  # a little room so this month's lines read as lines
-    line = lambda color: {"color": color, "width": 2, "shape": "linear"}
-    fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines", line=line(CLOSE_COLOR),
+    line = lambda color, dash="solid", width=2: {"color": color, "width": width, "dash": dash, "shape": "linear"}
+    fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines", line=line(CLOSE_COLOR, width=2.2),
                              customdata=sig_text,
                              hovertemplate="월말 종가 " + yfmt + "<br>%{customdata}<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines", line=line(MA5_COLOR),
+    fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines", line=line(MA5_COLOR, "dot", 1.8),
                              hovertemplate="5개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines", line=line(MA10_COLOR),
+    fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines", line=line(MA10_COLOR, "dot", 1.8),
                              hovertemplate="10개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
 
     # This month so far: a faint link from last month-end, one dot for the latest close.
@@ -269,11 +275,11 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     # The two lines this month's close has to clear, only across this month.
     # No text in the chart: the prices are in the stat row right above it, and
     # labels in a side margin got cut off on phones. Hover shows them.
-    for level, color, text in ((status.green_above, ui.TEXT, f"이달 말 100% 기준 ≥ {status.green_above:,.{digits}f}"),
-                               (status.red_below, "rgba(242,245,248,0.55)", f"이달 말 0% 기준 < {status.red_below:,.{digits}f}")):
+    for level, color, name, text in ((status.green_above, LINE_FULL, "100% 기준", f"이달 말 100% 기준 ≥ {status.green_above:,.{digits}f}"),
+                                     (status.red_below, LINE_NONE, "0% 기준", f"이달 말 0% 기준 < {status.red_below:,.{digits}f}")):
         fig.add_trace(go.Scatter(x=[last_confirmed_x, seg_end], y=[level, level], mode="lines",
-                                 line={"color": color, "width": 2, "dash": "dot"}, name=text, hovertemplate=text + "<extra></extra>",
-                                 showlegend=False), row=1, col=1)
+                                 line={"color": color, "width": 2.4}, name=name, hovertemplate=text + "<extra></extra>"),
+                      row=1, col=1)
 
     # Signal ribbon: one continuous segment per run, a 2-day gap between runs;
     # this month's in-progress segment faded.
@@ -292,7 +298,8 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
         hovertemplate="이번 달 진행 중<extra></extra>", showlegend=False,
     ), row=2, col=1)
 
-    _style(fig, 460)
+    # Shorter than before: on a phone the old 460px read as a tall strip.
+    _style(fig, 360)
     fig.update_layout(bargap=0, margin={"l": 10, "r": 12, "t": 36, "b": 24})
     # Log scale: a 10% move is the same height in 2021 and in 2026, so older
     # crossings aren't flattened by the recent rally.
@@ -308,7 +315,7 @@ def signal_key_html() -> str:
     swatch = lambda sig: (f"<span style='display:inline-block;width:10px;height:10px;border-radius:2px;"
                           f"background:{SIGNAL_COLOR[sig]};margin:0 5px 0 10px;vertical-align:-1px'></span>")
     items = "".join(f"{swatch(sig)}{weight_text(engine.SIGNAL_WEIGHT[sig])}" for sig in ("green", "yellow", "red"))
-    return f"<div class='tj-caption' style='margin-top:-.2rem'>월별 주식 비중{items} · 오른쪽 점선 = 이달 말 100%·0% 기준가 · 로그 눈금</div>"
+    return f"<div class='tj-caption' style='margin-top:-.2rem'>월별 주식 비중{items} · 로그 눈금</div>"
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
@@ -332,7 +339,7 @@ def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) 
                              hovertemplate="이격도 %{y:.1f}<extra></extra>"), row=2, col=1)
     fig.add_hline(y=engine.DEV_THRESHOLD, line={"color": "rgba(255,255,255,0.55)", "width": 1, "dash": "dash"}, row=2, col=1)
     fig.add_hline(y=100, line={"color": "rgba(255,255,255,0.25)", "width": 1}, row=2, col=1)
-    _style(fig, 500)
+    _style(fig, 400)
     fig.update_xaxes(tickformat="%y.%m")
     return fig
 
@@ -549,6 +556,37 @@ def sync_query_param(query: str) -> None:
         del st.query_params["q"]
 
 
+_fragment = getattr(st, "fragment", None) or (lambda func: func)
+
+
+@_fragment
+def render_charts(status: engine.IndexStatus, daily: pd.DataFrame, monthly: pd.DataFrame, digits: int, today: date) -> None:
+    """Charts with their own range picker (like the US page); changing the
+    range reruns only this part."""
+    _, range_col = st.columns([1, 1.2])
+    with range_col:
+        label = st.radio("기간", list(RANGE_YEARS), index=1, horizontal=True, key="kr_range",
+                         label_visibility="collapsed")
+    years = RANGE_YEARS[label]
+    tab_month, tab_disp = st.tabs(["월봉 신호", "이격도"])
+    with tab_month:
+        st.plotly_chart(build_monthly_chart(monthly, status, years=years, digits=digits),
+                        use_container_width=True, config=PLOT_CONFIG)
+        md(signal_key_html())
+        export = monthly.copy()
+        export["Month"] = export["Month"].astype(str)
+        export["Date"] = pd.to_datetime(export["Date"]).dt.strftime("%Y-%m-%d")
+        st.download_button(
+            label="월별 기록 CSV",
+            data=export.to_csv(index=False, encoding="utf-8-sig"),
+            file_name=f"{status.key}_monthly_signals_{today:%Y%m%d}.csv",
+            mime="text/csv",
+        )
+    with tab_disp:
+        st.plotly_chart(build_disparity_chart(daily, years=years, digits=digits),
+                        use_container_width=True, config=PLOT_CONFIG)
+
+
 # ── Page ───────────────────────────────────────────────────────────────────────
 def main() -> None:
     today = engine.kst_today()
@@ -635,20 +673,7 @@ def main() -> None:
     if backtests:
         md(backtest_line(backtests))
 
-    tab_month, tab_disp = st.tabs(["월봉 신호", "이격도"])
-    with tab_month:
-        st.plotly_chart(build_monthly_chart(monthly, status, digits=digits), use_container_width=True, config=PLOT_CONFIG)
-        md(signal_key_html())
-        export = monthly.copy()
-        export["Month"] = export["Month"].astype(str)
-        export["Date"] = pd.to_datetime(export["Date"]).dt.strftime("%Y-%m-%d")
-        st.download_button(
-            label="월별 기록 CSV",
-            data=export.to_csv(index=False, encoding="utf-8-sig"),
-            file_name=f"{status.key}_monthly_signals_{today:%Y%m%d}.csv",
-            mime="text/csv",
-        )
-    with tab_disp:
-        st.plotly_chart(build_disparity_chart(daily, digits=digits), use_container_width=True, config=PLOT_CONFIG)
+    render_charts(status, daily, monthly, digits, today)
+
     render_rule()
     st.markdown(ui.footer_html(), unsafe_allow_html=True)
