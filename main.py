@@ -14,6 +14,7 @@ from plotly.subplots import make_subplots
 from datetime import datetime
 from html import escape
 import time
+from pathlib import Path
 import uuid
 from zoneinfo import ZoneInfo
 
@@ -50,7 +51,7 @@ def central_timestamp_label() -> str:
 dashboard_param = st.query_params.get("dashboard")
 st.set_page_config(
     page_title={"korea": "Korea Market Signals", "puddle": "Puddle Signal Scanner"}.get(dashboard_param, "US Market Signals"),
-    page_icon="📈",
+    page_icon=str(Path(__file__).resolve().parent / "favicon.png"),
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -2217,6 +2218,13 @@ def add_fg_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
         add_panel_label(fig, row, f"공포·탐욕 <b>{fg_df['FG index'].iloc[-1]:.0f}</b>")
 
 
+def add_signal_line(fig: go.Figure, when, color: str, width: float) -> None:
+    """One unbroken vertical line through every panel (price, F&G, VIX / RSI),
+    including the gaps between them, so a signal day reads top to bottom."""
+    fig.add_shape(type='line', xref='x', yref='paper', x0=when, x1=when, y0=0, y1=1,
+                  line=dict(color=color, width=width), layer='below')
+
+
 BADGE_CLUSTER_DAYS = 5  # Puddle signals this many trading days apart share one badge
 
 
@@ -2253,7 +2261,7 @@ def add_puddle_badges(fig: go.Figure, df: pd.DataFrame) -> None:
     puddle_df = pd.DataFrame(clusters)
 
     for signal_date in puddle_df['Date']:
-        fig.add_vline(x=signal_date, line=dict(color='rgba(242,245,248,0.16)', width=1), layer='below', row='all', col=1)
+        add_signal_line(fig, signal_date, 'rgba(242,245,248,0.22)', 1)
 
     styles = [
         ('Puddle 1차', puddle_df['stage'] == '1',
@@ -2333,7 +2341,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     )
     for r in [1, 2, 3]:
         fig.update_xaxes(
-            **X_GRID, **date_axis, row=r, col=1,
+            showgrid=False, zeroline=False, **date_axis, row=r, col=1,
             showticklabels=(r == 3),
             tickfont=X_TICK_FONT,
             fixedrange=True,
@@ -2377,13 +2385,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
                 hoverinfo='skip',
             ), row=1, col=1)
             for d in vix_signal_dates:
-                fig.add_vline(
-                    x=d,
-                    line=dict(color='rgba(47,128,255,0.46)', width=1.6),
-                    layer='below',
-                    row=1,
-                    col=1,
-                )
+                add_signal_line(fig, d, 'rgba(47,128,255,0.46)', 1.6)
 
     if 'RSI_Puddle_Signal' in df.columns:
         overlap = df[df['RSI_Puddle_Signal'].apply(has_rsi_puddle_signal)]
@@ -2404,7 +2406,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     )
     for r in [1, 2]:
         fig.update_xaxes(
-            **X_GRID, **date_axis, row=r, col=1,
+            showgrid=False, zeroline=False, **date_axis, row=r, col=1,
             showticklabels=(r == 2),
             tickfont=X_TICK_FONT,
             fixedrange=True,
