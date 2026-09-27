@@ -217,6 +217,9 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 .tj-dot {{ width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto; background: rgba(255,255,255,0.32); }}
 .tj-dot.open, .tj-dot.live {{ background: {TEXT}; }}
 .tj-meta {{ margin-top: 0.42rem; color: rgba(255,255,255,0.52); font-size: 0.78rem; font-weight: 500; }}
+.tj-hero.compact {{ margin: -0.4rem 0 1.9rem; }}
+.tj-hero.compact .tj-meta {{ margin-top: 0; display: flex; align-items: center; flex-wrap: wrap; }}
+.tj-hero.compact .tj-dot {{ width: 6px; height: 6px; margin-right: 8px; }}
 .tj-meta .k {{ color: {FAINT}; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 6px; }}
 .tj-meta .sep {{ margin: 0 8px; color: rgba(255,255,255,0.22); }}
 .tj-hero-right {{ display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.52); font-size: 0.78rem; white-space: nowrap; }}
@@ -314,19 +317,17 @@ def nav_html(active: str) -> str:
 
 def hero_html(title: str, updated: str | None = None, dot: str = "live", right: str = "", extra_meta: str = "",
               self_key: str = "us") -> str:
-    """Page header. `right` and `extra_meta` are trusted HTML fragments."""
+    """Page header: just the data timestamp. The page name is already the
+    active nav pill, so no big title repeats it (`title` stays for callers
+    and the browser tab). `right` and `extra_meta` are trusted HTML."""
     meta = ""
     if updated:
         meta = f'<span class="k">기준</span>{escape(updated)}'
     if extra_meta:
         meta += (f'<span class="sep">·</span>' if meta else "") + extra_meta
     return html(f"""
-        <div class="tj-hero">
-          <div>
-            <div class="tj-title-row"><span class="tj-dot {escape(dot)}"></span>
-              <h1><a href="?dashboard={self_key}" target="_self">{escape(title)}</a></h1></div>
-            <div class="tj-meta">{meta}</div>
-          </div>
+        <div class="tj-hero compact">
+          <div class="tj-meta"><span class="tj-dot {escape(dot)}"></span>{meta}</div>
           <div class="tj-hero-right">{right}</div>
         </div>
     """)
