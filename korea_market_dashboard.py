@@ -44,6 +44,22 @@ PAGE_CSS = ui.html(f"""
 .kr-sentence b {{ color:{ui.TEXT}; }}
 .kr-rule {{ color:rgba(255,255,255,.72); font-size:.88rem; line-height:1.7; }}
 .kr-rule b {{ color:{ui.TEXT}; }}
+.kr-zone {{ margin:1.8rem 0 1.9rem; }}
+.kr-zone-head {{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:{ui.MUTED}; font-size:12px; font-weight:560; letter-spacing:.03em; margin-bottom:.7rem; }}
+.kr-zone-head b {{ color:{ui.TEXT}; font-size:.95rem; font-variant-numeric:tabular-nums; }}
+.kr-bar {{ position:relative; display:grid; grid-template-columns:1fr 2fr 1fr; gap:3px; height:34px; }}
+.kr-bar .seg {{ display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:.8rem; font-weight:640; color:rgba(255,255,255,.55); }}
+.kr-bar .seg.red {{ background:rgba(255,90,95,.10); }}
+.kr-bar .seg.yellow {{ background:rgba(240,195,90,.10); }}
+.kr-bar .seg.green {{ background:rgba(63,185,80,.10); }}
+.kr-bar .seg.red.on {{ background:rgba(255,90,95,.26); color:{ui.TEXT}; }}
+.kr-bar .seg.yellow.on {{ background:rgba(240,195,90,.26); color:{ui.TEXT}; }}
+.kr-bar .seg.green.on {{ background:rgba(63,185,80,.26); color:{ui.TEXT}; }}
+.kr-marker {{ position:absolute; top:-6px; bottom:-6px; width:3px; margin-left:-1.5px; border-radius:2px; background:{ui.TEXT}; box-shadow:0 0 0 2px {ui.BG}; }}
+.kr-ticks {{ position:relative; height:1.4rem; margin-top:.35rem; font-variant-numeric:tabular-nums; font-size:.8rem; color:rgba(255,255,255,.62); }}
+.kr-ticks span {{ position:absolute; transform:translateX(-50%); white-space:nowrap; }}
+.kr-zone-foot {{ margin-top:.35rem; color:rgba(255,255,255,.5); font-size:.8rem; }}
+.kr-zone-foot b {{ color:{ui.YELLOW}; font-weight:620; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
 """)
@@ -272,16 +288,11 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
 
 
 def signal_key_html() -> str:
-    """Key for the signal strip, as page text so it wraps on phones."""
+    """One-line key for the signal ribbon, as page text so it wraps on phones."""
     swatch = lambda sig: (f"<span style='display:inline-block;width:10px;height:10px;border-radius:2px;"
-                          f"background:{SIGNAL_COLOR[sig]};margin:0 6px 0 12px;vertical-align:-1px'></span>")
-    items = "".join(f"{swatch(sig)}{engine.SIGNAL_LABEL[sig]} {weight_text(engine.SIGNAL_WEIGHT[sig])}"
-                    for sig in ("green", "yellow", "red"))
-    line = lambda sig: (f"<span style='display:inline-block;width:14px;height:3px;border-radius:2px;"
-                        f"background:{SIGNAL_COLOR[sig]};margin:0 6px 0 0;vertical-align:3px'></span>")
-    return (f"<div class='tj-caption' style='margin-top:-.2rem'>{line('green')}{line('red')}오른쪽 끝 짧은 선 = 이번 달 말 초록불·빨간불 기준 가격 (위 숫자와 같아요)<br>"
-            f"아래 띠 = 매달 말 확정된 신호, 같은 신호는 이어서 표시{items}<span style='margin-left:10px'>· 흐린 끝 = 이번 달 진행 중</span><br>"
-            f"세로축은 로그 눈금이라 같은 % 움직임이 같은 높이로 보여요.</div>")
+                          f"background:{SIGNAL_COLOR[sig]};margin:0 5px 0 10px;vertical-align:-1px'></span>")
+    items = "".join(f"{swatch(sig)}{weight_text(engine.SIGNAL_WEIGHT[sig])}" for sig in ("green", "yellow", "red"))
+    return f"<div class='tj-caption' style='margin-top:-.2rem'>아래 띠 = 월별 신호{items} · 오른쪽 짧은 선 = 이달 말 기준가 · 로그 눈금</div>"
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
@@ -376,49 +387,56 @@ def render_banners(statuses: list[engine.IndexStatus], monthly_by_key: dict, tod
         md("<div class='tj-note warn'>📌 오늘 종가로 다음 달 신호가 확정됩니다.</div>")
 
 
+def zone_position(price: float, red: float, green: float) -> float:
+    """Where a price sits on the zone bar, in % of its width. The yellow zone
+    (red..green) is the middle half; red and green get a quarter each."""
+    span = (green - red) or price * 0.1
+    if price < red:
+        pos = 25 - (red - price) / (span * 0.5) * 25
+    elif price >= green:
+        pos = 75 + (price - green) / (span * 0.5) * 25
+    else:
+        pos = 25 + (price - red) / span * 50
+    return max(3.0, min(97.0, pos))
+
+
 def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None:
-    which, price, move = status.nearest_boundary
+    """This month at a glance: one bar showing which signal the latest close
+    would give at month-end, with the two prices that separate the zones."""
     d = price_digits(status.key)
     left = weekdays_left_in_month(today)
-    urgency = " (월말까지 평일 5일 이내!)" if 0 < left <= 5 else ""
-    trigger = status.disparity_trigger
-    trigger_move = (trigger / status.last_close - 1) * 100 if trigger else None
-
-    md(f"""
-        <div class="tj-focus">
-          <div class="eyebrow">{escape(eyebrow)}</div>
-          <div class="name">{escape(status.label)}<span class="ticker">{escape(status.key)}</span></div>
-        </div>
-    """)
-    items = [
-        ("최근 종가", fmt_num(status.last_close, d), f"{ui.kdate(status.last_date)} 종가", ""),
-        ("이달 말 초록불 기준", f"≥ {fmt_num(status.green_above, d)}", f"최근 종가 대비 {fmt_pct((status.green_above / status.last_close - 1) * 100)}", "tj-green"),
-        ("이달 말 빨간불 기준", f"< {fmt_num(status.red_below, d)}", f"최근 종가 대비 {fmt_pct((status.red_below / status.last_close - 1) * 100)}", "tj-red"),
-        (f"과열(이격도 {engine.DEV_THRESHOLD:.0f}) 가격", fmt_num(trigger, d), f"오늘 이 가격 이상이면 비중 한 단계↓ ({fmt_pct(trigger_move)})", ""),
-    ]
-    md("<div class='tj-stats'>" + "".join(
-        f"<div class='tj-stat'><div class='label'>{escape(label)}</div><div class='value {cls}'>{escape(value)}</div><div class='note'>{escape(note)}</div></div>"
-        for label, value, note, cls in items
-    ) + "</div>")
-
-    live = f"{engine.SIGNAL_EMOJI[status.live_signal]} {engine.SIGNAL_LABEL[status.live_signal]}"
-    sig = status.signal
-    base_line = (f"{month_label(status.confirmed_month)} 월말 {fmt_num(status.confirmed_close, d)} · "
-                 f"5개월선 {fmt_num(status.ma5, d)} · 10개월선 {fmt_num(status.ma10, d)} → "
-                 f"<b>{engine.SIGNAL_EMOJI[sig]} {engine.SIGNAL_LABEL[sig]} (주식 {weight_text(status.base_weight)})</b>")
-    live_line = (f"지금 수준으로 끝나면 {live} · {which}까지 {fmt_pct(move)}{urgency}<br>"
-                 f"<span style='color:rgba(255,255,255,.52)'>초록불 {fmt_num(status.green_above, d)} 이상 · "
-                 f"빨간불 {fmt_num(status.red_below, d)} 아래</span>")
+    red, green, close = status.red_below, status.green_above, status.last_close
+    pos = zone_position(close, red, green)
+    live = status.live_signal
+    w = lambda sig: weight_text(engine.SIGNAL_WEIGHT[sig])
+    to_green = (green / close - 1) * 100
+    to_red = (red / close - 1) * 100
+    foot = [f"초록불까지 {fmt_pct(to_green)}" if close < green else "초록불 구간",
+            f"빨간불까지 {fmt_pct(to_red)}" if close >= red else "빨간불 구간"]
+    if status.disparity_trigger:
+        foot.append(f"과열 {fmt_num(status.disparity_trigger, d)} ({fmt_pct((status.disparity_trigger / close - 1) * 100)})")
+    if 0 < left <= 5:
+        foot.append(f"<b>월말까지 평일 {left}일</b>")
+    heat = ""
     if status.overlay_active:
-        heat_line = (f"이격도 {fmt_num(status.disparity, 1)} — 🔥 과열({engine.DEV_THRESHOLD:.0f}↑)이라 한 단계 낮춘 "
-                     f"<b>주식 {weight_text(status.final_weight)}</b>가 권장 비중")
-    else:
-        heat_line = f"이격도 {fmt_num(status.disparity, 1)} — 과열 기준 {engine.DEV_THRESHOLD:.0f} 아래, 비중 그대로"
+        heat = (f"<div class='tj-note warn' style='margin:.9rem 0 0'>🔥 이격도 {fmt_num(status.disparity, 1)} 과열 — "
+                f"비중을 한 단계 낮춰 <b>주식 {weight_text(status.final_weight)}</b></div>")
     md(f"""
-        <div class="tj-lines">
-          <div class="k">지난달 판정</div><div class="v">{base_line}</div>
-          <div class="k">이번 달 전망</div><div class="v">{live_line}</div>
-          <div class="k">과열 체크</div><div class="v">{heat_line}</div>
+        <div class="kr-zone">
+          <div class="kr-zone-head"><span>이달 말 신호 · 지금 위치</span>
+            <span>현재 <b>{fmt_num(close, d)}</b> · {ui.kdate(status.last_date)}</span></div>
+          <div class="kr-bar">
+            <div class="seg red{' on' if live == 'red' else ''}">🔴 {w('red')}</div>
+            <div class="seg yellow{' on' if live == 'yellow' else ''}">🟡 {w('yellow')}</div>
+            <div class="seg green{' on' if live == 'green' else ''}">🟢 {w('green')}</div>
+            <div class="kr-marker" style="left:{pos:.1f}%"></div>
+          </div>
+          <div class="kr-ticks">
+            <span style="left:25%">{fmt_num(red, d)}</span>
+            <span style="left:75%">{fmt_num(green, d)}</span>
+          </div>
+          <div class="kr-zone-foot">{' · '.join(foot)}</div>
+          {heat}
         </div>
     """)
 
@@ -443,9 +461,7 @@ def render_backtest_table(backtests: dict) -> None:
           <thead><tr><th>방식</th><th>연 수익률</th><th>최대 낙폭</th><th>누적</th><th>비중 변경</th></tr></thead>
           <tbody>{body}</tbody>
         </table></div>
-        <div class="tj-caption">{over['start']:%Y-%m-%d} ~ {over['end']:%Y-%m-%d} ({over['years']:.1f}년) · 가격 기준(배당 제외) ·
-        현금 이자 0% · 비중 바꿀 때 0.1% 비용 · 신호가 난 날 종가로 매매했다고 가정.
-        과거에 이랬다고 앞으로도 그렇다는 보장은 없어요.</div>
+        <div class="tj-caption">{over['start']:%Y.%m} ~ {over['end']:%Y.%m} · 배당 제외 · 매매비용 0.1% · 과거 성과가 미래를 보장하진 않아요.</div>
         """
     )
 
@@ -464,7 +480,7 @@ def render_history_table(monthly: pd.DataFrame, digits: int = 2) -> None:
           <thead><tr><th>월</th><th>월말 종가</th><th>5개월선</th><th>10개월선</th><th>신호</th><th>기본 비중</th></tr></thead>
           <tbody>{body}</tbody>
         </table></div>
-        <div class="tj-caption">최근 12개월 · 전체 기록은 CSV로 받을 수 있어요. 기본 비중은 다음 달 한 달 동안 적용돼요. 달 중간에 60일 이격도가 120 이상이 되면 그동안만 한 단계 더 낮춥니다.</div>
+        <div class="tj-caption">최근 12개월 · 비중은 다음 달 한 달간 적용</div>
         """
     )
 
@@ -637,7 +653,7 @@ def main() -> None:
         )
         sync_query_param(query.strip())
         if not query.strip():
-            md("<div class='tj-caption'>코스피·코스닥 종목이나 국내 ETF를 이름 일부나 6자리 코드로 찾아보세요. 같은 5개월선 + 이격도 규칙을 적용해 보여줘요.</div>")
+            md("<div class='tj-caption'>이름 일부나 6자리 코드로 찾아보세요.</div>")
             render_rule()
             st.markdown(ui.footer_html(), unsafe_allow_html=True)
             return
@@ -647,8 +663,7 @@ def main() -> None:
             st.markdown(ui.footer_html(), unsafe_allow_html=True)
             return
         md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market)) + "</div>")
-        md("<div class='tj-note'>ℹ️ 이 규칙은 코스피·코스닥 <b>지수</b>로 검증했어요. 지수를 따라가는 ETF는 비슷하게 움직이지만, "
-           "개별 종목이나 레버리지·테마 ETF는 결과가 크게 다를 수 있으니 아래 <b>백테스트</b> 탭에서 꼭 같이 보세요.</div>")
+        md("<div class='tj-caption' style='margin:.2rem 0 0'>ℹ️ 규칙은 지수로 검증했어요. 개별 종목은 백테스트 탭을 같이 보세요.</div>")
         kind = "ETF" if target.market == "ETF" else f"{market_text(target.market)} 종목"
         eyebrow = f"이번 달 체크 · {kind}"
     else:
