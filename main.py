@@ -2045,6 +2045,57 @@ def get_date_axis(df: pd.DataFrame) -> dict:
         range=[dates.iloc[0], dates.iloc[-1] + right_pad],
     )
 
+# ── 보조 패널 (Chart / Signals 탭에서 공용) ─────────────────────────────────────
+def add_rsi_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
+    if 'RSI' in df.columns and df['RSI'].notna().any():
+        fig.add_trace(go.Scatter(
+            x=df['Date'], y=df['RSI'], name='RSI',
+            line=dict(color='rgba(255,255,255,0.46)', width=1.2),
+            hovertemplate='%{x|%Y-%m-%d}<br>RSI %{y:.1f}<extra></extra>',
+            showlegend=False,
+        ), row=row, col=1)
+        fig.add_hline(y=70, line=dict(color='#FF5A5F', width=1, dash='dot'), row=row, col=1)
+        fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=row, col=1)
+        fig.update_yaxes(
+            title_text='RSI', range=[0, 100], row=row, col=1,
+            tickfont=Y_TICK_FONT,
+            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
+        )
+
+
+def add_fg_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
+    if 'FG index' in df.columns and df['FG index'].notna().any():
+        fg_df = df[df['FG index'].notna()]
+        fg_zones = [
+            (0, 25,  'Extreme Fear', 'rgba(255,255,255,0.025)'),
+            (25, 45, 'Fear',         'rgba(255,255,255,0.018)'),
+            (45, 55, 'Neutral',      'rgba(255,255,255,0.012)'),
+            (55, 75, 'Greed',        'rgba(255,255,255,0.018)'),
+            (75, 100, 'Extreme Greed', 'rgba(255,255,255,0.025)'),
+        ]
+        for y0, y1, _, color in fg_zones:
+            fig.add_hrect(
+                y0=y0, y1=y1,
+                fillcolor=color, line_width=0,
+                row=row, col=1,
+            )
+        fig.add_trace(go.Scatter(
+            x=fg_df['Date'], y=fg_df['FG index'], name='Fear & Greed',
+            mode='lines',
+            line=dict(color='rgba(255,255,255,0.56)', width=2.1, shape='spline'),
+            hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
+            showlegend=False,
+        ), row=row, col=1)
+        for level in [25, 45, 55, 75]:
+            fig.add_hline(y=level, line=dict(color='rgba(255,255,255,0.075)', width=1, dash='dot'), row=row, col=1)
+        fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=row, col=1)
+        fig.update_yaxes(
+            title_text='F&G', range=[0, 100], row=row, col=1,
+            tickfont=Y_TICK_FONT,
+            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
+        )
+
+
 # ── 캔들스틱 차트 ─────────────────────────────────────────────────────────────
 def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     date_axis = get_date_axis(df)
@@ -2081,19 +2132,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
                             line=dict(width=1, color='white')),
             ), row=1, col=1)
 
-    if 'RSI' in df.columns and df['RSI'].notna().any():
-        fig.add_trace(go.Scatter(
-            x=df['Date'], y=df['RSI'], name='RSI',
-            line=dict(color='rgba(255,255,255,0.46)', width=1.2),
-            showlegend=False,
-        ), row=2, col=1)
-        fig.add_hline(y=70, line=dict(color='#FF5A5F', width=1, dash='dot'), row=2, col=1)
-        fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=2, col=1)
-        fig.update_yaxes(
-            title_text='RSI', range=[0, 100], row=2, col=1,
-            tickfont=Y_TICK_FONT,
-            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
-        )
+    add_fg_panel(fig, df, row=2)
 
     if 'VIX' in df.columns and df['VIX'].notna().any():
         fig.add_trace(go.Scatter(
@@ -2178,36 +2217,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
                             line=dict(width=1.5, color='white')),
             ), row=1, col=1)
 
-    if 'FG index' in df.columns and df['FG index'].notna().any():
-        fg_df = df[df['FG index'].notna()]
-        fg_zones = [
-            (0, 25,  'Extreme Fear', 'rgba(255,255,255,0.025)'),
-            (25, 45, 'Fear',         'rgba(255,255,255,0.018)'),
-            (45, 55, 'Neutral',      'rgba(255,255,255,0.012)'),
-            (55, 75, 'Greed',        'rgba(255,255,255,0.018)'),
-            (75, 100, 'Extreme Greed', 'rgba(255,255,255,0.025)'),
-        ]
-        for y0, y1, _, color in fg_zones:
-            fig.add_hrect(
-                y0=y0, y1=y1,
-                fillcolor=color, line_width=0,
-                row=2, col=1,
-            )
-        fig.add_trace(go.Scatter(
-            x=fg_df['Date'], y=fg_df['FG index'], name='Fear & Greed',
-            mode='lines',
-            line=dict(color='rgba(255,255,255,0.56)', width=2.1, shape='spline'),
-            hovertemplate='%{x|%Y-%m-%d}<br>F&G %{y:.0f}<extra></extra>',
-            showlegend=False,
-        ), row=2, col=1)
-        for level in [25, 45, 55, 75]:
-            fig.add_hline(y=level, line=dict(color='rgba(255,255,255,0.075)', width=1, dash='dot'), row=2, col=1)
-        fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=2, col=1)
-        fig.update_yaxes(
-            title_text='F&G', range=[0, 100], row=2, col=1,
-            tickfont=Y_TICK_FONT,
-            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
-        )
+    add_rsi_panel(fig, df, row=2)
 
     fig.update_layout(
         **CHART_THEME,
