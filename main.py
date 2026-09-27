@@ -1,3 +1,11 @@
+import linecache
+
+# After a hot redeploy the server process can still hold the previous
+# main.py lines in linecache; st.cache_* then reads a function's source at new
+# line numbers from the old text and tokenize fails (seen on Python 3.14).
+# Dropping stale entries before anything is decorated avoids that.
+linecache.checkcache()
+
 import streamlit as st
 import pandas as pd
 import numpy as np
