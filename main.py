@@ -50,7 +50,7 @@ def central_timestamp_label() -> str:
 # ── 페이지 설정 ────────────────────────────────────────────────────────────────
 dashboard_param = st.query_params.get("dashboard")
 st.set_page_config(
-    page_title={"korea": "Korea Market Signals", "puddle": "Puddle Signal Scanner"}.get(dashboard_param, "US Market Signals"),
+    page_title={"korea": "한국 시장", "puddle": "Puddle 스캐너"}.get(dashboard_param, "미국 시장"),
     page_icon=str(Path(__file__).resolve().parent / "favicon.png"),
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -1945,7 +1945,7 @@ def resolve_symbol_search(raw: str) -> tuple[dict | None, str]:
     if not query:
         return None, ""
     if query.upper().endswith((".KS", ".KQ")):
-        return None, "한국 종목·ETF는 코스피 · 코스닥 페이지에서 조회"
+        return None, "한국 종목·ETF는 한국 시장 페이지에서 조회"
     candidates = load_symbol_candidates(query)
     typed = us_symbol_search.normalize(query)
     exact = next((row for row in candidates if row["symbol"] == typed), None)
