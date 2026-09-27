@@ -23,7 +23,8 @@ CACHE_TTL_SECONDS = 60 * 60 * 3
 LISTING_PATH = Path(__file__).resolve().parent / "korea_stock_list.csv"
 ETF_LIST_PATH = Path(__file__).resolve().parent / "korea_etf_list.csv"
 
-SIGNAL_COLOR = {"green": ui.GREEN, "yellow": ui.YELLOW, "red": ui.RED}
+# Allocation levels as greys (Tesla-style monochrome): brighter = more stock.
+SIGNAL_COLOR = {"green": ui.LEVEL_FULL, "yellow": ui.LEVEL_HALF, "red": ui.LEVEL_NONE}
 SEARCH_MODE = "search"  # third option of the 보기 picker
 # Validated pair on the chart surface (dataviz validator): blue + neutral grey
 # stay apart in normal and color-blind vision; the old blue/violet pair did not.
@@ -39,7 +40,10 @@ PAGE_CSS = ui.html(f"""
 .kr-panel .top {{ display:flex; justify-content:space-between; gap:12px; color:{ui.MUTED}; font-size:12px; font-weight:560; text-transform:uppercase; letter-spacing:.04em; }}
 .kr-panel .weight {{ margin-top:.55rem; font-variant-numeric:tabular-nums; font-size:48px; font-weight:650; letter-spacing:-0.026em; line-height:1; color:{ui.TEXT}; }}
 .kr-panel .weight small {{ margin-left:10px; font-size:.95rem; font-weight:500; letter-spacing:0; color:rgba(255,255,255,.56); }}
-.kr-panel .chips {{ margin-top:.85rem; display:flex; flex-wrap:wrap; gap:6px; }}
+.kr-panel .meta {{ margin-top:.8rem; color:rgba(255,255,255,.5); font-size:.84rem; }}
+.kr-panel .meta b {{ color:{ui.TEXT}; font-weight:600; }}
+.kr-level {{ display:inline-flex; align-items:center; gap:7px; font-variant-numeric:tabular-nums; }}
+.kr-level i {{ width:8px; height:8px; border-radius:2px; display:inline-block; }}
 .kr-sentence {{ margin:1.3rem 0 1.6rem; color:rgba(255,255,255,.72); font-size:.92rem; line-height:1.65; }}
 .kr-sentence b {{ color:{ui.TEXT}; }}
 .kr-rule {{ color:rgba(255,255,255,.72); font-size:.88rem; line-height:1.7; }}
@@ -47,19 +51,15 @@ PAGE_CSS = ui.html(f"""
 .kr-zone {{ margin:1.8rem 0 1.9rem; }}
 .kr-zone-head {{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:{ui.MUTED}; font-size:12px; font-weight:560; letter-spacing:.03em; margin-bottom:.7rem; }}
 .kr-zone-head b {{ color:{ui.TEXT}; font-size:.95rem; font-variant-numeric:tabular-nums; }}
-.kr-bar {{ position:relative; display:grid; grid-template-columns:1fr 2fr 1fr; gap:3px; height:34px; }}
-.kr-bar .seg {{ display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:.8rem; font-weight:640; color:rgba(255,255,255,.55); }}
-.kr-bar .seg.red {{ background:rgba(255,90,95,.10); }}
-.kr-bar .seg.yellow {{ background:rgba(240,195,90,.10); }}
-.kr-bar .seg.green {{ background:rgba(63,185,80,.10); }}
-.kr-bar .seg.red.on {{ background:rgba(255,90,95,.26); color:{ui.TEXT}; }}
-.kr-bar .seg.yellow.on {{ background:rgba(240,195,90,.26); color:{ui.TEXT}; }}
-.kr-bar .seg.green.on {{ background:rgba(63,185,80,.26); color:{ui.TEXT}; }}
+.kr-bar {{ position:relative; display:grid; grid-template-columns:1fr 2fr 1fr; gap:3px; height:30px; }}
+.kr-bar .seg {{ display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:.78rem; font-weight:600;
+    color:rgba(255,255,255,.40); background:rgba(255,255,255,.045); font-variant-numeric:tabular-nums; }}
+.kr-bar .seg.on {{ background:rgba(255,255,255,.16); color:{ui.TEXT}; }}
 .kr-marker {{ position:absolute; top:-6px; bottom:-6px; width:3px; margin-left:-1.5px; border-radius:2px; background:{ui.TEXT}; box-shadow:0 0 0 2px {ui.BG}; }}
 .kr-ticks {{ position:relative; height:1.4rem; margin-top:.35rem; font-variant-numeric:tabular-nums; font-size:.8rem; color:rgba(255,255,255,.62); }}
 .kr-ticks span {{ position:absolute; transform:translateX(-50%); white-space:nowrap; }}
 .kr-zone-foot {{ margin-top:.35rem; color:rgba(255,255,255,.5); font-size:.8rem; }}
-.kr-zone-foot b {{ color:{ui.YELLOW}; font-weight:620; }}
+.kr-zone-foot b {{ color:{ui.TEXT}; font-weight:600; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
 """)
@@ -147,9 +147,14 @@ def weight_text(weight: float) -> str:
     return f"{int(round(weight * 100))}%"
 
 
+def level_name(signal: str) -> str:
+    """A signal is named by what it means: the stock weight."""
+    return f"주식 {weight_text(engine.SIGNAL_WEIGHT[signal])}"
+
+
 def signal_chip(signal: str, prefix: str = "") -> str:
-    label = f"{prefix}{engine.SIGNAL_EMOJI[signal]} {engine.SIGNAL_LABEL[signal]}"
-    return f"<span class='tj-chip {signal}'>{escape(label)}</span>"
+    return (f"<span class='kr-level'><i style='background:{SIGNAL_COLOR[signal]}'></i>"
+            f"{escape(prefix)}{weight_text(engine.SIGNAL_WEIGHT[signal])}</span>")
 
 
 def month_label(period: pd.Period) -> str:
@@ -229,15 +234,15 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     month_start = status.last_date.to_period("M").to_timestamp(how="start")
     month_end = (status.last_date + pd.offsets.MonthEnd(0)).normalize()
     last_confirmed_x = x.iloc[-1]
-    sig_text = data["Signal"].map(lambda sgn: f"{engine.SIGNAL_EMOJI[sgn]} {engine.SIGNAL_LABEL[sgn]} · 다음 달 {weight_text(engine.SIGNAL_WEIGHT[sgn])}")
-    live_color = SIGNAL_COLOR[status.live_signal]
+    sig_text = data["Signal"].map(lambda sgn: f"다음 달 {level_name(sgn)}")
+    live_color = ui.TEXT
 
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.95, 0.05], vertical_spacing=0.025)
     seg_end = month_end + pd.Timedelta(days=25)  # a little room so this month's lines read as lines
     line = lambda color: {"color": color, "width": 2, "shape": "linear"}
     fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines", line=line(CLOSE_COLOR),
                              customdata=sig_text,
-                             hovertemplate="월말 종가 " + yfmt + "<br>신호 %{customdata}<extra></extra>"), row=1, col=1)
+                             hovertemplate="월말 종가 " + yfmt + "<br>%{customdata}<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines", line=line(MA5_COLOR),
                              hovertemplate="5개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines", line=line(MA10_COLOR),
@@ -253,8 +258,8 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     # The two lines this month's close has to clear, only across this month.
     # No text in the chart: the prices are in the stat row right above it, and
     # labels in a side margin got cut off on phones. Hover shows them.
-    for level, color, text in ((status.green_above, SIGNAL_COLOR["green"], f"이달 말 초록불 기준 ≥ {status.green_above:,.{digits}f}"),
-                               (status.red_below, SIGNAL_COLOR["red"], f"이달 말 빨간불 기준 < {status.red_below:,.{digits}f}")):
+    for level, color, text in ((status.green_above, ui.LEVEL_FULL, f"이달 말 100% 기준 ≥ {status.green_above:,.{digits}f}"),
+                               (status.red_below, ui.LEVEL_HALF, f"이달 말 0% 기준 < {status.red_below:,.{digits}f}")):
         fig.add_trace(go.Scatter(x=[last_confirmed_x, seg_end], y=[level, level], mode="lines",
                                  line={"color": color, "width": 3}, name=text, hovertemplate=text + "<extra></extra>",
                                  showlegend=False), row=1, col=1)
@@ -266,13 +271,13 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
         fig.add_trace(go.Bar(
             x=[run["start"] + span / 2], y=[1], width=[(span - pd.Timedelta(days=2)).total_seconds() * 1000],
             marker={"color": SIGNAL_COLOR[run["sig"]], "line": {"width": 0}},
-            hovertemplate=f"{engine.SIGNAL_EMOJI[run['sig']]} {engine.SIGNAL_LABEL[run['sig']]} · {run['months']}개월<extra></extra>",
+            hovertemplate=f"{level_name(run['sig'])} · {run['months']}개월<extra></extra>",
             showlegend=False,
         ), row=2, col=1)
     span = month_end + pd.Timedelta(days=1) - month_start
     fig.add_trace(go.Bar(
         x=[month_start + span / 2], y=[1], width=[(span - pd.Timedelta(days=2)).total_seconds() * 1000],
-        marker={"color": live_color, "opacity": 0.35, "line": {"width": 0}},
+        marker={"color": SIGNAL_COLOR[status.live_signal], "opacity": 0.35, "line": {"width": 0}},
         hovertemplate="이번 달 진행 중<extra></extra>", showlegend=False,
     ), row=2, col=1)
 
@@ -292,7 +297,7 @@ def signal_key_html() -> str:
     swatch = lambda sig: (f"<span style='display:inline-block;width:10px;height:10px;border-radius:2px;"
                           f"background:{SIGNAL_COLOR[sig]};margin:0 5px 0 10px;vertical-align:-1px'></span>")
     items = "".join(f"{swatch(sig)}{weight_text(engine.SIGNAL_WEIGHT[sig])}" for sig in ("green", "yellow", "red"))
-    return f"<div class='tj-caption' style='margin-top:-.2rem'>아래 띠 = 월별 신호{items} · 오른쪽 짧은 선 = 이달 말 기준가 · 로그 눈금</div>"
+    return f"<div class='tj-caption' style='margin-top:-.2rem'>월별 주식 비중{items} · 오른쪽 선 = 이달 말 기준가 · 로그 눈금</div>"
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
@@ -306,15 +311,15 @@ def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) 
                              line={"color": "#f5f5f7", "width": 1.8},
                              hovertemplate="%{x|%Y-%m-%d}<br>종가 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=data["Date"], y=data["MA60"], name="60일 평균", mode="lines",
-                             line={"color": ui.YELLOW, "width": 1.3, "dash": "dot"},
+                             line={"color": MA10_COLOR, "width": 1.3, "dash": "dot"},
                              hovertemplate="60일 평균 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=hot["Date"], y=hot["Close"], name=f"이격도 {engine.DEV_THRESHOLD:.0f}↑ (과열)",
-                             mode="markers", marker={"size": 6, "color": SIGNAL_COLOR["red"]},
+                             mode="markers", marker={"size": 5, "color": MA5_COLOR},
                              hovertemplate="과열 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=data["Date"], y=data["Disparity"], name="60일 이격도", mode="lines",
                              line={"color": MA5_COLOR, "width": 1.6},
                              hovertemplate="이격도 %{y:.1f}<extra></extra>"), row=2, col=1)
-    fig.add_hline(y=engine.DEV_THRESHOLD, line={"color": SIGNAL_COLOR["red"], "width": 1, "dash": "dash"}, row=2, col=1)
+    fig.add_hline(y=engine.DEV_THRESHOLD, line={"color": "rgba(255,255,255,0.55)", "width": 1, "dash": "dash"}, row=2, col=1)
     fig.add_hline(y=100, line={"color": "rgba(255,255,255,0.25)", "width": 1}, row=2, col=1)
     _style(fig, 500)
     fig.update_xaxes(tickformat="%y.%m")
@@ -332,11 +337,11 @@ def build_backtest_chart(backtests: dict) -> go.Figure:
                              line={"color": MA5_COLOR, "width": 1.5},
                              hovertemplate="5개월선만 %{y:.2f}배<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=over["Date"], y=over["System"], name=f"5개월선 + 이격도{engine.DEV_THRESHOLD:.0f}",
-                             mode="lines", line={"color": ui.GREEN, "width": 2},
+                             mode="lines", line={"color": ui.TEXT, "width": 2},
                              hovertemplate="5개월선+이격도 %{y:.2f}배<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=over["Date"], y=over["Weight"] * 100, name="주식 비중(%)", mode="lines",
-                             line={"color": ui.GREEN, "width": 1, "shape": "hv"}, fill="tozeroy",
-                             fillcolor="rgba(63,185,80,0.16)", showlegend=False,
+                             line={"color": "rgba(242,245,248,0.7)", "width": 1, "shape": "hv"}, fill="tozeroy",
+                             fillcolor="rgba(242,245,248,0.10)", showlegend=False,
                              hovertemplate="주식 비중 %{y:.0f}%<extra></extra>"), row=2, col=1)
     _style(fig, 520)
     fig.update_yaxes(type="log", row=1, col=1)
@@ -351,19 +356,16 @@ def md(markup: str) -> None:
 
 
 def index_panel(status: engine.IndexStatus, tag: str | None = None) -> str:
-    chips = [signal_chip(status.signal, "5개월선 ")]
     disp = fmt_num(status.disparity, 1)
-    if status.overlay_active:
-        chips.append(f"<span class='tj-chip red'>🔥 이격도 {disp} · 과열</span>")
-    else:
-        chips.append(f"<span class='tj-chip'>이격도 {disp}</span>")
+    heat = f"<b>이격도 {disp} 과열 · 한 단계 낮춤</b>" if status.overlay_active else f"이격도 {disp}"
+    meta = f"{signal_chip(status.signal, '5·10개월선 ')}<span style='margin:0 9px;color:rgba(255,255,255,.24)'>·</span>{heat}"
     cash = 1 - status.final_weight
     name = f"{status.label} {status.key}" + (f" · {tag}" if tag else "")
     return f"""
       <div class="kr-panel">
         <div class="top"><span>{escape(name)}</span><span>{month_label(status.confirmed_month)} 확정</span></div>
         <div class="weight">{weight_text(status.final_weight)}<small>주식 · 현금 {weight_text(cash)}</small></div>
-        <div class="chips">{''.join(chips)}</div>
+        <div class="meta">{meta}</div>
       </div>
     """
 
@@ -376,15 +378,15 @@ def render_banners(statuses: list[engine.IndexStatus], monthly_by_key: dict, tod
             monthly = monthly_by_key[s.key]
             prev = monthly.iloc[-2]["Signal"] if len(monthly) >= 2 else None
             if prev and prev != s.signal:
-                changes.append(f"{s.label} {engine.SIGNAL_EMOJI[prev]}→{engine.SIGNAL_EMOJI[s.signal]}")
+                changes.append(f"{s.label} {weight_text(engine.SIGNAL_WEIGHT[prev])} → {weight_text(engine.SIGNAL_WEIGHT[s.signal])}")
             else:
                 same.append(s.label)
         if changes:
-            md(f"<div class='tj-note warn'>⚠️ 신호 변화: {escape(', '.join(changes))} — 오늘 주식 비중을 새 신호에 맞출 차례예요.</div>")
+            md(f"<div class='tj-note warn'>{month_label(confirmed[0].confirmed_month)} 신호 변경 · {escape(', '.join(changes))}</div>")
         if same:
-            md(f"<div class='tj-note ok'>✅ {month_label(confirmed[0].confirmed_month)} 신호 확정: {escape(', '.join(same))} 그대로 유지</div>")
+            md(f"<div class='tj-note ok'>{month_label(confirmed[0].confirmed_month)} 신호 확정 · {escape(', '.join(same))} 유지</div>")
     if is_last_weekday_of_month(today):
-        md("<div class='tj-note warn'>📌 오늘 종가로 다음 달 신호가 확정됩니다.</div>")
+        md("<div class='tj-note warn'>오늘 종가로 다음 달 비중 확정</div>")
 
 
 def zone_position(price: float, red: float, green: float) -> float:
@@ -411,24 +413,24 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
     w = lambda sig: weight_text(engine.SIGNAL_WEIGHT[sig])
     to_green = (green / close - 1) * 100
     to_red = (red / close - 1) * 100
-    foot = [f"초록불까지 {fmt_pct(to_green)}" if close < green else "초록불 구간",
-            f"빨간불까지 {fmt_pct(to_red)}" if close >= red else "빨간불 구간"]
+    foot = [f"100%까지 {fmt_pct(to_green)}" if close < green else "100% 구간",
+            f"0%까지 {fmt_pct(to_red)}" if close >= red else "0% 구간"]
     if status.disparity_trigger:
         foot.append(f"과열 {fmt_num(status.disparity_trigger, d)} ({fmt_pct((status.disparity_trigger / close - 1) * 100)})")
     if 0 < left <= 5:
-        foot.append(f"<b>월말까지 평일 {left}일</b>")
+        foot.append(f"<b>월말까지 {left}거래일</b>")
     heat = ""
     if status.overlay_active:
-        heat = (f"<div class='tj-note warn' style='margin:.9rem 0 0'>🔥 이격도 {fmt_num(status.disparity, 1)} 과열 — "
-                f"비중을 한 단계 낮춰 <b>주식 {weight_text(status.final_weight)}</b></div>")
+        heat = (f"<div class='tj-note warn' style='margin:.9rem 0 0'>이격도 {fmt_num(status.disparity, 1)} 과열 · "
+                f"주식 {weight_text(status.final_weight)}로 한 단계 낮춤</div>")
     md(f"""
         <div class="kr-zone">
-          <div class="kr-zone-head"><span>이달 말 신호 · 지금 위치</span>
+          <div class="kr-zone-head"><span>이달 말 비중</span>
             <span>현재 <b>{fmt_num(close, d)}</b> · {ui.kdate(status.last_date)}</span></div>
           <div class="kr-bar">
-            <div class="seg red{' on' if live == 'red' else ''}">🔴 {w('red')}</div>
-            <div class="seg yellow{' on' if live == 'yellow' else ''}">🟡 {w('yellow')}</div>
-            <div class="seg green{' on' if live == 'green' else ''}">🟢 {w('green')}</div>
+            <div class="seg{' on' if live == 'red' else ''}">{w('red')}</div>
+            <div class="seg{' on' if live == 'yellow' else ''}">{w('yellow')}</div>
+            <div class="seg{' on' if live == 'green' else ''}">{w('green')}</div>
             <div class="kr-marker" style="left:{pos:.1f}%"></div>
           </div>
           <div class="kr-ticks">
@@ -461,7 +463,7 @@ def render_backtest_table(backtests: dict) -> None:
           <thead><tr><th>방식</th><th>연 수익률</th><th>최대 낙폭</th><th>누적</th><th>비중 변경</th></tr></thead>
           <tbody>{body}</tbody>
         </table></div>
-        <div class="tj-caption">{over['start']:%Y.%m} ~ {over['end']:%Y.%m} · 배당 제외 · 매매비용 0.1% · 과거 성과가 미래를 보장하진 않아요.</div>
+        <div class="tj-caption">{over['start']:%Y.%m} ~ {over['end']:%Y.%m} · 배당 제외 · 매매비용 0.1% · 과거 성과는 미래를 보장하지 않음</div>
         """
     )
 
@@ -486,26 +488,21 @@ def render_history_table(monthly: pd.DataFrame, digits: int = 2) -> None:
 
 
 def render_rule() -> None:
-    with st.expander("규칙 설명 (어떻게 계산하나요?)"):
+    with st.expander("규칙"):
         md(
             f"""
             <div class="kr-rule">
-            <b>1. 기본 비중 — 5개월선·10개월선</b><br>
-            매달 마지막 거래일 종가(월말 종가)를 최근 5개월·10개월 월말 종가의 평균과 비교해요.
-            둘 다 위면 🟢 주식 100%, 하나만 위면 🟡 50%, 둘 다 아래면 🔴 0%(전부 현금).
-            신호는 월말 종가로 정해지고 다음 달 내내 유지돼요.<br><br>
-            <b>2. 과열 보조 — 60일 이격도 {engine.DEV_THRESHOLD:.0f}</b><br>
-            이격도 = 오늘 종가 ÷ 최근 60거래일 평균 × 100. {engine.DEV_THRESHOLD:.0f}이면 평균보다 {engine.DEV_THRESHOLD - 100:.0f}% 높다는 뜻이에요.
-            이 값이 {engine.DEV_THRESHOLD:.0f} 이상인 동안에만 비중을 한 단계 낮춰요(100%→50%, 50%→0%). 내려오면 원래대로.<br><br>
-            <b>왜 이 조합?</b> 『돈을 불러오는 TIP』의 비중 규칙(이격도 130, 5개월선, 주봉 RSI 70)을
-            코스피 2004~·코스닥 2001~ 일봉으로 검증해 보니, 5개월선이 뼈대 역할을 했고
-            이격도는 130·125보다 120일 때 수익률과 낙폭이 함께 좋아졌어요(코스닥은 역대 130을 한 번도 넘지 않음).
-            RSI 70을 더하면 너무 자주 발동해 코스피 수익률이 크게 깎여서 뺐어요.<br><br>
-            <b>개별 종목</b> 검색한 종목에도 같은 계산을 그대로 적용해요. 규칙 자체는 지수로 검증했으니 종목마다 백테스트 결과를 같이 보세요.
-            종목은 KRX(KIND) 상장법인 목록, ETF는 네이버 금융 ETF 목록의 한글 이름으로 찾아요(둘 다 매일 새로 받음).
-            띄어 쓴 단어는 각각 찾아서 "KODEX 나스닥"처럼 일부만 써도 돼요. 이름으로 안 나오면 6자리 코드로 검색해 보세요.<br><br>
-            <b>한계</b> 한 달 안에 몰아치는 급락은 월간 신호로 피할 수 없고, 헛신호도 있어요.
-            과거 데이터로 만든 규칙을 기계적으로 계산한 결과이며 투자 권유가 아닙니다.
+            <b>기본 비중 · 5·10개월선</b><br>
+            월말 종가가 5개월·10개월 월말 평균 둘 다 위 100%, 하나만 위 50%, 둘 다 아래 0%. 다음 달 내내 유지.<br><br>
+            <b>과열 · 60일 이격도 {engine.DEV_THRESHOLD:.0f}</b><br>
+            이격도 = 종가 ÷ 60거래일 평균 × 100. {engine.DEV_THRESHOLD:.0f} 이상인 동안 한 단계 낮춤(100→50, 50→0).<br><br>
+            <b>근거</b><br>
+            『돈을 불러오는 TIP』의 비중 규칙(이격도 130, 5개월선, 주봉 RSI 70)을 코스피 2004~·코스닥 2001~ 일봉으로 검증.
+            5개월선이 뼈대, 이격도는 120에서 수익률·낙폭 모두 개선(코스닥은 130 도달 이력 없음). RSI 70은 과다 발동으로 제외.<br><br>
+            <b>개별 종목</b><br>
+            같은 계산 적용. 규칙은 지수 기준 검증이므로 백테스트 함께 확인. 종목은 KRX(KIND), ETF는 네이버 금융 목록(매일 갱신).<br><br>
+            <b>한계</b><br>
+            월중 급락은 피할 수 없음 · 헛신호 있음 · 투자 권유 아님.
             </div>
             """
         )
@@ -542,8 +539,8 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
 
     if hits.empty:
         if not engine.CODE_PATTERN.match(code):
-            hint = "" if live else " (종목 목록을 지금 새로 받지 못해 저장된 목록으로 찾았어요 — 최근 상장한 종목은 6자리 코드로 검색해 주세요.)"
-            st.info(f"'{q}'에 맞는 코스피·코스닥 종목이나 ETF가 없어요. 이름 일부(예: 나스닥100, 코스닥150)나 6자리 코드(예: 069500)로도 찾아보세요.{hint}")
+            hint = "" if live else " · 저장된 목록 기준(최근 상장 종목은 6자리 코드로 검색)"
+            st.info(f"'{q}' 검색 결과 없음 · 이름 일부(나스닥100, 코스닥150) 또는 6자리 코드(069500){hint}")
             return None
         pick = {"code": code, "name": "", "market": ""}
     elif len(hits) == 1:
@@ -552,9 +549,9 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
         # An exact name/code match opens right away; the rest stay in the list.
         wanted = "".join(engine.query_tokens(q))
         exact_first = (engine.normalize_text(hits.at[0, "name"]) == wanted) or (hits.at[0, "code"].lower() == wanted)
-        label = f"검색 결과 {len(hits)}개" + (" · 더 있으면 이름을 더 입력해 주세요" if len(hits) >= 30 else "")
+        label = f"검색 결과 {len(hits)}개" + (" · 이름을 더 입력하면 좁혀짐" if len(hits) >= 30 else "")
         idx = st.selectbox(
-            label, list(hits.index), index=0 if exact_first else None, placeholder="종목을 골라 주세요",
+            label, list(hits.index), index=0 if exact_first else None, placeholder="종목 선택",
             format_func=lambda i: f"{hits.at[i, 'name']} · {hits.at[i, 'code']} · {market_text(hits.at[i, 'market'])}",
             key=f"kr_pick_{engine.normalize_text(q)}",
         )
@@ -562,20 +559,20 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
             return None
         pick = hits.loc[idx].to_dict()
 
-    with st.spinner(f"{pick['name'] or pick['code']} 데이터를 불러오는 중..."):
+    with st.spinner(f"{pick['name'] or pick['code']} 불러오는 중"):
         try:
             found = load_stock(pick["code"], pick.get("market") or "", day_key)
         except Exception:
             found = None
     if found is None:
-        st.warning(f"{pick['name'] or pick['code']} 시세를 지금 찾을 수 없어요.")
+        st.warning(f"{pick['name'] or pick['code']} 시세 없음")
         return None
 
     name = pick["name"] or found["yahoo_name"]
     try:
         status = engine.current_status(pick["code"], found["daily"], today, label=name)
     except engine.HistoryTooShort:
-        st.info(f"{name}은(는) 상장한 지 얼마 안 돼서 아직 계산할 수 없어요. 월말 종가 10개월치와 60거래일이 쌓여야 해요.")
+        st.info(f"{name} · 데이터 부족 (월말 종가 10개월, 60거래일 필요)")
         return None
     monthly = engine.monthly_signals(found["daily"], today).dropna(subset=["Signal"])
     return Target(status, found["daily"], monthly, found["symbol"], engine.STOCK_START_YEAR, pick.get("market") or None)
@@ -606,7 +603,7 @@ def main() -> None:
                                     extra_meta="코스피 · 코스닥 주식/현금 비중"), unsafe_allow_html=True)
 
     dailies, statuses, monthly_by_key, errors = {}, {}, {}, []
-    with st.spinner("코스피·코스닥 데이터를 불러오는 중..."):
+    with st.spinner("불러오는 중"):
         for key in engine.INDEXES:
             try:
                 daily = load_daily(key, day_key)
@@ -628,7 +625,7 @@ def main() -> None:
     ), unsafe_allow_html=True)
 
     if errors:
-        st.warning(f"{', '.join(errors)} 데이터를 지금 불러오지 못했어요. 잠시 후 새로고침해 주세요.")
+        st.warning(f"{', '.join(errors)} 데이터 불러오기 실패 · 잠시 후 새로고침")
     if not statuses:
         st.stop()
 
@@ -643,7 +640,7 @@ def main() -> None:
         st.session_state["kr_query"] = str(shared_q)[:40]
     selected = st.radio(
         "보기", options, horizontal=True, key="kr_index",
-        format_func=lambda k: "🔍 종목·ETF 검색" if k == SEARCH_MODE else f"{engine.INDEXES[k]['label']} {k}",
+        format_func=lambda k: "종목 · ETF" if k == SEARCH_MODE else f"{engine.INDEXES[k]['label']} {k}",
     )
     target = None
     if selected == SEARCH_MODE:
@@ -653,7 +650,7 @@ def main() -> None:
         )
         sync_query_param(query.strip())
         if not query.strip():
-            md("<div class='tj-caption'>이름 일부나 6자리 코드로 찾아보세요.</div>")
+            md("<div class='tj-caption'>이름 일부 또는 6자리 코드</div>")
             render_rule()
             st.markdown(ui.footer_html(), unsafe_allow_html=True)
             return
@@ -663,7 +660,7 @@ def main() -> None:
             st.markdown(ui.footer_html(), unsafe_allow_html=True)
             return
         md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market)) + "</div>")
-        md("<div class='tj-caption' style='margin:.2rem 0 0'>ℹ️ 규칙은 지수로 검증했어요. 개별 종목은 백테스트 탭을 같이 보세요.</div>")
+        md("<div class='tj-caption' style='margin:.2rem 0 0'>규칙은 지수 기준으로 검증 · 개별 종목은 백테스트 참고</div>")
         kind = "ETF" if target.market == "ETF" else f"{market_text(target.market)} 종목"
         eyebrow = f"이번 달 체크 · {kind}"
     else:
@@ -687,7 +684,7 @@ def main() -> None:
             backtests = load_backtests(target.symbol, target.start_year, day_key)
         except Exception:
             backtests = None
-            st.info("백테스트를 계산하지 못했어요.")
+            st.info("백테스트 계산 실패")
         if backtests:
             st.plotly_chart(build_backtest_chart(backtests), use_container_width=True, config=PLOT_CONFIG)
             render_backtest_table(backtests)

@@ -27,6 +27,11 @@ GREEN = "#3FB950"
 YELLOW = "#F0C35A"
 RED = "#FF5A5F"
 PLOT_BG = "#05070d"
+# Tesla-style monochrome: meaning is carried by lightness, not hue. One accent
+# (ACCENT) is kept for focus/selection. Allocation levels use these greys.
+LEVEL_FULL = "#C9CED6"   # 100%
+LEVEL_HALF = "#8A9099"   # 50%
+LEVEL_NONE = "#3A4049"   # 0%
 FONT_STACK = '-apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "DM Sans", sans-serif'
 
 PAGES = [
@@ -153,7 +158,7 @@ div[data-testid="stRadio"] div[role="radiogroup"] label:has(input:checked) p {{ 
 }}
 .stTabs [aria-selected="true"] {{
     color: rgba(255,255,255,0.96) !important; background: transparent !important;
-    box-shadow: inset 0 -2px 0 rgba(110,168,255,0.82) !important;
+    box-shadow: inset 0 -2px 0 rgba(242,245,248,0.9) !important;
 }}
 .stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] {{ display: none !important; }}
 .stTabs [data-baseweb="tab"] p {{ color: inherit !important; font-weight: inherit !important; }}
@@ -207,14 +212,13 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 }}
 .tj-hero h1 a {{ color: inherit !important; text-decoration: none !important; }}
 .tj-dot {{ width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto; background: rgba(255,255,255,0.32); }}
-.tj-dot.open {{ background: {GREEN}; }}
-.tj-dot.live {{ background: {ACCENT}; }}
+.tj-dot.open, .tj-dot.live {{ background: {TEXT}; }}
 .tj-meta {{ margin-top: 0.42rem; color: rgba(255,255,255,0.52); font-size: 0.78rem; font-weight: 500; }}
 .tj-meta .k {{ color: {FAINT}; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 6px; }}
 .tj-meta .sep {{ margin: 0 8px; color: rgba(255,255,255,0.22); }}
 .tj-hero-right {{ display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.52); font-size: 0.78rem; white-space: nowrap; }}
 .tj-hero-right strong {{ color: {TEXT}; font-weight: 650; }}
-.tj-hero-right .tj-dot {{ width: 7px; height: 7px; background: {ACCENT}; opacity: .75; }}
+.tj-hero-right .tj-dot {{ width: 6px; height: 6px; background: rgba(255,255,255,0.5); }}
 
 /* focus title: eyebrow + big name */
 .tj-focus {{ margin: 2.05rem 0 0.95rem; }}
@@ -228,29 +232,27 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 .tj-stat .label {{ color: {MUTED}; font-size: 12px; font-weight: 560; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 7px; }}
 .tj-stat .value {{ font-variant-numeric: tabular-nums; color: {TEXT}; font-size: 1.26rem; font-weight: 620; letter-spacing: -0.01em; }}
 .tj-stat .note {{ margin-top: 5px; font-size: 0.82rem; color: rgba(255,255,255,0.56); line-height: 1.4; }}
-.tj-green {{ color: {GREEN} !important; }} .tj-yellow {{ color: {YELLOW} !important; }} .tj-red {{ color: {RED} !important; }} .tj-blue {{ color: {ACCENT} !important; }}
+.tj-green, .tj-yellow, .tj-red, .tj-blue {{ color: {TEXT} !important; }}
 
 /* chips & notes */
 .tj-chip {{
     display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.035);
-    color: rgba(255,255,255,0.82); font-size: 0.76rem; font-weight: 600; white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.09); background: transparent;
+    color: rgba(255,255,255,0.62); font-size: 0.76rem; font-weight: 560; white-space: nowrap;
 }}
-.tj-chip.green {{ color: {GREEN}; border-color: rgba(63,185,80,0.30); background: rgba(63,185,80,0.08); }}
-.tj-chip.yellow {{ color: {YELLOW}; border-color: rgba(240,195,90,0.30); background: rgba(240,195,90,0.08); }}
-.tj-chip.red {{ color: {RED}; border-color: rgba(255,90,95,0.30); background: rgba(255,90,95,0.08); }}
+.tj-chip.green, .tj-chip.yellow, .tj-chip.red, .tj-chip.blue, .tj-chip.on {{ color: {TEXT}; border-color: rgba(255,255,255,0.22); }}
 .tj-note {{
-    margin: 0 0 1rem; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.035);
-    color: rgba(255,255,255,0.78); font-size: 0.86rem; line-height: 1.55;
+    margin: 0 0 1rem; padding: 2px 0 2px 12px; border-left: 2px solid rgba(255,255,255,0.28); background: transparent;
+    color: rgba(255,255,255,0.72); font-size: 0.86rem; line-height: 1.55;
 }}
-.tj-note.warn {{ background: rgba(240,195,90,0.08); color: #F6DC9C; }}
-.tj-note.ok {{ background: rgba(63,185,80,0.08); color: #9FE0AA; }}
+.tj-note.warn, .tj-note.ok {{ border-left-color: rgba(255,255,255,0.72); color: {TEXT}; }}
 .tj-note b {{ color: {TEXT}; }}
 
 /* verdict: the page's "so what" as a row of chips */
-.tj-verdict {{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:.2rem 0 1.4rem; }}
-.tj-verdict .lead {{ color:{MUTED}; font-size:12px; font-weight:560; letter-spacing:.04em; margin-right:4px; }}
-.tj-chip.blue {{ color:#8EC1FF; border-color:rgba(47,128,255,0.34); background:rgba(47,128,255,0.10); }}
+.tj-verdict {{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 0; margin:.2rem 0 1.6rem; color:rgba(255,255,255,0.56); font-size:.86rem; }}
+.tj-verdict .lead {{ color:{MUTED}; font-size:12px; font-weight:560; letter-spacing:.04em; margin-right:12px; }}
+.tj-verdict .item + .item::before {{ content:"·"; margin:0 9px; color:rgba(255,255,255,0.24); }}
+.tj-verdict .item.em {{ color:{TEXT}; font-weight:600; }}
 
 /* label / value lines (short explanations) */
 .tj-lines {{ display:grid; grid-template-columns:max-content minmax(0,1fr); column-gap:20px; row-gap:9px; margin:1.3rem 0 1.6rem; font-size:.9rem; line-height:1.5; }}

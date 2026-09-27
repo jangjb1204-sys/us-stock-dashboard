@@ -1745,6 +1745,17 @@ st.markdown("""
         gap: 0 !important;
     }
 
+    /* Tesla-style monochrome: status words in grey, only states that need
+       attention in white; signal actions in white instead of green/blue. */
+    .summary-status, .summary-status.safe, .summary-status.neutral, .summary-status.caution {
+        color: rgba(255,255,255,0.52) !important;
+    }
+    .summary-status.risk, .summary-status.opportunity { color: #F2F5F8 !important; }
+    .signal-action, .signal-action.buy, .signal-action.signal, .signal-action.sell, .signal-action.risk {
+        color: #F2F5F8 !important; font-weight: 600 !important;
+    }
+    .signal-date { font-family: inherit !important; }
+
     /* Section titles, replacing "### Signal Feed" so headings share one style. */
     .section-heading {
         margin: 1.35rem 0 0.6rem;
@@ -1808,9 +1819,10 @@ DATA_PERIOD = "4y"
 RECENT_TICKER_LIMIT = 12
 
 MA_COLORS = {
+    # One accent (MA20) and greys by lightness for the slower averages.
     "MA20":  "#6EA8FF",
-    "MA60":  "#C7A15A",
-    "MA120": "#C77A86",
+    "MA60":  "#B4BAC4",
+    "MA120": "#6B7280",
     "MA200": "#6B7280",
 }
 PRICE_LEGEND_SERIES = {'MA20', 'MA60', 'MA120'}
@@ -1919,7 +1931,7 @@ def resolve_symbol_search(raw: str) -> tuple[dict | None, str]:
     if not query:
         return None, ""
     if query.upper().endswith((".KS", ".KQ")):
-        return None, "한국 종목·ETF는 위쪽 🇰🇷 코스피 · 코스닥 페이지에서 볼 수 있어요."
+        return None, "한국 종목·ETF는 코스피 · 코스닥 페이지에서 조회"
     candidates = load_symbol_candidates(query)
     typed = us_symbol_search.normalize(query)
     exact = next((row for row in candidates if row["symbol"] == typed), None)
@@ -1938,8 +1950,8 @@ def resolve_symbol_search(raw: str) -> tuple[dict | None, str]:
         # Search found nothing (or Yahoo was unreachable): try it as a raw ticker.
         return {"symbol": normalize_ticker(query), "name": ""}, ""
     if us_symbol_search._HANGUL.search(query):
-        return None, "한글 이름은 주요 종목만 지원해요. 영어 이름이나 티커로 검색해 보세요 (예: Nvidia, NVDA)."
-    return None, f"‘{query}’에 맞는 미국 주식·ETF가 없어요. 영어 이름이나 티커로도 찾아보세요."
+        return None, "한글 이름은 주요 종목만 지원 · 영어 이름 또는 티커로 검색 (Nvidia, NVDA)"
+    return None, f"‘{query}’ 검색 결과 없음 · 영어 이름 또는 티커로 검색"
 
 def unique_tickers(tickers) -> list[str]:
     result = []
@@ -2154,8 +2166,8 @@ def add_rsi_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
             hovertemplate='%{x|%Y-%m-%d}<br>RSI %{y:.1f}<extra></extra>',
             showlegend=False,
         ), row=row, col=1)
-        fig.add_hline(y=70, line=dict(color='#FF5A5F', width=1, dash='dot'), row=row, col=1)
-        fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=row, col=1)
+        fig.add_hline(y=70, line=dict(color='rgba(255,255,255,0.34)', width=1, dash='dot'), row=row, col=1)
+        fig.add_hline(y=30, line=dict(color='rgba(255,255,255,0.34)', width=1, dash='dot'), row=row, col=1)
         fig.update_yaxes(range=[0, 100], tickvals=[30, 70], row=row, col=1, tickfont=Y_TICK_FONT)
         latest = df['RSI'].dropna().iloc[-1]
         add_panel_label(fig, row, f"RSI <b>{latest:.1f}</b>")
@@ -2186,7 +2198,7 @@ def add_fg_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
         ), row=row, col=1)
         for level in [25, 45, 55, 75]:
             fig.add_hline(y=level, line=dict(color='rgba(255,255,255,0.075)', width=1, dash='dot'), row=row, col=1)
-        fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=row, col=1)
+        fig.add_hline(y=50, line=dict(color='rgba(255,255,255,0.26)', width=1, dash='solid'), row=row, col=1)
         fig.update_yaxes(range=[0, 100], tickvals=[25, 50, 75], row=row, col=1, tickfont=Y_TICK_FONT)
         add_panel_label(fig, row, f"공포·탐욕 <b>{fg_df['FG index'].iloc[-1]:.0f}</b>")
 
@@ -2293,7 +2305,7 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             fill='tozeroy', fillcolor='rgba(255,255,255,0.04)',
             showlegend=False,
         ), row=3, col=1)
-        fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
+        fig.add_hline(y=25, line=dict(color='rgba(255,255,255,0.30)', width=1, dash='dot'), row=3, col=1)
         fig.update_yaxes(row=3, col=1, tickfont=Y_TICK_FONT, nticks=3)
         add_panel_label(fig, 3, f"VIX <b>{df['VIX'].dropna().iloc[-1]:.1f}</b>")
 
@@ -2611,11 +2623,11 @@ def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers
     # click opens it (no separate "Load" button, which the old version had).
     # Data is loaded up front because the header depends on it;
     # load_market_summary_rows is cached (30 min), so repeat visits are instant.
-    with st.spinner("전체 종목 요약을 불러오는 중..."):
+    with st.spinner("불러오는 중"):
         summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
     if summary_df.empty:
-        st.info("전체 종목 요약을 아직 불러오지 못했어요.")
+        st.info("전체 종목 요약 불러오기 실패")
         return
 
     columns = ['Name', 'Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal']
@@ -2700,7 +2712,7 @@ def render_signal_cards(df: pd.DataFrame):
             for _, date, action, tone, title, detail in signal_rows
         )
     else:
-        body = "<div class='signal-empty-feed'>최근 신호가 없어요. 시장이 조용한 편이에요.</div>"
+        body = "<div class='signal-empty-feed'>최근 신호 없음</div>"
 
     st.markdown(
         f"""
@@ -2734,36 +2746,36 @@ def verdict_chips(full_df: pd.DataFrame) -> list[str]:
     ago = len(data) - 1 - hits[-1] if len(hits) else None
     if info and ago <= VERDICT_LOOKBACK_DAYS:
         when = "오늘" if ago == 0 else f"{ago}거래일 전"
-        chips.append(f"<span class='tj-chip'>{ui.kdate(data.at[hits[-1], 'Date'])} Puddle {info['stage']}차 · "
-                     f"{info['ma']} 이탈 · {when}</span>")
+        chips.append(f"<span class='item'>Puddle {info['stage']}차 · {info['ma']} 이탈 · "
+                     f"{ui.kdate(data.at[hits[-1], 'Date'])} ({when})</span>")
         buy = f"보유 현금 {info['cash']}%" if info['cash'] is not None else "매수"
         if info['days']:
             day = ago + 1
             if day <= info['days']:
-                rule, tone = f"{buy} {info['days']}일 분할매수 · {day}/{info['days']}일째", 'blue'
+                rule, tone = f"{buy} {info['days']}일 분할매수 · {day}/{info['days']}일째", 'em'
             else:
                 rule, tone = f"{buy} {info['days']}일 분할매수 · 기간 끝", ''
         else:
-            rule, tone = f"{buy} 매수", ('blue' if ago == 0 else '')
-        chips.append(f"<span class='tj-chip {tone}'>{escape(rule)}</span>")
+            rule, tone = f"{buy} 매수", ('em' if ago == 0 else '')
+        chips.append(f"<span class='item {tone}'>{escape(rule)}</span>")
         ma_val, close = safe_float(last.get(info['ma'])), safe_float(last.get('Close'))
         if ma_val is not None and close is not None:
             gap = (close / ma_val - 1) * 100
             where = "위로 회복" if close >= ma_val else "아래"
-            chips.append(f"<span class='tj-chip'>지금 {info['ma']} {where} ({gap:+.1f}%)</span>")
+            chips.append(f"<span class='item'>{info['ma']} {where} {gap:+.1f}%</span>")
     else:
-        chips.append(f"<span class='tj-chip'>최근 {VERDICT_LOOKBACK_DAYS}거래일 Puddle 신호 없음</span>")
+        chips.append(f"<span class='item'>최근 {VERDICT_LOOKBACK_DAYS}거래일 Puddle 신호 없음</span>")
     if has_rsi_puddle_signal(last.get('RSI_Puddle_Signal')):
-        chips.append("<span class='tj-chip blue'>RSI+Puddle 과매도 신호 진행 중</span>")
+        chips.append("<span class='item em'>RSI+Puddle 진행 중</span>")
     if 'VIX1D>VIX' in data.columns and (data['VIX1D>VIX'].tail(5) == 'BUY').any():
-        chips.append("<span class='tj-chip blue'>최근 5일 VIX1D&gt;VIX 매수 신호</span>")
+        chips.append("<span class='item em'>VIX1D&gt;VIX 매수 신호 (5일 내)</span>")
     return chips
 
 
 def render_verdict(full_df: pd.DataFrame) -> None:
     chips = verdict_chips(full_df)
     if chips:
-        st.markdown("<div class='tj-verdict'><span class='lead'>지금 상태</span>" + "".join(chips) + "</div>",
+        st.markdown("<div class='tj-verdict'><span class='lead'>현재</span>" + "".join(chips) + "</div>",
                     unsafe_allow_html=True)
 
 
@@ -2915,7 +2927,7 @@ if ticker_param and st.session_state.get("_ticker_param_seen") != ticker_param:
 with search_col:
     raw_custom_ticker = st.text_input(
         "검색",
-        placeholder="티커나 이름 · 예: AAPL, 엔비디아, Tesla, S&P 500",
+        placeholder="티커 또는 이름 · AAPL, 엔비디아, S&P 500",
         key="direct_ticker_query",
     )
     search_pick, search_note = resolve_symbol_search(raw_custom_ticker)
@@ -2964,7 +2976,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-with st.spinner(f"{selected_name} 데이터를 불러오는 중..."):
+with st.spinner(f"{selected_name} 불러오는 중"):
     table_df, updated_at = load_ticker_data(
         selected_ticker,
         selected_name,
@@ -2978,7 +2990,7 @@ render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at
             data_date=df['Date'].iloc[-1] if not df.empty else None)
 
 if df.empty:
-    st.error(f"{selected_ticker} 데이터를 지금 불러올 수 없어요. 잠시 후 다시 시도해 주세요.")
+    st.error(f"{selected_ticker} 데이터 불러오기 실패 · 잠시 후 다시 시도")
     st.stop()
 
 latest = df.iloc[-1]

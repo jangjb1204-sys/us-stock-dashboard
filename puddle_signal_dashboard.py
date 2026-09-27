@@ -44,8 +44,8 @@ CSS = ui.html(f"""
 .stage-strip {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:8px; margin:1.1rem 0 0; }}
 .pd-stats {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:28px; row-gap:18px; }}
 .pd-stats .tj-stat {{ padding-top:18px; }}
-.pd-open {{ display:inline-block; margin-top:.9rem; color:#8EC1FF!important; font-size:.84rem; font-weight:600; text-decoration:none!important; }}
-.pd-open:hover {{ color:#B8D7FF!important; }}
+.pd-open {{ display:inline-block; margin-top:.9rem; color:rgba(255,255,255,.72)!important; font-size:.84rem; font-weight:600; text-decoration:none!important; }}
+.pd-open:hover {{ color:#F2F5F8!important; }}
 .stage {{ border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:10px 12px; background:rgba(255,255,255,.035); min-width:0; }}
 .stage .name {{ color:rgba(255,255,255,.82); font-weight:620; font-size:.86rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
 .stage .name span {{ color:rgba(255,255,255,.46); font-weight:520; font-size:.76rem; margin-left:2px; }}
@@ -345,9 +345,9 @@ def build_signal_chart(data: pd.DataFrame, ticker: str) -> go.Figure:
     ))
 
     ma_styles = {
-        "MA20": "#5aa6ff",
-        "MA60": "#f0c35a",
-        "MA120": "#e6829a",
+        "MA20": "#6EA8FF",
+        "MA60": "#B4BAC4",
+        "MA120": "#6B7280",
     }
     for ma, color in ma_styles.items():
         if ma in data.columns and data[ma].notna().any():
@@ -572,11 +572,11 @@ def render_signal_chart_section(ticker: str, signal: str, company: str | None = 
         "</div>",
         unsafe_allow_html=True,
     )
-    with st.spinner(f"{ticker} 차트를 불러오는 중..."):
+    with st.spinner(f"{ticker} 불러오는 중"):
         history = load_signal_history(ticker)
     if history.empty:
         st.markdown(
-            f"<div class='signal-chart-note'>{escape(ticker)} 차트 데이터를 불러오지 못했어요.</div>",
+            f"<div class='signal-chart-note'>{escape(ticker)} 차트 데이터 없음</div>",
             unsafe_allow_html=True,
         )
         return
@@ -587,7 +587,7 @@ def render_signal_chart_section(ticker: str, signal: str, company: str | None = 
     )
     st.markdown(
         f"<a class='pd-open' href='?dashboard=us&amp;ticker={quote(ticker)}' target='_self'>"
-        f"미국 시장 페이지에서 {escape(ticker)} 자세히 보기 →</a>",
+        f"미국 시장에서 {escape(ticker)} 보기 →</a>",
         unsafe_allow_html=True,
     )
 
@@ -688,7 +688,7 @@ def main() -> None:
         st.markdown(f"<div class='tj-label'>{escape(ui.kdate(selected_date))} 스캔 결과</div>", unsafe_allow_html=True)
         stats = [
             ("전체 신호", total, "", "Puddle + RSI+Puddle"),
-            ("RSI+Puddle", rsi_puddle, "tj-red", "과매도까지 겹친 신호"),
+            ("RSI+Puddle", rsi_puddle, "", "과매도 동반"),
             ("주식", stocks, "", "S&amp;P500 + NASDAQ100"),
             ("ETF", etfs, "", "대표 ETF"),
         ]
@@ -730,7 +730,7 @@ def main() -> None:
             filtered = filtered[filtered["signal"] == signal_filter]
 
     st.markdown("<div class='panel-title'><span class='chev'>›</span><span>신호 목록</span>"
-                "<span class='tj-caption' style='margin:0 0 0 6px'>행을 누르면 차트가 열려요</span></div>", unsafe_allow_html=True)
+                "<span class='tj-caption' style='margin:0 0 0 6px'>행 선택 시 차트</span></div>", unsafe_allow_html=True)
     clicked_ticker, _ = parse_signal_table_value(st.session_state.get("signal_table_picker"))
     available_tickers = set(filtered.get("ticker", pd.Series(dtype=str)).astype(str).str.upper())
     selected_chart_ticker = clicked_ticker if clicked_ticker in available_tickers else None
