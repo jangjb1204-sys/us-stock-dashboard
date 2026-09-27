@@ -360,15 +360,19 @@ def parse_puddle_label(label) -> dict | None:
 
 
 def puddle_label_ko(label, short: bool = False) -> str:
-    """'2nd: MA60, 50% cash, 5d' -> '2차 · MA60 이탈 · 현금 50% · 5일'."""
+    """'2nd: MA60, 50% cash, 5d' -> '2차 · MA60 이탈 · 현금 50% 5일 분할매수'.
+
+    Puddle is a buy-the-dip rule: "50% cash, 5d" means put 50% of the cash on
+    hand to work, split over 5 days — not "hold 50% in cash"."""
     info = parse_puddle_label(label)
     if not info:
         return str(label or "")
     parts = [f"{info['stage']}차", f"{info['ma']} 이탈" + (" + RSI≤30" if info["rsi"] and not short else "")]
     if info["cash"] is not None:
-        parts.append(f"현금 {info['cash']}%")
-    if info["days"] and not short:
-        parts.append(f"{info['days']}일")
+        if info["days"]:
+            parts.append(f"현금 {info['cash']}% " + ("분할매수" if short else f"{info['days']}일 분할매수"))
+        else:
+            parts.append(f"현금 {info['cash']}% 매수")
     return " · ".join(parts)
 
 
