@@ -27,7 +27,9 @@ ETF_LIST_PATH = Path(__file__).resolve().parent / "korea_etf_list.csv"
 SIGNAL_COLOR = {"green": ui.LEVEL_FULL, "yellow": ui.LEVEL_HALF, "red": ui.LEVEL_NONE}
 # Validated pair on the chart surface (dataviz validator): blue + neutral grey
 # stay apart in normal and color-blind vision; the old blue/violet pair did not.
-CLOSE_COLOR, MA5_COLOR, MA10_COLOR = ui.TEXT, "#6EA8FF", "#7D828C"
+# Same muted blue / amber as the US chart's MA20 / MA60, so the 10-month line
+# no longer looks like the grey month-end threshold lines.
+CLOSE_COLOR, MA5_COLOR, MA10_COLOR = ui.TEXT, "#4C8DF0", "#BA852B"
 PLOT_CONFIG = {"displayModeBar": False, "responsive": True, "scrollZoom": False, "doubleClick": False}
 
 # Page-only pieces; everything else comes from ui_theme.BASE_CSS.
@@ -265,10 +267,10 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     # The two lines this month's close has to clear, only across this month.
     # No text in the chart: the prices are in the stat row right above it, and
     # labels in a side margin got cut off on phones. Hover shows them.
-    for level, color, text in ((status.green_above, ui.LEVEL_FULL, f"이달 말 100% 기준 ≥ {status.green_above:,.{digits}f}"),
-                               (status.red_below, ui.LEVEL_HALF, f"이달 말 0% 기준 < {status.red_below:,.{digits}f}")):
+    for level, color, text in ((status.green_above, ui.TEXT, f"이달 말 100% 기준 ≥ {status.green_above:,.{digits}f}"),
+                               (status.red_below, "rgba(242,245,248,0.55)", f"이달 말 0% 기준 < {status.red_below:,.{digits}f}")):
         fig.add_trace(go.Scatter(x=[last_confirmed_x, seg_end], y=[level, level], mode="lines",
-                                 line={"color": color, "width": 3}, name=text, hovertemplate=text + "<extra></extra>",
+                                 line={"color": color, "width": 2, "dash": "dot"}, name=text, hovertemplate=text + "<extra></extra>",
                                  showlegend=False), row=1, col=1)
 
     # Signal ribbon: one continuous segment per run, a 2-day gap between runs;
@@ -304,7 +306,7 @@ def signal_key_html() -> str:
     swatch = lambda sig: (f"<span style='display:inline-block;width:10px;height:10px;border-radius:2px;"
                           f"background:{SIGNAL_COLOR[sig]};margin:0 5px 0 10px;vertical-align:-1px'></span>")
     items = "".join(f"{swatch(sig)}{weight_text(engine.SIGNAL_WEIGHT[sig])}" for sig in ("green", "yellow", "red"))
-    return f"<div class='tj-caption' style='margin-top:-.2rem'>월별 주식 비중{items} · 오른쪽 선 = 이달 말 기준가 · 로그 눈금</div>"
+    return f"<div class='tj-caption' style='margin-top:-.2rem'>월별 주식 비중{items} · 오른쪽 점선 = 이달 말 100%·0% 기준가 · 로그 눈금</div>"
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
