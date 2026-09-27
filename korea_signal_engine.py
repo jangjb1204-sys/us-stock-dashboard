@@ -52,8 +52,9 @@ CHUNK_YEARS = 4
 TRADE_COST = 0.001  # 0.1% of the traded weight each time the weight changes
 
 SIGNAL_WEIGHT = {"green": 1.0, "yellow": 0.5, "red": 0.0}
-SIGNAL_LABEL = {"green": "초록불", "yellow": "노란불", "red": "빨간불"}
-SIGNAL_EMOJI = {"green": "🟢", "yellow": "🟡", "red": "🔴"}
+# Named by the stock weight they set (no traffic-light names or emoji in the UI).
+SIGNAL_LABEL = {"green": "주식 100%", "yellow": "주식 50%", "red": "주식 0%"}
+SIGNAL_EMOJI = {"green": "", "yellow": "", "red": ""}
 
 
 # ── Data ───────────────────────────────────────────────────────────────────────
@@ -452,14 +453,14 @@ class IndexStatus:
     def nearest_boundary(self) -> tuple[str, float, float]:
         """(which, price, % move from last close) for the closest line to cross."""
         if self.live_signal == "red":
-            return "노란불", self.red_below, (self.red_below / self.last_close - 1) * 100
+            return "주식 50%", self.red_below, (self.red_below / self.last_close - 1) * 100
         if self.live_signal == "green":
-            return "노란불", self.green_above, (self.green_above / self.last_close - 1) * 100
+            return "주식 50%", self.green_above, (self.green_above / self.last_close - 1) * 100
         up = (self.green_above / self.last_close - 1) * 100
         down = (self.red_below / self.last_close - 1) * 100
         if abs(up) <= abs(down):
-            return "초록불", self.green_above, up
-        return "빨간불", self.red_below, down
+            return "주식 100%", self.green_above, up
+        return "주식 0%", self.red_below, down
 
 
 class HistoryTooShort(ValueError):

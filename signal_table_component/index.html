@@ -19,7 +19,7 @@
     .row { background: #080D14; border-bottom: 1px solid rgba(255,255,255,.06); cursor: pointer; color: rgba(255,255,255,.82); font-size: .86rem; }
     .row:nth-child(odd) { background: #0A111A; }
     .row:hover { background: #0D1A2A; }
-    .row.active { background: rgba(47,128,255,.12); box-shadow: inset 3px 0 0 rgba(110,168,255,.82); }
+    .row.active { background: rgba(255,255,255,.06); box-shadow: inset 2px 0 0 #F2F5F8; }
     .row:focus-visible { outline: 1px solid rgba(110,168,255,.82); outline-offset: -1px; }
     .who { min-width: 0; }
     .ticker { color: #F2F5F8; font-weight: 660; }
@@ -28,12 +28,12 @@
     .who .line1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .num { white-space: nowrap; }
     .up { color: #6EA8FF; } .down { color: #FF5A5F; }
-    .hot { color: #6EA8FF; font-weight: 620; }
-    .badge { display: inline-flex; align-items: center; height: 24px; border-radius: 999px; padding: 0 9px; font-size: .74rem; font-weight: 620; border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.035); color: rgba(255,255,255,.82); white-space: nowrap; }
-    .badge.strong { background: rgba(255,90,95,.08); color: #FF5A5F; border-color: rgba(255,90,95,.30); }
+    .hot { color: #F2F5F8; font-weight: 650; }
+    .badge { display: inline-flex; align-items: center; height: 24px; border-radius: 999px; padding: 0 9px; font-size: .74rem; font-weight: 600; border: 1px solid rgba(255,255,255,.10); background: transparent; color: rgba(255,255,255,.62); white-space: nowrap; }
+    .badge.strong { color: #F2F5F8; border-color: rgba(255,255,255,.34); }
     .puddle { color: rgba(255,255,255,.72); line-height: 1.35; font-size: .82rem; }
     .chev { color: rgba(255,255,255,.34); font-size: 1.1rem; text-align: right; }
-    .row.active .chev { color: #8EC1FF; }
+    .row.active .chev { color: #F2F5F8; }
     .empty-note { color: rgba(255,255,255,.46); padding: 1.2rem 0; font-size: .9rem; }
     .lab { display: none; color: rgba(255,255,255,.40); font-size: .7rem; margin-right: 4px; }
     @media (max-width: 640px) {
@@ -104,7 +104,7 @@
       const rows = currentArgs.rows || [];
       const root = document.getElementById("root");
       if (!rows.length) {
-        root.innerHTML = `<div class="list"><div class="empty-note">선택한 조건에 맞는 신호가 없어요.</div></div>`;
+        root.innerHTML = `<div class="list"><div class="empty-note">조건에 맞는 신호 없음</div></div>`;
         scheduleResize();
         return;
       }
