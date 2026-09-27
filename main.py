@@ -1821,7 +1821,10 @@ st.markdown("""
             scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px !important;
         }
         .st-key-saved_ticker_radio div[role="radiogroup"]::-webkit-scrollbar { display: none; }
-        .st-key-saved_ticker_radio div[role="radiogroup"] label { flex: 0 0 auto; }
+        /* Newer Streamlit wraps each option in its own div; that wrapper shrank
+           in the no-wrap row and stacked the text one letter per line. */
+        .st-key-saved_ticker_radio div[role="radiogroup"] > div,
+        .st-key-saved_ticker_radio div[role="radiogroup"] label { flex: 0 0 auto !important; }
         .section-heading { margin: 1.1rem 0 0.5rem; }
     }
 </style>
