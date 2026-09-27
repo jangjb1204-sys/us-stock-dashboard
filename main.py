@@ -2096,6 +2096,43 @@ def add_fg_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
         )
 
 
+def add_puddle_badges(fig: go.Figure, df: pd.DataFrame) -> None:
+    """Puddle days on the candle chart: a numbered badge (the stage, 1-4) just
+    under that day's low, and a faint vertical line through every panel so the
+    date lines up with F&G and VIX below. White is used by no candle or
+    moving average, so the badges stand out; stage 1 is an outline, stage 2+
+    is filled. Hover shows the full label."""
+    if 'Puddle' not in df.columns:
+        return
+    puddle_df = df[df['Puddle'].astype(str).str.contains(r'[a-zA-Z]', na=False)].copy()
+    if puddle_df.empty:
+        return
+    puddle_df['stage'] = puddle_df['Puddle'].astype(str).str.extract(r'^\s*(\d)', expand=False).fillna('?')
+    span = float(df['High'].max() - df['Low'].min()) if df['High'].notna().any() else 0.0
+    pad = span * 0.05
+
+    for signal_date in puddle_df['Date']:
+        fig.add_vline(x=signal_date, line=dict(color='rgba(242,245,248,0.16)', width=1), layer='below', row='all', col=1)
+
+    styles = [
+        ('Puddle 1st', puddle_df['stage'] == '1',
+         dict(size=17, color='#05070d', line=dict(width=1.5, color='#F2F5F8')), '#F2F5F8', 10),
+        ('Puddle 2nd+', puddle_df['stage'] != '1',
+         dict(size=19, color='#F2F5F8', line=dict(width=2, color='#05070d')), '#05070B', 11),
+    ]
+    for name, mask, marker, text_color, text_size in styles:
+        part = puddle_df[mask]
+        if part.empty:
+            continue
+        fig.add_trace(go.Scatter(
+            x=part['Date'], y=part['Low'] - pad, mode='markers+text', name=name,
+            text=part['stage'], textposition='middle center',
+            textfont=dict(color=text_color, size=text_size),
+            marker=marker, customdata=part['Puddle'],
+            hovertemplate='%{x|%Y-%m-%d}<br>Puddle %{customdata}<extra></extra>',
+        ), row=1, col=1)
+
+
 # ── 캔들스틱 차트 ─────────────────────────────────────────────────────────────
 def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     date_axis = get_date_axis(df)
@@ -2122,15 +2159,6 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
                 line=dict(color=color, width=1.4), mode='lines',
             ), row=1, col=1)
 
-    if 'Puddle' in df.columns:
-        puddle_df = df[df['Puddle'].str.contains(r'[a-zA-Z]', na=False)]
-        if not puddle_df.empty:
-            fig.add_trace(go.Scatter(
-                x=puddle_df['Date'], y=puddle_df['Low'] * 0.982,
-                mode='markers', name='Puddle',
-                marker=dict(symbol='triangle-up', size=9, color='#2F80FF',
-                            line=dict(width=1, color='white')),
-            ), row=1, col=1)
 
     add_fg_panel(fig, df, row=2)
 
@@ -2147,6 +2175,9 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             tickfont=Y_TICK_FONT,
             title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
         )
+
+    # After the lower panels exist, so the date lines run through all of them.
+    add_puddle_badges(fig, df)
 
     fig.update_layout(
         **CHART_THEME,
