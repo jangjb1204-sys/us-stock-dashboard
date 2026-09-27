@@ -595,8 +595,7 @@ def main() -> None:
     st.markdown(PAGE_CSS, unsafe_allow_html=True)
     st.markdown(ui.nav_html("korea"), unsafe_allow_html=True)
     hero_slot = st.empty()
-    hero_slot.markdown(ui.hero_html("Korea Market Signals", "불러오는 중", self_key="korea",
-                                    extra_meta="코스피 · 코스닥 주식/현금 비중"), unsafe_allow_html=True)
+    hero_slot.markdown(ui.hero_html("Korea Market Signals", "불러오는 중", self_key="korea"), unsafe_allow_html=True)
 
     dailies, statuses, monthly_by_key, errors = {}, {}, {}, []
     with st.spinner("불러오는 중"):
@@ -617,7 +616,6 @@ def main() -> None:
         (f"{ui.kdate(updated)} 종가" + (f" · {closed}" if (closed := closed_weekdays_text(updated, today)) else ""))
         if updated is not None else "불러오기 실패",
         dot="live" if statuses else "closed", self_key="korea",
-        extra_meta="코스피 · 코스닥 주식/현금 비중",
     ), unsafe_allow_html=True)
 
     if errors:
