@@ -4,29 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
+    /* Colors, font and shapes follow ui_theme.py (the shared app style). */
     html, body {
       margin: 0;
       padding: 0;
       background: transparent;
-      color: #f5f5f7;
-      font-family: 'DM Sans', sans-serif;
+      color: #F2F5F8;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "DM Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
     * { box-sizing: border-box; }
-    .signal-table-wrap { margin-top: 1rem; border-top:1px solid rgba(255,255,255,.08); padding-top:1.2rem; overflow-x:auto; }
-    .signal-table { width:100%; border-collapse:collapse; min-width:980px; font-family:'DM Sans', sans-serif; }
-    .signal-table thead th { padding:13px 14px; text-align:left; color:#8e8e93; font-size:.72rem; font-weight:760; letter-spacing:.055em; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.075); background:#05070d; }
-    .signal-table tbody td { padding:14px; color:#e9ebef; font-size:.88rem; font-weight:560; border-bottom:1px solid rgba(255,255,255,.055); background:#05070d; vertical-align:middle; }
-    .signal-table tbody tr:hover td { background:#0b0f18; }
-    .signal-table .ticker { font-family:'DM Mono', monospace; color:#f5f5f7; font-weight:500; }
-    .signal-table .num { font-family:'DM Mono', monospace; color:#d7dce5; font-weight:500; white-space:nowrap; }
-    .signal-table .muted { color:#8e8e93; }
-    .signal-badge { appearance:none; display:inline-flex; align-items:center; border-radius:999px; padding:5px 10px; font-size:.76rem; font-weight:760; border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.045); color:#e9ebef; white-space:nowrap; font-family:'DM Sans', sans-serif; cursor:pointer; }
-    .signal-badge.strong { background:rgba(255,107,122,.12); color:#ffb6bf; border-color:rgba(255,107,122,.22); }
-    .signal-badge:hover, .signal-badge:focus-visible, .signal-badge.active { border-color:rgba(47,128,255,.68); outline:none; box-shadow:inset 0 0 0 1px rgba(47,128,255,.14); }
-    .type-badge { color:#9fb6d9; font-size:.78rem; font-weight:720; }
-    .puddle-text { color:#b7bcc7; min-width:220px; max-width:330px; line-height:1.34; }
-    .empty-note { color:#8e8e93; padding:1.2rem 0; }
+    .signal-table-wrap { margin-top: .4rem; overflow-x:auto; }
+    .signal-table { width:100%; border-collapse:collapse; min-width:980px; font-variant-numeric:tabular-nums; }
+    .signal-table thead th { padding:11px 12px; text-align:left; color:rgba(255,255,255,.50); font-size:.76rem; font-weight:560; background:#101722; box-shadow:0 1px 0 rgba(255,255,255,.07); }
+    .signal-table tbody td { padding:12px; color:rgba(255,255,255,.82); font-size:.86rem; font-weight:450; border-bottom:1px solid rgba(255,255,255,.06); background:#080D14; vertical-align:middle; }
+    .signal-table tbody tr:nth-child(even) td { background:#0A111A; }
+    .signal-table tbody tr:hover td { background:#0D1A2A; }
+    .signal-table .ticker { color:#F2F5F8; font-weight:620; }
+    .signal-table .num { color:rgba(255,255,255,.82); white-space:nowrap; }
+    .signal-table .muted { color:rgba(255,255,255,.46); }
+    .signal-badge { appearance:none; display:inline-flex; align-items:center; height:26px; border-radius:999px; padding:0 10px; font-size:.76rem; font-weight:600; border:1px solid rgba(255,255,255,.07); background:rgba(255,255,255,.035); color:rgba(255,255,255,.82); white-space:nowrap; font-family:inherit; cursor:pointer; }
+    .signal-badge.strong { background:rgba(255,90,95,.08); color:#FF5A5F; border-color:rgba(255,90,95,.30); }
+    .signal-badge:hover, .signal-badge:focus-visible, .signal-badge.active { border-color:rgba(110,168,255,.82); outline:none; box-shadow:inset 0 0 0 1px rgba(47,128,255,.14); }
+    .type-badge { color:#82B8FF; font-size:.78rem; font-weight:600; }
+    .puddle-text { color:rgba(255,255,255,.72); min-width:220px; max-width:330px; line-height:1.34; }
+    .empty-note { color:rgba(255,255,255,.46); padding:1.2rem 0; }
   </style>
 </head>
 <body>
