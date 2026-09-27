@@ -2677,7 +2677,7 @@ def render_signal_cards(df: pd.DataFrame):
 
     signal_rows = []
     for date, value in puddle_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '현금↑', 'signal', 'Puddle', puddle_label_ko(value)))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '매수', 'signal', 'Puddle', puddle_label_ko(value)))
     for date, value in rsi_puddle_items:
         rsi_part, _, puddle_part = value.partition(' · ')
         detail = f"{rsi_part} · {puddle_label_ko(puddle_part, short=True)}" if puddle_part else value
@@ -2719,8 +2719,9 @@ def puddle_mask(frame: pd.DataFrame) -> pd.Series:
 
 def verdict_chips(full_df: pd.DataFrame) -> list[str]:
     """The page's answer to "so what now?", from the Puddle rule itself:
-    the latest Puddle signal, what the rule says to hold in cash and for how
-    long, and whether price is back above the moving average it broke."""
+    the latest Puddle signal, how much of the cash on hand the rule puts to
+    work (and over how many days — e.g. 50% of cash, split over 5 days), and
+    where price is against the moving average it broke."""
     if full_df.empty or 'Puddle' not in full_df.columns:
         return []
     data = full_df.copy()
@@ -2735,23 +2736,23 @@ def verdict_chips(full_df: pd.DataFrame) -> list[str]:
         when = "오늘" if ago == 0 else f"{ago}거래일 전"
         chips.append(f"<span class='tj-chip'>{ui.kdate(data.at[hits[-1], 'Date'])} Puddle {info['stage']}차 · "
                      f"{info['ma']} 이탈 · {when}</span>")
-        rule = f"규칙: 현금 {info['cash']}%" if info['cash'] is not None else "규칙"
+        buy = f"보유 현금 {info['cash']}%" if info['cash'] is not None else "매수"
         if info['days']:
-            left = info['days'] - ago
-            rule += f" · {left}일 남음" if left > 0 else f" · {info['days']}일 기간 끝"
-            tone = 'yellow' if left > 0 else ''
+            day = ago + 1
+            if day <= info['days']:
+                rule, tone = f"{buy} {info['days']}일 분할매수 · {day}/{info['days']}일째", 'blue'
+            else:
+                rule, tone = f"{buy} {info['days']}일 분할매수 · 기간 끝", ''
         else:
-            tone = 'yellow'
+            rule, tone = f"{buy} 매수", ('blue' if ago == 0 else '')
         chips.append(f"<span class='tj-chip {tone}'>{escape(rule)}</span>")
         ma_val, close = safe_float(last.get(info['ma'])), safe_float(last.get('Close'))
         if ma_val is not None and close is not None:
             gap = (close / ma_val - 1) * 100
-            if close >= ma_val:
-                chips.append(f"<span class='tj-chip green'>지금 {info['ma']} 위로 회복 ({gap:+.1f}%)</span>")
-            else:
-                chips.append(f"<span class='tj-chip red'>지금 {info['ma']} 아래 ({gap:+.1f}%)</span>")
+            where = "위로 회복" if close >= ma_val else "아래"
+            chips.append(f"<span class='tj-chip'>지금 {info['ma']} {where} ({gap:+.1f}%)</span>")
     else:
-        chips.append(f"<span class='tj-chip green'>최근 {VERDICT_LOOKBACK_DAYS}거래일 Puddle 신호 없음</span>")
+        chips.append(f"<span class='tj-chip'>최근 {VERDICT_LOOKBACK_DAYS}거래일 Puddle 신호 없음</span>")
     if has_rsi_puddle_signal(last.get('RSI_Puddle_Signal')):
         chips.append("<span class='tj-chip blue'>RSI+Puddle 과매도 신호 진행 중</span>")
     if 'VIX1D>VIX' in data.columns and (data['VIX1D>VIX'].tail(5) == 'BUY').any():
