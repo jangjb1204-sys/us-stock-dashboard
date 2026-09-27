@@ -345,9 +345,9 @@ def build_signal_chart(data: pd.DataFrame, ticker: str) -> go.Figure:
     ))
 
     ma_styles = {
-        "MA20": "#6EA8FF",
-        "MA60": "#B4BAC4",
-        "MA120": "#6B7280",
+        "MA20": "#4C8DF0",
+        "MA60": "#BA852B",
+        "MA120": "#B8649E",
     }
     for ma, color in ma_styles.items():
         if ma in data.columns and data[ma].notna().any():
