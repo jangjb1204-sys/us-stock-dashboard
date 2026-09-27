@@ -24,7 +24,10 @@ LISTING_PATH = Path(__file__).resolve().parent / "korea_stock_list.csv"
 ETF_LIST_PATH = Path(__file__).resolve().parent / "korea_etf_list.csv"
 
 SIGNAL_COLOR = {"green": ui.GREEN, "yellow": ui.YELLOW, "red": ui.RED}
-MA5_COLOR, MA10_COLOR = "#5aa6ff", "#b58cff"
+# Validated pair on the chart surface (dataviz validator): blue + neutral grey
+# stay apart in normal and color-blind vision; the old blue/violet pair did not.
+CLOSE_COLOR, MA5_COLOR, MA10_COLOR = ui.TEXT, "#6EA8FF", "#7D828C"
+MUTED_TEXT = "rgba(242,245,248,0.72)"
 PLOT_CONFIG = {"displayModeBar": False, "responsive": True, "scrollZoom": False, "doubleClick": False}
 
 # Page-only pieces; everything else comes from ui_theme.BASE_CSS.
@@ -171,47 +174,77 @@ def _style(fig: go.Figure, height: int) -> go.Figure:
 
 
 def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years: int = 6, digits: int = 2) -> go.Figure:
+    """Month-end close with its 5/10-month averages (top) and each month's
+    signal as a strip of blocks (bottom). This month: the latest close as one
+    dot, plus the two closing lines it has to clear, drawn only over this month."""
     yfmt = f"%{{y:,.{digits}f}}"
     cutoff = status.confirmed_month - 12 * years
     data = monthly[monthly["Month"] >= cutoff].copy()
     x = data["Month"].dt.to_timestamp(how="end").dt.normalize()
+    month_end = (status.last_date + pd.offsets.MonthEnd(0)).normalize()
+    last_confirmed_x = x.iloc[-1]
+    sig_text = data["Signal"].map(lambda sgn: f"{engine.SIGNAL_EMOJI[sgn]} {engine.SIGNAL_LABEL[sgn]} · 다음 달 {weight_text(engine.SIGNAL_WEIGHT[sgn])}")
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines",
-                             line={"color": "#f5f5f7", "width": 2},
-                             hovertemplate="%{x|%Y-%m}<br>월말 종가 " + yfmt + "<extra></extra>"))
-    fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines",
-                             line={"color": MA5_COLOR, "width": 1.6, "dash": "dot"},
-                             hovertemplate="5개월선 " + yfmt + "<extra></extra>"))
-    fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines",
-                             line={"color": MA10_COLOR, "width": 1.6, "dash": "dot"},
-                             hovertemplate="10개월선 " + yfmt + "<extra></extra>"))
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.89, 0.11], vertical_spacing=0.03)
+    seg_end = month_end + pd.Timedelta(days=40)  # room so this month's lines read as lines
+    line = lambda color: {"color": color, "width": 2, "shape": "linear"}
+    fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines", line=line(CLOSE_COLOR),
+                             hovertemplate="월말 종가 " + yfmt + "<extra></extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines", line=line(MA5_COLOR),
+                             hovertemplate="5개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines", line=line(MA10_COLOR),
+                             hovertemplate="10개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
+
+    # This month so far: a faint link from last month-end, one dot for the latest close.
+    live_color = SIGNAL_COLOR[status.live_signal]
+    fig.add_trace(go.Scatter(x=[last_confirmed_x, status.last_date], y=[data["Close"].iloc[-1], status.last_close],
+                             mode="lines", line={"color": "rgba(242,245,248,0.38)", "width": 2, "dash": "dot"},
+                             hoverinfo="skip", showlegend=False), row=1, col=1)
+    fig.add_trace(go.Scatter(x=[status.last_date], y=[status.last_close], mode="markers", name="이번 달 최근 종가",
+                             marker={"size": 11, "color": live_color, "line": {"width": 2, "color": ui.PLOT_BG}},
+                             hovertemplate="이번 달 최근 종가 " + yfmt + "<extra></extra>", showlegend=False), row=1, col=1)
+    # The two lines this month's close has to clear, only across this month.
+    for level, color, text in ((status.green_above, SIGNAL_COLOR["green"], f"초록불 ≥ {status.green_above:,.{digits}f}"),
+                               (status.red_below, SIGNAL_COLOR["red"], f"빨간불 < {status.red_below:,.{digits}f}")):
+        fig.add_trace(go.Scatter(x=[last_confirmed_x, seg_end], y=[level, level], mode="lines",
+                                 line={"color": color, "width": 2}, hoverinfo="skip", showlegend=False), row=1, col=1)
+        fig.add_annotation(x=seg_end, y=level, xref="x", yref="y", text=text, showarrow=False,
+                           xanchor="left", xshift=6, font={"color": MUTED_TEXT, "size": 11})
+
+    # Signal strip: one block per month (gaps between them), this month faded.
+    width_ms = 86400000 * 20
     for sig in ("green", "yellow", "red"):
-        part = data[data["Signal"] == sig]
-        if part.empty:
-            continue
-        fig.add_trace(go.Scatter(
-            x=part["Month"].dt.to_timestamp(how="end").dt.normalize(), y=part["Close"],
-            name=engine.SIGNAL_LABEL[sig], mode="markers",
-            marker={"size": 8, "color": SIGNAL_COLOR[sig], "line": {"width": 1, "color": ui.PLOT_BG}},
-            hovertemplate=f"{engine.SIGNAL_LABEL[sig]}<extra></extra>",
-        ))
+        part = data["Signal"] == sig
+        fig.add_trace(go.Bar(
+            x=x[part], y=[1] * int(part.sum()), width=width_ms, name=engine.SIGNAL_LABEL[sig],
+            marker={"color": SIGNAL_COLOR[sig], "line": {"width": 0}}, customdata=sig_text[part],
+            hovertemplate="신호 %{customdata}<extra></extra>", showlegend=False,
+        ), row=2, col=1)
+    fig.add_trace(go.Bar(
+        x=[month_end], y=[1], width=width_ms, marker={"color": live_color, "opacity": 0.35, "line": {"width": 0}},
+        customdata=[f"{engine.SIGNAL_EMOJI[status.live_signal]} {engine.SIGNAL_LABEL[status.live_signal]} (이번 달 진행 중, 지금 수준이면)"],
+        hovertemplate="%{customdata}<extra></extra>", showlegend=False,
+    ), row=2, col=1)
 
-    # This month so far, plus the two lines its month-end close has to clear.
-    fig.add_trace(go.Scatter(
-        x=[status.last_date], y=[status.last_close], name="이번 달(진행 중)", mode="markers",
-        marker={"size": 10, "color": "rgba(0,0,0,0)", "line": {"width": 2, "color": SIGNAL_COLOR[status.live_signal]}},
-        hovertemplate="이번 달 최근 종가 " + yfmt + "<extra></extra>",
-    ))
-    fig.add_hline(y=status.green_above, line={"color": SIGNAL_COLOR["green"], "width": 1, "dash": "dash"},
-                  annotation_text=f"초록불 기준 {status.green_above:,.0f}", annotation_position="top left",
-                  annotation_font={"color": SIGNAL_COLOR["green"], "size": 10})
-    fig.add_hline(y=status.red_below, line={"color": SIGNAL_COLOR["red"], "width": 1, "dash": "dash"},
-                  annotation_text=f"빨간불 기준 {status.red_below:,.0f}", annotation_position="bottom left",
-                  annotation_font={"color": SIGNAL_COLOR["red"], "size": 10})
-    _style(fig, 440)
-    fig.update_xaxes(tickformat="%y.%m")
+    _style(fig, 470)
+    fig.update_layout(bargap=0, margin={"l": 56, "r": 112, "t": 36, "b": 24})
+    fig.update_yaxes(tickformat=",.0f", row=1, col=1)
+    fig.update_yaxes(visible=False, range=[0, 1], showgrid=False, row=2, col=1)
+    fig.update_xaxes(showgrid=False, row=2, col=1)
+    fig.add_annotation(x=0, xref="paper", y=0.5, yref="y2 domain", text="월말 신호", showarrow=False,
+                       xanchor="right", xshift=-6, font={"color": "rgba(242,245,248,0.46)", "size": 10})
+    fig.update_xaxes(tickformat="%y.%m", range=[x.iloc[0] - pd.Timedelta(days=20), seg_end + pd.Timedelta(days=5)])
     return fig
+
+
+def signal_key_html() -> str:
+    """Key for the signal strip, as page text so it wraps on phones."""
+    swatch = lambda sig: (f"<span style='display:inline-block;width:10px;height:10px;border-radius:2px;"
+                          f"background:{SIGNAL_COLOR[sig]};margin:0 6px 0 12px;vertical-align:-1px'></span>")
+    items = "".join(f"{swatch(sig)}{engine.SIGNAL_LABEL[sig]} {weight_text(engine.SIGNAL_WEIGHT[sig])}"
+                    for sig in ("green", "yellow", "red"))
+    return (f"<div class='tj-caption' style='margin-top:-.2rem'>아래 띠 = 매달 말 확정된 신호(다음 달 주식 비중){items}"
+            f"<span style='margin-left:12px'>· 흐린 칸 = 이번 달 진행 중</span></div>")
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
@@ -555,6 +588,7 @@ def main() -> None:
     tab_month, tab_disp, tab_bt, tab_hist = st.tabs(["월봉 신호", "이격도", "백테스트", "기록"])
     with tab_month:
         st.plotly_chart(build_monthly_chart(monthly, status, digits=digits), use_container_width=True, config=PLOT_CONFIG)
+        md(signal_key_html())
     with tab_disp:
         st.plotly_chart(build_disparity_chart(daily, digits=digits), use_container_width=True, config=PLOT_CONFIG)
     with tab_bt:
