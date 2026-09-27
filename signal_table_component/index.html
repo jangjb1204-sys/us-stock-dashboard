@@ -31,7 +31,9 @@
     .hot { color: #F2F5F8; font-weight: 650; }
     .badge { display: inline-flex; align-items: center; height: 24px; border-radius: 999px; padding: 0 9px; font-size: .74rem; font-weight: 600; border: 1px solid rgba(255,255,255,.10); background: transparent; color: rgba(255,255,255,.62); white-space: nowrap; }
     .badge.strong { color: #F2F5F8; border-color: rgba(255,255,255,.34); }
-    .puddle { color: rgba(255,255,255,.72); line-height: 1.35; font-size: .82rem; }
+    .puddle { color: rgba(255,255,255,.72); line-height: 1.45; font-size: .82rem; }
+    .puddle .part { white-space: nowrap; }
+    .puddle .dot { color: rgba(255,255,255,.30); }
     .chev { color: rgba(255,255,255,.34); font-size: 1.1rem; text-align: right; }
     .row.active .chev { color: #F2F5F8; }
     .empty-note { color: rgba(255,255,255,.46); padding: 1.2rem 0; font-size: .9rem; }
@@ -95,7 +97,7 @@
             <div class="num ${tone(r.change)}"><span class="lab">등락</span>${esc(r.change)}</div>
             <div class="num${rsiHot ? " hot" : ""}"><span class="lab">RSI</span>${esc(r.rsi)}</div>
           </div>
-          <div class="puddle">${esc(r.puddle)}</div>
+          <div class="puddle">${String(r.puddle || "").split(" · ").map((part) => `<span class="part">${esc(part)}</span>`).join('<span class="dot"> · </span>')}</div>
           <div class="chev">›</div>
         </div>`;
     }
