@@ -172,30 +172,46 @@ def _style(fig: go.Figure, height: int) -> go.Figure:
     return fig
 
 
+def signal_runs(data: pd.DataFrame) -> list[dict]:
+    """Consecutive months with the same signal, merged: {sig, start, end, months}."""
+    runs: list[dict] = []
+    for month, sig in zip(data["Month"], data["Signal"]):
+        start = month.to_timestamp(how="start")
+        end = month.to_timestamp(how="end").normalize() + pd.Timedelta(days=1)
+        if runs and runs[-1]["sig"] == sig:
+            runs[-1]["end"], runs[-1]["months"] = end, runs[-1]["months"] + 1
+        else:
+            runs.append({"sig": sig, "start": start, "end": end, "months": 1})
+    return runs
+
+
 def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years: int = 6, digits: int = 2) -> go.Figure:
-    """Month-end close with its 5/10-month averages (top) and each month's
-    signal as a strip of blocks (bottom). This month: the latest close as one
-    dot, plus the two closing lines it has to clear, drawn only over this month."""
+    """Month-end close with its 5/10-month averages, and each month's signal as
+    a thin ribbon under the chart (runs of the same signal drawn as one
+    segment). This month: the latest close as one dot, plus the two closing
+    lines it has to clear."""
     yfmt = f"%{{y:,.{digits}f}}"
     cutoff = status.confirmed_month - 12 * years
     data = monthly[monthly["Month"] >= cutoff].copy()
     x = data["Month"].dt.to_timestamp(how="end").dt.normalize()
+    month_start = status.last_date.to_period("M").to_timestamp(how="start")
     month_end = (status.last_date + pd.offsets.MonthEnd(0)).normalize()
     last_confirmed_x = x.iloc[-1]
     sig_text = data["Signal"].map(lambda sgn: f"{engine.SIGNAL_EMOJI[sgn]} {engine.SIGNAL_LABEL[sgn]} · 다음 달 {weight_text(engine.SIGNAL_WEIGHT[sgn])}")
+    live_color = SIGNAL_COLOR[status.live_signal]
 
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.89, 0.11], vertical_spacing=0.03)
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.95, 0.05], vertical_spacing=0.025)
     seg_end = month_end + pd.Timedelta(days=25)  # a little room so this month's lines read as lines
     line = lambda color: {"color": color, "width": 2, "shape": "linear"}
     fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines", line=line(CLOSE_COLOR),
-                             hovertemplate="월말 종가 " + yfmt + "<extra></extra>"), row=1, col=1)
+                             customdata=sig_text,
+                             hovertemplate="월말 종가 " + yfmt + "<br>신호 %{customdata}<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=x, y=data["MA5"], name="5개월선", mode="lines", line=line(MA5_COLOR),
                              hovertemplate="5개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines", line=line(MA10_COLOR),
                              hovertemplate="10개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
 
     # This month so far: a faint link from last month-end, one dot for the latest close.
-    live_color = SIGNAL_COLOR[status.live_signal]
     fig.add_trace(go.Scatter(x=[last_confirmed_x, status.last_date], y=[data["Close"].iloc[-1], status.last_close],
                              mode="lines", line={"color": "rgba(242,245,248,0.38)", "width": 2, "dash": "dot"},
                              hoverinfo="skip", showlegend=False), row=1, col=1)
@@ -211,29 +227,29 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
                                  line={"color": color, "width": 3}, name=text, hovertemplate=text + "<extra></extra>",
                                  showlegend=False), row=1, col=1)
 
-    # Signal strip: one block per month (gaps between them), this month faded.
-    width_ms = 86400000 * 20
-    for sig in ("green", "yellow", "red"):
-        part = data["Signal"] == sig
+    # Signal ribbon: one continuous segment per run, a 2-day gap between runs;
+    # this month's in-progress segment faded.
+    for run in signal_runs(data):
+        span = run["end"] - run["start"]
         fig.add_trace(go.Bar(
-            x=x[part], y=[1] * int(part.sum()), width=width_ms, name=engine.SIGNAL_LABEL[sig],
-            marker={"color": SIGNAL_COLOR[sig], "line": {"width": 0}}, customdata=sig_text[part],
-            hovertemplate="신호 %{customdata}<extra></extra>", showlegend=False,
+            x=[run["start"] + span / 2], y=[1], width=[(span - pd.Timedelta(days=2)).total_seconds() * 1000],
+            marker={"color": SIGNAL_COLOR[run["sig"]], "line": {"width": 0}},
+            hovertemplate=f"{engine.SIGNAL_EMOJI[run['sig']]} {engine.SIGNAL_LABEL[run['sig']]} · {run['months']}개월<extra></extra>",
+            showlegend=False,
         ), row=2, col=1)
+    span = month_end + pd.Timedelta(days=1) - month_start
     fig.add_trace(go.Bar(
-        x=[month_end], y=[1], width=width_ms, marker={"color": live_color, "opacity": 0.35, "line": {"width": 0}},
-        customdata=[f"{engine.SIGNAL_EMOJI[status.live_signal]} {engine.SIGNAL_LABEL[status.live_signal]} (이번 달 진행 중, 지금 수준이면)"],
-        hovertemplate="%{customdata}<extra></extra>", showlegend=False,
+        x=[month_start + span / 2], y=[1], width=[(span - pd.Timedelta(days=2)).total_seconds() * 1000],
+        marker={"color": live_color, "opacity": 0.35, "line": {"width": 0}},
+        hovertemplate="이번 달 진행 중<extra></extra>", showlegend=False,
     ), row=2, col=1)
 
-    _style(fig, 470)
-    fig.update_layout(bargap=0, margin={"l": 56, "r": 12, "t": 36, "b": 24})
+    _style(fig, 460)
+    fig.update_layout(bargap=0, margin={"l": 10, "r": 12, "t": 36, "b": 24})
     fig.update_yaxes(tickformat=",.0f", row=1, col=1)
     fig.update_yaxes(visible=False, range=[0, 1], showgrid=False, row=2, col=1)
     fig.update_xaxes(showgrid=False, row=2, col=1)
-    fig.add_annotation(x=0, xref="paper", y=0.5, yref="y2 domain", text="월말 신호", showarrow=False,
-                       xanchor="right", xshift=-6, font={"color": "rgba(242,245,248,0.46)", "size": 10})
-    fig.update_xaxes(tickformat="%y.%m", range=[x.iloc[0] - pd.Timedelta(days=20), seg_end + pd.Timedelta(days=5)])
+    fig.update_xaxes(tickformat="%y.%m", range=[x.iloc[0] - pd.Timedelta(days=35), seg_end + pd.Timedelta(days=5)])
     return fig
 
 
@@ -246,7 +262,7 @@ def signal_key_html() -> str:
     line = lambda sig: (f"<span style='display:inline-block;width:14px;height:3px;border-radius:2px;"
                         f"background:{SIGNAL_COLOR[sig]};margin:0 6px 0 0;vertical-align:3px'></span>")
     return (f"<div class='tj-caption' style='margin-top:-.2rem'>{line('green')}{line('red')}오른쪽 끝 짧은 선 = 이번 달 말 초록불·빨간불 기준 가격 (위 숫자와 같아요)<br>"
-            f"아래 띠 = 매달 말 확정된 신호{items}<span style='margin-left:10px'>· 흐린 칸 = 이번 달 진행 중</span></div>")
+            f"아래 띠 = 매달 말 확정된 신호, 같은 신호는 이어서 표시{items}<span style='margin-left:10px'>· 흐린 끝 = 이번 달 진행 중</span></div>")
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
