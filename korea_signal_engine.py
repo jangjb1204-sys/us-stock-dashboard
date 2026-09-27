@@ -156,7 +156,7 @@ def clean_daily(data: pd.DataFrame) -> pd.DataFrame:
 KIND_LIST_URL = "https://kind.krx.co.kr/corpgeneral/corpList.do"
 KIND_MARKETS = {"stockMkt": "KOSPI", "kosdaqMkt": "KOSDAQ"}
 MARKET_SUFFIX = {"KOSPI": ".KS", "KOSDAQ": ".KQ"}
-MARKET_LABEL = {"KOSPI": "코스피", "KOSDAQ": "코스닥"}
+MARKET_LABEL = {"KOSPI": "코스피", "KOSDAQ": "코스닥", "ETF": "ETF"}
 LISTING_COLUMNS = ["code", "name", "market", "industry", "listed"]
 STOCK_START_YEAR = 2001
 
@@ -223,6 +223,77 @@ def search_listing(listing: pd.DataFrame, query: str, limit: int = 30) -> pd.Dat
     hits = listing.assign(_rank=rank, _len=names.str.len())
     hits = hits[hits["_rank"] < 99].sort_values(["_rank", "_len", "name"])
     return hits.drop(columns=["_rank", "_len"]).head(limit)
+
+
+# ── ETF search (Yahoo) ─────────────────────────────────────────────────────────
+# KRX's company list has no ETFs, so ETF names are looked up on Yahoo's symbol
+# search. Yahoo lists Korean ETFs under English names ("KODEX LEVERAGE") and
+# rejects Hangul, so common Korean ETF words are translated and any other
+# Hangul is dropped before searching.
+YAHOO_SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search"
+ETF_TERMS = {
+    "레버리지": "Leverage", "인버스": "Inverse", "곱버스": "Inverse 2X", "선물": "Futures",
+    "미국": "US", "나스닥": "NASDAQ", "코스닥": "KOSDAQ", "코스피": "KOSPI", "다우": "Dow",
+    "반도체": "Semiconductor", "배당": "Dividend", "커버드콜": "Covered Call", "국채": "Treasury",
+    "채권": "Bond", "달러": "USD", "중국": "China", "일본": "Japan", "인도": "India", "베트남": "Vietnam",
+    "원유": "Oil", "골드": "Gold", "금현물": "Gold", "2차전지": "Battery", "바이오": "Bio",
+    "빅테크": "Big Tech", "테크": "Tech", "고배당": "High Dividend", "머니마켓": "Money Market",
+    # brands written in Hangul
+    "코덱스": "KODEX", "타이거": "TIGER", "에이스": "ACE", "라이즈": "RISE", "하나로": "HANARO",
+    "키움": "KIWOOM", "플러스": "PLUS", "아리랑": "ARIRANG", "쏠": "SOL",
+}
+ETF_BRAND_PATTERN = re.compile(r"[A-Za-z]")
+_HANGUL = re.compile(r"[\uac00-\ud7a3\u3131-\u318e]+")
+
+
+def etf_search_query(query: str) -> str:
+    q = query
+    for ko, en in sorted(ETF_TERMS.items(), key=lambda kv: -len(kv[0])):
+        q = q.replace(ko, f" {en} ")
+    q = _HANGUL.sub(" ", q)
+    return " ".join(q.split())
+
+
+def should_search_etfs(query: str, krx_hits: pd.DataFrame) -> bool:
+    """Latin letters (ETF brands are KODEX, TIGER, ACE, ...), a known ETF word,
+    or nothing found among companies."""
+    return bool(ETF_BRAND_PATTERN.search(query)) or krx_hits.empty or any(t in query for t in ETF_TERMS)
+
+
+def parse_yahoo_etf_quotes(payload: dict) -> pd.DataFrame:
+    rows = []
+    for quote_ in payload.get("quotes") or []:
+        symbol = str(quote_.get("symbol") or "")
+        if quote_.get("quoteType") != "ETF" or not symbol.endswith((".KS", ".KQ")):
+            continue
+        code = symbol.rsplit(".", 1)[0].upper()
+        if not CODE_PATTERN.match(code):
+            continue
+        name = " ".join(str(quote_.get("shortname") or quote_.get("longname") or code).split())
+        rows.append({"code": code, "name": name, "market": "ETF", "industry": "ETF", "listed": ""})
+    return pd.DataFrame(rows, columns=LISTING_COLUMNS).drop_duplicates("code").reset_index(drop=True)
+
+
+def search_yahoo_etfs(query: str, limit: int = 20) -> pd.DataFrame:
+    q = etf_search_query(query)
+    if not q:
+        return pd.DataFrame(columns=LISTING_COLUMNS)
+    response = requests.get(
+        YAHOO_SEARCH_URL,
+        params={"q": q, "quotesCount": limit, "newsCount": 0},
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=10,
+    )
+    response.raise_for_status()
+    return parse_yahoo_etf_quotes(response.json())
+
+
+def combine_hits(krx_hits: pd.DataFrame, etf_hits: pd.DataFrame, limit: int = 30) -> pd.DataFrame:
+    """Companies first, then ETFs not already listed; fresh 0..n index."""
+    if etf_hits is None or etf_hits.empty:
+        return krx_hits.head(limit).reset_index(drop=True)
+    extra = etf_hits[~etf_hits["code"].isin(krx_hits["code"])]
+    return pd.concat([krx_hits, extra], ignore_index=True).head(limit)
 
 
 def yahoo_candidates(code: str, market: str | None) -> list[str]:

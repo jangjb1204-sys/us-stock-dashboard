@@ -66,6 +66,15 @@ def load_listing(day_key: str) -> tuple[pd.DataFrame, bool]:
         return engine.load_listing_csv(LISTING_PATH), False
 
 
+@st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
+def load_etf_search(query_key: str, query: str, day_key: str) -> pd.DataFrame:
+    """Korean ETFs matching the query on Yahoo's symbol search (empty on failure)."""
+    try:
+        return engine.search_yahoo_etfs(query)
+    except Exception:
+        return pd.DataFrame(columns=engine.LISTING_COLUMNS)
+
+
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
 def load_stock(code: str, market: str, day_key: str) -> dict | None:
     """First Yahoo symbol for this KRX code that has data, or None."""
@@ -389,7 +398,8 @@ def render_rule() -> None:
             이격도는 130·125보다 120일 때 수익률과 낙폭이 함께 좋아졌어요(코스닥은 역대 130을 한 번도 넘지 않음).
             RSI 70을 더하면 너무 자주 발동해 코스피 수익률이 크게 깎여서 뺐어요.<br><br>
             <b>개별 종목</b> 검색한 종목에도 같은 계산을 그대로 적용해요. 규칙 자체는 지수로 검증했으니 종목마다 백테스트 결과를 같이 보세요.
-            종목 목록은 KRX(KIND) 상장법인 목록을 쓰고, 목록에 없는 ETF 등은 6자리 코드로 찾을 수 있어요.<br><br>
+            종목은 KRX(KIND) 상장법인 목록으로, ETF는 Yahoo 종목 검색으로 찾아요(ETF는 영문 이름으로 올라가 있어서 "레버리지"→Leverage처럼 흔한 단어는 바꿔서 찾아요).
+            이름으로 안 나오면 6자리 코드로 검색해 보세요.<br><br>
             <b>한계</b> 한 달 안에 몰아치는 급락은 월간 신호로 피할 수 없고, 헛신호도 있어요.
             과거 데이터로 만든 규칙을 기계적으로 계산한 결과이며 투자 권유가 아닙니다.
             </div>
@@ -422,12 +432,14 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
     q = query.strip()
     listing, live = load_listing(day_key)
     hits = engine.search_listing(listing, q)
+    if engine.should_search_etfs(q, hits):
+        hits = engine.combine_hits(hits, load_etf_search(engine.normalize_text(q), q, day_key))
     code = q.upper().replace(" ", "")
 
     if hits.empty:
         if not engine.CODE_PATTERN.match(code):
             hint = "" if live else " (KRX 목록을 지금 못 받아 저장된 목록으로 찾았어요 — 최근 상장 종목은 종목코드로 검색해 주세요.)"
-            st.info(f"'{q}'에 맞는 코스피·코스닥 종목이 없어요. ETF는 6자리 종목코드로 검색할 수 있어요(예: 069500).{hint}")
+            st.info(f"'{q}'에 맞는 코스피·코스닥 종목이나 ETF가 없어요. ETF는 영문 이름(예: KODEX 200)이나 6자리 코드(예: 069500)로도 찾을 수 있어요.{hint}")
             return None
         pick = {"code": code, "name": "", "market": ""}
     elif len(hits) == 1:
@@ -503,19 +515,20 @@ def main() -> None:
     render_banners(list(statuses.values()), monthly_by_key, today)
     md("<div class='kr-panels'>" + "".join(index_panel(s) for s in statuses.values()) + "</div>")
 
-    md("<div class='tj-label'>종목 검색</div>")
+    md("<div class='tj-label'>종목 · ETF 검색</div>")
     query = st.text_input(
-        "종목 검색", key="kr_query", label_visibility="collapsed",
-        placeholder="코스피·코스닥 종목 이름 또는 코드 · 예: 삼성전자, 005930, 에코프로비엠",
+        "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
+        placeholder="종목·ETF 이름 또는 코드 · 예: 삼성전자, 005930, KODEX 200, TIGER 미국S&P500",
     )
     target = resolve_search(query, today, day_key) if query.strip() else None
 
     if target is not None:
         md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market)) + "</div>")
-        md("<div class='tj-note'>ℹ️ 이 규칙은 코스피·코스닥 <b>지수</b>로 검증했어요. 개별 종목은 훨씬 크게 움직여서 "
-           "같은 규칙이 잘 맞는다는 보장이 없으니, 아래 <b>백테스트</b> 탭에서 이 종목 결과를 꼭 같이 보세요. "
+        md("<div class='tj-note'>ℹ️ 이 규칙은 코스피·코스닥 <b>지수</b>로 검증했어요. 지수를 따라가는 ETF는 비슷하게 움직이지만, "
+           "개별 종목이나 레버리지·테마 ETF는 결과가 크게 다를 수 있으니 아래 <b>백테스트</b> 탭에서 꼭 같이 보세요. "
            "검색창을 비우면 지수로 돌아가요.</div>")
-        eyebrow = f"이번 달 체크 · {market_text(target.market)} 종목"
+        kind = "ETF" if target.market == "ETF" else f"{market_text(target.market)} 종목"
+        eyebrow = f"이번 달 체크 · {kind}"
     else:
         options = list(statuses.keys())
         selected = st.radio("지수", options, horizontal=True, key="kr_index",
