@@ -412,8 +412,7 @@ def build_signal_chart(data: pd.DataFrame, ticker: str) -> go.Figure:
     fig.update_xaxes(
         tickformat="%y.%m",
         dtick="M2",
-        showgrid=True,
-        gridcolor="rgba(255,255,255,0.055)",
+        showgrid=False,
         zeroline=False,
         fixedrange=True,
         tickfont={"color": "rgba(245,245,247,0.54)", "size": 10},
