@@ -25,7 +25,6 @@ ETF_LIST_PATH = Path(__file__).resolve().parent / "korea_etf_list.csv"
 
 # Allocation levels as greys (Tesla-style monochrome): brighter = more stock.
 SIGNAL_COLOR = {"green": ui.LEVEL_FULL, "yellow": ui.LEVEL_HALF, "red": ui.LEVEL_NONE}
-SEARCH_MODE = "search"  # third option of the 보기 picker
 # Validated pair on the chart surface (dataviz validator): blue + neutral grey
 # stay apart in normal and color-blind vision; the old blue/violet pair did not.
 CLOSE_COLOR, MA5_COLOR, MA10_COLOR = ui.TEXT, "#6EA8FF", "#7D828C"
@@ -40,6 +39,14 @@ PAGE_CSS = ui.html(f"""
 .kr-panel .top {{ display:flex; justify-content:space-between; gap:12px; color:{ui.MUTED}; font-size:12px; font-weight:560; text-transform:uppercase; letter-spacing:.04em; }}
 .kr-panel .weight {{ margin-top:.55rem; font-variant-numeric:tabular-nums; font-size:48px; font-weight:650; letter-spacing:-0.026em; line-height:1; color:{ui.TEXT}; }}
 .kr-panel .weight small {{ margin-left:10px; font-size:.95rem; font-weight:500; letter-spacing:0; color:rgba(255,255,255,.56); }}
+.kr-panel {{ transition: border-color .15s ease; }}
+.kr-panel:not(.sel) .weight, .kr-panel:not(.sel) .meta {{ opacity:.45; }}
+.kr-panel.sel {{ border-top-color:rgba(242,245,248,.85); }}
+div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]) {{ position:relative; }}
+div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(.sel) .weight,
+div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(.sel) .meta {{ opacity:.75; }}
+[class*="st-key-kr_card_"] {{ position:absolute!important; inset:0; width:100%!important; height:100%!important; z-index:3; margin:0!important; }}
+[class*="st-key-kr_card_"] button {{ width:100%!important; height:100%!important; opacity:0; cursor:pointer; }}
 .kr-panel .meta {{ margin-top:.8rem; color:rgba(255,255,255,.5); font-size:.84rem; }}
 .kr-panel .meta b {{ color:{ui.TEXT}; font-weight:600; }}
 .kr-level {{ display:inline-flex; align-items:center; gap:7px; font-variant-numeric:tabular-nums; }}
@@ -158,7 +165,7 @@ def signal_chip(signal: str, prefix: str = "") -> str:
 
 
 def month_label(period: pd.Period) -> str:
-    return f"{period.year}년 {period.month}월"
+    return f"{period.month}월"
 
 
 def is_last_weekday_of_month(day: date) -> bool:
@@ -355,14 +362,14 @@ def md(markup: str) -> None:
     st.markdown(ui.html(markup), unsafe_allow_html=True)
 
 
-def index_panel(status: engine.IndexStatus, tag: str | None = None) -> str:
+def index_panel(status: engine.IndexStatus, tag: str | None = None, selected: bool = False) -> str:
     disp = fmt_num(status.disparity, 1)
     heat = f"<b>이격도 {disp} 과열 · 한 단계 낮춤</b>" if status.overlay_active else f"이격도 {disp}"
     meta = f"{signal_chip(status.signal, '5·10개월선 ')}<span style='margin:0 9px;color:rgba(255,255,255,.24)'>·</span>{heat}"
     cash = 1 - status.final_weight
     name = f"{status.label} {status.key}" + (f" · {tag}" if tag else "")
     return f"""
-      <div class="kr-panel">
+      <div class="kr-panel{' sel' if selected else ''}">
         <div class="top"><span>{escape(name)}</span><span>{month_label(status.confirmed_month)} 확정</span></div>
         <div class="weight">{weight_text(status.final_weight)}<small>주식 · 현금 {weight_text(cash)}</small></div>
         <div class="meta">{meta}</div>
@@ -468,25 +475,6 @@ def render_backtest_table(backtests: dict) -> None:
     )
 
 
-def render_history_table(monthly: pd.DataFrame, digits: int = 2) -> None:
-    recent = monthly.dropna(subset=["Signal"]).iloc[::-1].head(12)
-    body = "".join(
-        f"<tr><td>{row.Month.year}-{row.Month.month:02d}</td>"
-        f"<td class='num'>{row.Close:,.{digits}f}</td><td class='num'>{row.MA5:,.{digits}f}</td><td class='num'>{row.MA10:,.{digits}f}</td>"
-        f"<td>{signal_chip(row.Signal)}</td><td class='num'>{weight_text(row.Weight)}</td></tr>"
-        for row in recent.itertuples()
-    )
-    md(
-        f"""
-        <div class="tj-table-wrap"><table class="tj-table">
-          <thead><tr><th>월</th><th>월말 종가</th><th>5개월선</th><th>10개월선</th><th>신호</th><th>기본 비중</th></tr></thead>
-          <tbody>{body}</tbody>
-        </table></div>
-        <div class="tj-caption">최근 12개월 · 비중은 다음 달 한 달간 적용</div>
-        """
-    )
-
-
 def render_rule() -> None:
     with st.expander("규칙"):
         md(
@@ -578,6 +566,12 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
     return Target(status, found["daily"], monthly, found["symbol"], engine.STOCK_START_YEAR, pick.get("market") or None)
 
 
+def pick_index(key: str) -> None:
+    """Card tap: show that index and leave search mode."""
+    st.session_state["kr_index"] = key
+    st.session_state["kr_query"] = ""
+
+
 def sync_query_param(query: str) -> None:
     """Keep ?q= in the address bar equal to the search, so the URL can be shared."""
     current = st.query_params.get("q") or ""
@@ -630,53 +624,60 @@ def main() -> None:
         st.stop()
 
     render_banners(list(statuses.values()), monthly_by_key, today)
-    md("<div class='kr-panels'>" + "".join(index_panel(s) for s in statuses.values()) + "</div>")
-
-    options = [*statuses.keys(), SEARCH_MODE]
+    # ?q= (shared link) opens that search once.
     shared_q = st.query_params.get("q")
     if shared_q and st.session_state.get("_kr_q_seen") != shared_q:
         st.session_state["_kr_q_seen"] = shared_q
-        st.session_state["kr_index"] = SEARCH_MODE
         st.session_state["kr_query"] = str(shared_q)[:40]
-    selected = st.radio(
-        "보기", options, horizontal=True, key="kr_index",
-        format_func=lambda k: "종목 · ETF" if k == SEARCH_MODE else f"{engine.INDEXES[k]['label']} {k}",
+
+    keys = list(statuses.keys())
+    if st.session_state.get("kr_index") not in keys:
+        st.session_state["kr_index"] = keys[0]
+    searching = bool(str(st.session_state.get("kr_query") or "").strip())
+
+    # The index cards are the picker: a tap selects (an invisible button covers each card).
+    for col, key in zip(st.columns(len(keys), gap="large"), keys):
+        with col:
+            md(index_panel(statuses[key], selected=(key == st.session_state["kr_index"] and not searching)))
+            st.button(f"{engine.INDEXES[key]['label']} 보기", key=f"kr_card_{key}", on_click=pick_index, args=(key,))
+
+    query = st.text_input(
+        "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
+        placeholder="종목 · ETF 검색 · 삼성전자, 005930, KODEX 레버리지",
     )
-    target = None
-    if selected == SEARCH_MODE:
-        query = st.text_input(
-            "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
-            placeholder="종목·ETF 이름 또는 코드 · 예: 삼성전자, 005930, KODEX 레버리지, 미국나스닥100",
-        )
-        sync_query_param(query.strip())
-        if not query.strip():
-            md("<div class='tj-caption'>이름 일부 또는 6자리 코드</div>")
-            render_rule()
-            st.markdown(ui.footer_html(), unsafe_allow_html=True)
-            return
+    sync_query_param(query.strip())
+    if query.strip():
         target = resolve_search(query, today, day_key)
         if target is None:
             render_rule()
             st.markdown(ui.footer_html(), unsafe_allow_html=True)
             return
-        md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market)) + "</div>")
+        md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market), selected=True) + "</div>")
         md("<div class='tj-caption' style='margin:.2rem 0 0'>규칙은 지수 기준으로 검증 · 개별 종목은 백테스트 참고</div>")
-        kind = "ETF" if target.market == "ETF" else f"{market_text(target.market)} 종목"
-        eyebrow = f"이번 달 체크 · {kind}"
+        eyebrow = ""
     else:
-        sync_query_param("")
+        selected = st.session_state["kr_index"]
         cfg = engine.INDEXES[selected]
         target = Target(statuses[selected], dailies[selected], monthly_by_key[selected], cfg["symbol"], cfg["start_year"], selected)
-        eyebrow = "이번 달 체크 · 지수"
+        eyebrow = ""
 
     status, daily, monthly = target.status, target.daily, target.monthly
     digits = price_digits(status.key)
     render_detail(status, today, eyebrow)
 
-    tab_month, tab_disp, tab_bt, tab_hist = st.tabs(["월봉 신호", "이격도", "백테스트", "기록"])
+    tab_month, tab_disp, tab_bt = st.tabs(["월봉 신호", "이격도", "백테스트"])
     with tab_month:
         st.plotly_chart(build_monthly_chart(monthly, status, digits=digits), use_container_width=True, config=PLOT_CONFIG)
         md(signal_key_html())
+        export = monthly.copy()
+        export["Month"] = export["Month"].astype(str)
+        export["Date"] = pd.to_datetime(export["Date"]).dt.strftime("%Y-%m-%d")
+        st.download_button(
+            label="월별 기록 CSV",
+            data=export.to_csv(index=False, encoding="utf-8-sig"),
+            file_name=f"{status.key}_monthly_signals_{today:%Y%m%d}.csv",
+            mime="text/csv",
+        )
     with tab_disp:
         st.plotly_chart(build_disparity_chart(daily, digits=digits), use_container_width=True, config=PLOT_CONFIG)
     with tab_bt:
@@ -688,17 +689,6 @@ def main() -> None:
         if backtests:
             st.plotly_chart(build_backtest_chart(backtests), use_container_width=True, config=PLOT_CONFIG)
             render_backtest_table(backtests)
-    with tab_hist:
-        render_history_table(monthly, digits)
-        export = monthly.copy()
-        export["Month"] = export["Month"].astype(str)
-        export["Date"] = pd.to_datetime(export["Date"]).dt.strftime("%Y-%m-%d")
-        st.download_button(
-            label="월별 신호 CSV 다운로드",
-            data=export.to_csv(index=False, encoding="utf-8-sig"),
-            file_name=f"{status.key}_monthly_signals_{today:%Y%m%d}.csv",
-            mime="text/csv",
-        )
 
     render_rule()
     st.markdown(ui.footer_html(), unsafe_allow_html=True)

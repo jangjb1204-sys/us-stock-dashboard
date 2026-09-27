@@ -42,6 +42,12 @@ CSS = ui.html(f"""
 .panel-title {{ display:flex; align-items:center; gap:10px; color:{ui.TEXT}; font-weight:650; font-size:1.02rem; margin:2.2rem 0 .9rem; }}
 .chev {{ color:{ui.FAINT}; font-size:1.3rem; line-height:1; }}
 .stage-strip {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:8px; margin:1.1rem 0 0; }}
+.pd-hero {{ padding-top:14px; border-top:1px solid {ui.LINE}; }}
+.pd-hero .num {{ font-size:56px; font-weight:650; letter-spacing:-0.026em; line-height:1; color:{ui.TEXT}; font-variant-numeric:tabular-nums; }}
+.pd-hero .num small {{ margin-left:10px; font-size:1rem; font-weight:500; letter-spacing:0; color:rgba(255,255,255,.5); }}
+.pd-hero .line {{ margin-top:.9rem; color:rgba(255,255,255,.78); font-size:.92rem; font-variant-numeric:tabular-nums; }}
+.pd-hero .line.dim {{ margin-top:.35rem; color:rgba(255,255,255,.46); font-size:.86rem; }}
+.pd-hero .sep {{ margin:0 9px; color:rgba(255,255,255,.24); }}
 .pd-stats {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:28px; row-gap:18px; }}
 .pd-stats .tj-stat {{ padding-top:18px; }}
 .pd-open {{ display:inline-block; margin-top:.9rem; color:rgba(255,255,255,.72)!important; font-size:.84rem; font-weight:600; text-decoration:none!important; }}
@@ -565,18 +571,32 @@ def render_signal_table_component(df: pd.DataFrame, selected_ticker: str | None)
         key="signal_table_picker",
     )
 
+def scroll_to_chart(ticker: str) -> None:
+    """Bring the chart into view once per newly picked row (it renders under
+    a possibly long list, where a tap on a phone looked like it did nothing)."""
+    if st.session_state.get("_pd_scrolled_for") == ticker:
+        return
+    st.session_state["_pd_scrolled_for"] = ticker
+    components.html(
+        "<script>setTimeout(function(){try{var d=window.parent.document;"
+        "var el=d.getElementById('pd-chart');if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}}catch(e){}},350);</script>",
+        height=0,
+    )
+
+
 def render_signal_chart_section(ticker: str, signal: str, company: str | None = None) -> None:
     title = f"{ticker} 신호 차트"
     subtitle_parts = [SIGNAL_LABEL.get(signal, signal) or "신호", "최근 1년"]
     if company and company != "--":
         subtitle_parts.insert(0, company)
     st.markdown(
-        "<div class='signal-chart-header'>"
+        "<div class='signal-chart-header' id='pd-chart'>"
         f"<div class='signal-chart-title'>{escape(title)}</div>"
         f"<div class='signal-chart-subtitle'>{escape(' · '.join(subtitle_parts))}</div>"
         "</div>",
         unsafe_allow_html=True,
     )
+    scroll_to_chart(ticker)
     with st.spinner(f"{ticker} 불러오는 중"):
         history = load_signal_history(ticker)
     if history.empty:
@@ -670,10 +690,8 @@ def main() -> None:
     stocks = int((df.get("asset_type") == "Stock").sum()) if not df.empty and "asset_type" in df.columns else 0
     etfs = int((df.get("asset_type") == "ETF").sum()) if not df.empty and "asset_type" in df.columns else 0
 
-    right = (f"<span class='tj-dot'></span><span>선택 <strong>{escape(ui.kdate(selected_date))}</strong></span>"
-             f"<span>·</span><span>신호 <strong>{total}</strong>개</span>")
     st.markdown(ui.hero_html("Puddle Signal Scanner", f"{scan_time} 스캔" if scan_time != "--" else None,
-                             dot="open", right=right, self_key="puddle"), unsafe_allow_html=True)
+                             dot="open", self_key="puddle"), unsafe_allow_html=True)
 
     # Summary first (left), calendar beside it (right); on a phone the summary
     # comes first, so the day's result is visible without scrolling past a month.
@@ -691,23 +709,15 @@ def main() -> None:
     summary_col, calendar_col = st.columns([1, 1.05], gap="large")
     with summary_col:
         st.markdown(f"<div class='tj-label'>{escape(ui.kdate(selected_date))} 스캔 결과</div>", unsafe_allow_html=True)
-        stats = [
-            ("전체 신호", total, "", "Puddle + RSI+Puddle"),
-            ("RSI+Puddle", rsi_puddle, "", "과매도 동반"),
-            ("주식", stocks, "", "S&amp;P500 + NASDAQ100"),
-            ("ETF", etfs, "", "대표 ETF"),
-        ]
-        stages = [("1차", "MA20", "1st"), ("2차", "MA60", "2nd"), ("3차", "MA120", "3rd"), ("4차", "MA200", "4th")]
-        st.markdown(
-            "<div class='pd-stats'>" + "".join(
-                f"<div class='tj-stat'><div class='label'>{label}</div><div class='value {cls}'>{value}</div><div class='note'>{note}</div></div>"
-                for label, value, cls, note in stats
-            ) + "</div><div class='stage-strip'>" + "".join(
-                f"<div class='stage'><div class='name'>{name} <span>{ma}</span></div><div class='count'>{stage_counts.get(key, 0)}</div></div>"
-                for name, ma, key in stages
-            ) + "</div>",
-            unsafe_allow_html=True,
-        )
+        # One hero number; everything else is a quiet breakdown line.
+        stage_line = " · ".join(f"{n}차 {stage_counts.get(k, 0)}" for n, k in ((1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th")))
+        st.markdown(ui.html(f"""
+            <div class="pd-hero">
+              <div class="num">{total}<small>신호</small></div>
+              <div class="line">RSI+Puddle {rsi_puddle}<span class="sep">·</span>주식 {stocks}<span class="sep">·</span>ETF {etfs}</div>
+              <div class="line dim">{stage_line}</div>
+            </div>
+        """), unsafe_allow_html=True)
     with calendar_col:
         st.markdown("<div class='tj-label'>스캔 날짜 · 숫자는 그날 신호 수</div>", unsafe_allow_html=True)
         render_calendar_component(current_month, selected_date, available_dates, month_options, counts)

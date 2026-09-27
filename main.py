@@ -1756,6 +1756,13 @@ st.markdown("""
     }
     .signal-date { font-family: inherit !important; }
 
+    /* The verdict line sits between the price and the stat row. */
+    .premium-summary .tj-verdict { margin: 0.95rem 0 0.1rem !important; }
+
+    /* Range pills sit right-aligned above the chart they control. */
+    .st-key-range_radio div[role="radiogroup"] { margin-left: auto; }
+    .st-key-range_radio label[data-testid="stRadioOption"] { min-height: 30px !important; height: 30px !important; padding: 0 10px !important; }
+
     /* Section titles, replacing "### Signal Feed" so headings share one style. */
     .section-heading {
         margin: 1.35rem 0 0.6rem;
@@ -1777,7 +1784,7 @@ st.markdown("""
     .signal-feed { margin: 0.4rem 0 1.4rem !important; }
     .signal-entry {
         display: grid !important;
-        grid-template-columns: 52px 78px 128px minmax(0, 1fr);
+        grid-template-columns: 82px 128px minmax(0, 1fr);
         align-items: baseline;
         gap: 14px;
         padding: 9px 0 !important;
@@ -1800,14 +1807,20 @@ st.markdown("""
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             column-gap: 18px !important;
         }
-        /* Stack the signal row: action + date on top, type + detail beneath. */
+        /* Stack the signal row: date + type on top, detail beneath. */
         .signal-entry {
-            grid-template-columns: 48px minmax(0, 1fr);
+            grid-template-columns: 74px minmax(0, 1fr);
             row-gap: 3px;
             padding: 11px 0 !important;
         }
-        .signal-entry .signal-title { grid-column: 2; }
         .signal-entry .signal-detail { grid-column: 2; }
+        /* Ten ticker pills: one swipeable row instead of three wrapped rows. */
+        .st-key-saved_ticker_radio div[role="radiogroup"] {
+            flex-wrap: nowrap !important; overflow-x: auto; width: 100% !important;
+            scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px !important;
+        }
+        .st-key-saved_ticker_radio div[role="radiogroup"]::-webkit-scrollbar { display: none; }
+        .st-key-saved_ticker_radio div[role="radiogroup"] label { flex: 0 0 auto; }
         .section-heading { margin: 1.1rem 0 0.5rem; }
     }
 </style>
@@ -2690,13 +2703,13 @@ def render_signal_cards(df: pd.DataFrame):
 
     signal_rows = []
     for date, value in puddle_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '매수', 'signal', 'Puddle', puddle_label_ko(value)))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '', 'signal', 'Puddle', puddle_label_ko(value)))
     for date, value in rsi_puddle_items:
         rsi_part, _, puddle_part = value.partition(' · ')
         detail = f"{rsi_part} · {puddle_label_ko(puddle_part, short=True)}" if puddle_part else value
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '매수', 'buy', 'RSI+Puddle', detail))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '', 'buy', 'RSI+Puddle', detail))
     for date, value in vix_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '매수', 'buy', 'VIX1D > VIX', '단기 변동성 역전'))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '', 'buy', 'VIX1D > VIX', '단기 변동성 역전 · 매수'))
 
     signal_rows = sorted(signal_rows, key=lambda item: item[0], reverse=True)[:10]
     if signal_rows:
@@ -2705,12 +2718,11 @@ def render_signal_cards(df: pd.DataFrame):
         # than filling two screens.
         body = ''.join(
             f"<div class='signal-entry'>"
-            f"<div class='signal-action {escape(tone)}'>{escape(action)}</div>"
-            f"<div class='signal-date'>{escape(date)}</div>"
+            f"<div class='signal-date'>{escape(ui.kdate(when))}</div>"
             f"<div class='signal-title'>{escape(title)}</div>"
             f"<div class='signal-detail'>{escape(detail)}</div>"
             f"</div>"
-            for _, date, action, tone, title, detail in signal_rows
+            for when, date, action, tone, title, detail in signal_rows
         )
     else:
         body = "<div class='signal-empty-feed'>최근 신호 없음</div>"
@@ -2773,11 +2785,9 @@ def verdict_chips(full_df: pd.DataFrame) -> list[str]:
     return chips
 
 
-def render_verdict(full_df: pd.DataFrame) -> None:
+def verdict_html(full_df: pd.DataFrame) -> str:
     chips = verdict_chips(full_df)
-    if chips:
-        st.markdown("<div class='tj-verdict'><span class='lead'>현재</span>" + "".join(chips) + "</div>",
-                    unsafe_allow_html=True)
+    return ("<div class='tj-verdict'><span class='lead'>현재</span>" + "".join(chips) + "</div>") if chips else ""
 
 
 def status_color(level: str) -> str:
@@ -2790,7 +2800,7 @@ def status_color(level: str) -> str:
     }.get(level, '#a1a1aa')
 
 
-def render_risk_metrics(metrics):
+def render_risk_metrics(metrics, after_price_html: str = ""):
     if not metrics:
         return
     primary = metrics[0]
@@ -2804,18 +2814,19 @@ def render_risk_metrics(metrics):
             f"</div>"
         )
     st.markdown(
-        f"""
+        ui.html(f"""
         <div class="premium-summary">
           <div class="summary-top">
             <div>
-              <div class="summary-label">{escape(primary['label'])}</div>
+              {f"<div class='summary-label'>{escape(primary['label'])}</div>" if primary['label'] else ''}
               <div class="summary-price">{escape(primary['value'])}{primary.get('unit_html', '')}</div>
             </div>
             <div class="summary-change {escape(primary['level'])}">{escape(primary['status'])}</div>
           </div>
+          {after_price_html}
           <div class="summary-grid">{''.join(rows)}</div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 
@@ -2893,7 +2904,7 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
             "US Market Signals",
             updated_short,
             dot="open" if market_dot_class == "open" else "closed",
-            right=ui.viewers_html(active_viewers),
+            right="",
             self_key="us",
         ),
         unsafe_allow_html=True,
@@ -2901,6 +2912,8 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
 
 
 # ── 상단 컨트롤 ────────────────────────────────────────────────────────────────
+# Content first: only the ticker picker and search sit above the stock; the
+# range picker lives with the chart it controls, the overview goes last.
 base_tickers = list(TICKER_CONFIGS.keys())
 ticker_options = base_tickers
 total_views, active_viewers = get_view_stats()
@@ -2910,51 +2923,42 @@ st.markdown(ui.nav_html("us"), unsafe_allow_html=True)
 hero_slot = st.empty()
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")
 
-# Range and Search share one row: Range only needs about a third of the width,
-# and pairing them keeps the whole control block to two rows instead of three.
-range_col, search_col = st.columns([1.1, 1])
-with range_col:
-    delta_label = st.radio(
-        "기간",
-        options=list(DELTA_OPTIONS.keys()),
-        index=list(DELTA_OPTIONS.keys()).index("180D"),
-        horizontal=True,
-    )
 # ?ticker=ROP (links from the Puddle scanner) fills the search box once.
 ticker_param = st.query_params.get("ticker")
 if ticker_param and st.session_state.get("_ticker_param_seen") != ticker_param:
     st.session_state["_ticker_param_seen"] = ticker_param
     st.session_state["direct_ticker_query"] = str(ticker_param)[:40]
+
+saved_default = st.session_state.get("saved_ticker_radio") or st.session_state.get("saved_ticker_select")
+if saved_default not in ticker_options:
+    saved_default = ticker_options[0]
+picker_col, search_col = st.columns([2.6, 1], gap="medium")
+with picker_col:
+    preset_ticker = st.radio(
+        "관심 종목",
+        ticker_options,
+        index=ticker_options.index(saved_default),
+        format_func=ticker_name,
+        horizontal=True,
+        key="saved_ticker_radio",
+        on_change=clear_direct_ticker_input,
+        label_visibility="collapsed",
+    )
 with search_col:
     raw_custom_ticker = st.text_input(
         "검색",
-        placeholder="티커 또는 이름 · AAPL, 엔비디아, S&P 500",
+        placeholder="티커 또는 이름 검색",
         key="direct_ticker_query",
+        label_visibility="collapsed",
     )
     search_pick, search_note = resolve_symbol_search(raw_custom_ticker)
     if search_note:
         st.caption(search_note)
-delta = DELTA_OPTIONS[delta_label]
 
 
 # ── 메인 영역 ──────────────────────────────────────────────────────────────────
 period = DATA_PERIOD
-cache_key = f"{period}_{delta}"
-
-# Full width so the ten tickers wrap into two rows on desktop and two on mobile,
-# rather than three rows squeezed into a half-width column.
-saved_default = st.session_state.get("saved_ticker_radio") or st.session_state.get("saved_ticker_select")
-if saved_default not in ticker_options:
-    saved_default = ticker_options[0]
-preset_ticker = st.radio(
-    "관심 종목",
-    ticker_options,
-    index=ticker_options.index(saved_default),
-    format_func=ticker_name,
-    horizontal=True,
-    key="saved_ticker_radio",
-    on_change=clear_direct_ticker_input,
-)
+FULL_DELTA = DELTA_OPTIONS["4Y"]
 
 if search_pick:
     selected_ticker = search_pick["symbol"]
@@ -2963,14 +2967,9 @@ else:
     selected_ticker = preset_ticker
     selected_name = load_ticker_display_name(selected_ticker)
 
-summary_extra_tickers = ()
-render_market_summary(period, delta, cache_key, summary_extra_tickers)
-st.markdown("---")
-
 st.markdown(
     f"""
     <div class="focus-title">
-      <div class="eyebrow">{'검색 종목' if search_pick else '관심 종목'}</div>
       <div class="name">{escape(selected_name)} <span class="ticker">{escape(selected_ticker)}</span></div>
     </div>
     """,
@@ -2978,23 +2977,16 @@ st.markdown(
 )
 
 with st.spinner(f"{selected_name} 불러오는 중"):
-    table_df, updated_at = load_ticker_data(
-        selected_ticker,
-        selected_name,
-        period,
-        DELTA_OPTIONS["4Y"],
-        f"{period}_{DELTA_OPTIONS['4Y']}",
-    )
-    df = filter_by_delta(table_df, delta)
+    table_df, updated_at = load_ticker_data(selected_ticker, selected_name, period, FULL_DELTA, f"{period}_{FULL_DELTA}")
 
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at,
-            data_date=df['Date'].iloc[-1] if not df.empty else None)
+            data_date=table_df['Date'].iloc[-1] if not table_df.empty else None)
 
-if df.empty:
+if table_df.empty:
     st.error(f"{selected_ticker} 데이터 불러오기 실패 · 잠시 후 다시 시도")
     st.stop()
 
-latest = df.iloc[-1]
+latest = table_df.iloc[-1]
 
 # ── 메트릭 카드 ────────────────────────────────────────────────────────────────
 close_val    = safe_float(latest.get('Close'))
@@ -3014,99 +3006,76 @@ skew_level, skew_state, skew_caption = skew_status(skew_val)
 treasury_level, treasury_state, treasury_caption = treasury_status(treasury_val)
 
 is_index = selected_ticker.startswith('^')
-prev_close = safe_float(df['Close'].iloc[-2]) if len(df) >= 2 else None
+prev_close = safe_float(table_df['Close'].iloc[-2]) if len(table_df) >= 2 else None
 render_risk_metrics([
     {
-        'label': '지수' if is_index else '가격',
+        'label': '',
         'value': fmt_price(close_val, is_index),
         'unit_html': "<span class='summary-unit'>pt</span>" if is_index else '',
         'status': fmt_change(close_val, prev_close, change_val, is_index),
         'caption': '전일 대비',
         'level': change_level,
     },
-    {
-        'label': 'RSI',
-        'value': fmt_1f(rsi_val) if rsi_val is not None else 'N/A',
-        'status': rsi_state,
-        'caption': rsi_caption,
-        'level': rsi_level,
-    },
-    {
-        'label': 'VIX',
-        'value': fmt_1f(vix_val) if vix_val is not None else 'N/A',
-        'status': vix_state,
-        'caption': vix_caption,
-        'level': vix_level,
-    },
-    {
-        'label': 'F&G',
-        'value': fmt_int(fg_val) if fg_val is not None else 'N/A',
-        'status': fg_state,
-        'caption': fg_caption,
-        'level': fg_level,
-    },
-    {
-        'label': 'SKEW',
-        'value': fmt_1f(skew_val) if skew_val is not None else 'N/A',
-        'status': skew_state,
-        'caption': skew_caption,
-        'level': skew_level,
-    },
-    {
-        'label': '10Y',
-        'value': f"{treasury_val:.2f}%" if treasury_val is not None else 'N/A',
-        'status': treasury_state,
-        'caption': treasury_caption,
-        'level': treasury_level,
-    },
-])
+    {'label': 'RSI', 'value': fmt_1f(rsi_val) if rsi_val is not None else 'N/A',
+     'status': rsi_state, 'caption': rsi_caption, 'level': rsi_level},
+    {'label': 'VIX', 'value': fmt_1f(vix_val) if vix_val is not None else 'N/A',
+     'status': vix_state, 'caption': vix_caption, 'level': vix_level},
+    {'label': 'F&G', 'value': fmt_int(fg_val) if fg_val is not None else 'N/A',
+     'status': fg_state, 'caption': fg_caption, 'level': fg_level},
+    {'label': 'SKEW', 'value': fmt_1f(skew_val) if skew_val is not None else 'N/A',
+     'status': skew_state, 'caption': skew_caption, 'level': skew_level},
+    {'label': '10Y', 'value': f"{treasury_val:.2f}%" if treasury_val is not None else 'N/A',
+     'status': treasury_state, 'caption': treasury_caption, 'level': treasury_level},
+], after_price_html=verdict_html(table_df))
 
-render_verdict(table_df)
 
-# ── 탭 ────────────────────────────────────────────────────────────────────────
-# The chart sits directly under the price block: it is the reason people open a
-# market dashboard, and it previously started ~1,800px down the page, below the
-# signal feed, so it was two full scrolls out of view on a laptop.
-tab1, tab2, tab3 = st.tabs(["차트", "신호", "지표"])
+# ── 차트 · 신호 (range changes rerun only this part) ─────────────────────────
+fragment = getattr(st, "fragment", None) or (lambda func: func)
+PLOTLY_CONFIG = {'displayModeBar': False, 'responsive': True, 'scrollZoom': False, 'doubleClick': False}
 
-with tab1:
-    st.plotly_chart(
-        build_candlestick_chart(df, selected_name),
-        use_container_width=True,
-        config={'displayModeBar': False, 'responsive': True, 'scrollZoom': False, 'doubleClick': False},
-    )
 
-with tab2:
-    st.plotly_chart(
-        build_line_chart(df, selected_name),
-        use_container_width=True,
-        config={'displayModeBar': False, 'responsive': True, 'scrollZoom': False, 'doubleClick': False},
-    )
+@fragment
+def render_chart_section(table_df: pd.DataFrame, selected_name: str) -> None:
+    head_col, range_col = st.columns([1, 1.4])
+    with range_col:
+        delta_label = st.radio(
+            "기간",
+            options=list(DELTA_OPTIONS.keys()),
+            index=list(DELTA_OPTIONS.keys()).index("180D"),
+            horizontal=True,
+            key="range_radio",
+            label_visibility="collapsed",
+        )
+    df = filter_by_delta(table_df, DELTA_OPTIONS[delta_label])
+    tab1, tab2, tab3 = st.tabs(["차트", "신호", "지표"])
+    with tab1:
+        st.plotly_chart(build_candlestick_chart(df, selected_name), use_container_width=True, config=PLOTLY_CONFIG)
+    with tab2:
+        st.plotly_chart(build_line_chart(df, selected_name), use_container_width=True, config=PLOTLY_CONFIG)
+    with tab3:
+        render_glass_table(
+            table_df,
+            ['Date', 'Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG index', 'FG/RSI signal', 'SS Signal',
+             'Puddle', 'VIX', 'VIX1D', 'VIX1D>VIX', 'SKEW', '10Y Treasury'],
+            height_px=500,
+            newest_first=True,
+        )
+        csv = table_df.copy()
+        if 'Date' in csv.columns:
+            csv['Date'] = pd.to_datetime(csv['Date']).dt.strftime('%Y-%m-%d')
+        st.download_button(
+            label="CSV 다운로드",
+            data=csv.to_csv(index=False, encoding='utf-8-sig'),
+            file_name=f"{selected_name}_{central_now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+        )
+    st.markdown("<div class='section-heading'>최근 신호</div>", unsafe_allow_html=True)
+    render_signal_cards(df)
 
-with tab3:
-    render_glass_table(
-        table_df,
-        [
-            'Date', 'Close', 'Change(%)', '2sigma(%)', 'RSI',
-            'FG index', 'FG/RSI signal', 'SS Signal', 'Puddle',
-            'VIX', 'VIX1D', 'VIX1D>VIX', 'SKEW', '10Y Treasury',
-        ],
-        height_px=500,
-        newest_first=True,
-    )
 
-    csv = table_df.copy()
-    if 'Date' in csv.columns:
-        csv['Date'] = pd.to_datetime(csv['Date']).dt.strftime('%Y-%m-%d')
-    st.download_button(
-        label="CSV 다운로드",
-        data=csv.to_csv(index=False, encoding='utf-8-sig'),
-        file_name=f"{selected_name}_{central_now().strftime('%Y%m%d')}.csv",
-        mime="text/csv",
-    )
+render_chart_section(table_df, selected_name)
 
-# ── 최근 신호 ──────────────────────────────────────────────────────────────────
-st.markdown("<div class='section-heading'>최근 신호</div>", unsafe_allow_html=True)
-render_signal_cards(df)
+# ── 전체 종목 요약 (last: a reference table, not the page's subject) ────────
+render_market_summary(period, FULL_DELTA, f"{period}_{FULL_DELTA}", ())
 
 st.markdown(ui.footer_html(), unsafe_allow_html=True)
