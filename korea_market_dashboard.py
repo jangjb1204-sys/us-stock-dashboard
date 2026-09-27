@@ -27,7 +27,6 @@ SIGNAL_COLOR = {"green": ui.GREEN, "yellow": ui.YELLOW, "red": ui.RED}
 # Validated pair on the chart surface (dataviz validator): blue + neutral grey
 # stay apart in normal and color-blind vision; the old blue/violet pair did not.
 CLOSE_COLOR, MA5_COLOR, MA10_COLOR = ui.TEXT, "#6EA8FF", "#7D828C"
-MUTED_TEXT = "rgba(242,245,248,0.72)"
 PLOT_CONFIG = {"displayModeBar": False, "responsive": True, "scrollZoom": False, "doubleClick": False}
 
 # Page-only pieces; everything else comes from ui_theme.BASE_CSS.
@@ -186,7 +185,7 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     sig_text = data["Signal"].map(lambda sgn: f"{engine.SIGNAL_EMOJI[sgn]} {engine.SIGNAL_LABEL[sgn]} · 다음 달 {weight_text(engine.SIGNAL_WEIGHT[sgn])}")
 
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.89, 0.11], vertical_spacing=0.03)
-    seg_end = month_end + pd.Timedelta(days=40)  # room so this month's lines read as lines
+    seg_end = month_end + pd.Timedelta(days=25)  # a little room so this month's lines read as lines
     line = lambda color: {"color": color, "width": 2, "shape": "linear"}
     fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines", line=line(CLOSE_COLOR),
                              hovertemplate="월말 종가 " + yfmt + "<extra></extra>"), row=1, col=1)
@@ -204,12 +203,13 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
                              marker={"size": 11, "color": live_color, "line": {"width": 2, "color": ui.PLOT_BG}},
                              hovertemplate="이번 달 최근 종가 " + yfmt + "<extra></extra>", showlegend=False), row=1, col=1)
     # The two lines this month's close has to clear, only across this month.
-    for level, color, text in ((status.green_above, SIGNAL_COLOR["green"], f"초록불 ≥ {status.green_above:,.{digits}f}"),
-                               (status.red_below, SIGNAL_COLOR["red"], f"빨간불 < {status.red_below:,.{digits}f}")):
+    # No text in the chart: the prices are in the stat row right above it, and
+    # labels in a side margin got cut off on phones. Hover shows them.
+    for level, color, text in ((status.green_above, SIGNAL_COLOR["green"], f"이달 말 초록불 기준 ≥ {status.green_above:,.{digits}f}"),
+                               (status.red_below, SIGNAL_COLOR["red"], f"이달 말 빨간불 기준 < {status.red_below:,.{digits}f}")):
         fig.add_trace(go.Scatter(x=[last_confirmed_x, seg_end], y=[level, level], mode="lines",
-                                 line={"color": color, "width": 2}, hoverinfo="skip", showlegend=False), row=1, col=1)
-        fig.add_annotation(x=seg_end, y=level, xref="x", yref="y", text=text, showarrow=False,
-                           xanchor="left", xshift=6, font={"color": MUTED_TEXT, "size": 11})
+                                 line={"color": color, "width": 3}, name=text, hovertemplate=text + "<extra></extra>",
+                                 showlegend=False), row=1, col=1)
 
     # Signal strip: one block per month (gaps between them), this month faded.
     width_ms = 86400000 * 20
@@ -227,7 +227,7 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     ), row=2, col=1)
 
     _style(fig, 470)
-    fig.update_layout(bargap=0, margin={"l": 56, "r": 112, "t": 36, "b": 24})
+    fig.update_layout(bargap=0, margin={"l": 56, "r": 12, "t": 36, "b": 24})
     fig.update_yaxes(tickformat=",.0f", row=1, col=1)
     fig.update_yaxes(visible=False, range=[0, 1], showgrid=False, row=2, col=1)
     fig.update_xaxes(showgrid=False, row=2, col=1)
@@ -243,8 +243,10 @@ def signal_key_html() -> str:
                           f"background:{SIGNAL_COLOR[sig]};margin:0 6px 0 12px;vertical-align:-1px'></span>")
     items = "".join(f"{swatch(sig)}{engine.SIGNAL_LABEL[sig]} {weight_text(engine.SIGNAL_WEIGHT[sig])}"
                     for sig in ("green", "yellow", "red"))
-    return (f"<div class='tj-caption' style='margin-top:-.2rem'>아래 띠 = 매달 말 확정된 신호(다음 달 주식 비중){items}"
-            f"<span style='margin-left:12px'>· 흐린 칸 = 이번 달 진행 중</span></div>")
+    line = lambda sig: (f"<span style='display:inline-block;width:14px;height:3px;border-radius:2px;"
+                        f"background:{SIGNAL_COLOR[sig]};margin:0 6px 0 0;vertical-align:3px'></span>")
+    return (f"<div class='tj-caption' style='margin-top:-.2rem'>{line('green')}{line('red')}오른쪽 끝 짧은 선 = 이번 달 말 초록불·빨간불 기준 가격 (위 숫자와 같아요)<br>"
+            f"아래 띠 = 매달 말 확정된 신호{items}<span style='margin-left:10px'>· 흐린 칸 = 이번 달 진행 중</span></div>")
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
