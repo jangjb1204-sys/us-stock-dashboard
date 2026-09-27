@@ -514,6 +514,17 @@ def first_query_value(key: str) -> str | None:
     return value
 
 SIGNAL_LABEL = {"RSI & Puddle": "RSI+Puddle", "Puddle": "Puddle"}
+UNIVERSE_SHORT = {"S&P500": "S&P", "NASDAQ100": "NDX", "ETF": "ETF"}
+
+def rank_label(universe: str, rank: str) -> str:
+    """Index + rank, short: 'S&P #56', 'NDX #40', 'S&P #69 · NDX #34', 'ETF #9'."""
+    dual = re.fullmatch(r"S(\d+)/N(\d+)", rank or "")
+    if dual:
+        return f"S&P #{dual.group(1)} · NDX #{dual.group(2)}"
+    if universe == "Dual":
+        return "S&P · NDX"
+    short = UNIVERSE_SHORT.get(universe, universe)
+    return f"{short} #{rank}" if rank and short else short
 
 def prepare_signal_table_rows(df: pd.DataFrame) -> list[dict]:
     rows = []
@@ -521,13 +532,7 @@ def prepare_signal_table_rows(df: pd.DataFrame) -> list[dict]:
         company = str(row.get("company_name", "") or "")
         universe = normalize_index_label(row.get("universe", ""))
         rank = safe_text(row.get("rank", ""), "")
-        dual = re.fullmatch(r"S(\d+)/N(\d+)", rank)
-        if universe == "Dual" and dual:
-            meta = f"S&P500 {dual.group(1)}위 · NASDAQ100 {dual.group(2)}위"
-        elif universe == "Dual":
-            meta = "S&P500 · NASDAQ100"
-        else:
-            meta = f"{universe} 안 {rank}위" if rank and universe else universe
+        meta = rank_label(universe, rank)
         signal = str(row.get("signal", "") or "")
         rows.append({
             "meta": meta,
