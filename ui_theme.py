@@ -11,6 +11,10 @@ which makes multi-line HTML safe to hand to st.markdown.
 from __future__ import annotations
 
 from html import escape
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+import pandas as pd
 
 # ── Tokens ─────────────────────────────────────────────────────────────────────
 BG = "#05070B"
@@ -26,11 +30,31 @@ PLOT_BG = "#05070d"
 FONT_STACK = '-apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "DM Sans", sans-serif'
 
 PAGES = [
-    ("us", "US Market"),
-    ("puddle", "Puddle Scanner"),
-    ("korea", "KOSPI · KOSDAQ"),
+    ("us", "미국 시장"),
+    ("puddle", "Puddle 스캐너"),
+    ("korea", "코스피 · 코스닥"),
 ]
+KST = ZoneInfo("Asia/Seoul")
+KO_WEEKDAYS = "월화수목금토일"
 THREADS_URL = "https://www.threads.net/@30s_tech_j"
+
+
+def kdate(value) -> str:
+    """A date as Koreans read it: 9/25(금)."""
+    d = pd.Timestamp(value)
+    return f"{d.month}/{d.day}({KO_WEEKDAYS[d.weekday()]})"
+
+
+def kst_time(value, tz=None) -> str:
+    """A timestamp shown in Korean time: 9/26(토) 09:17 KST. Naive values are read in `tz`."""
+    try:
+        ts = pd.Timestamp(value)
+        if ts.tzinfo is None:
+            ts = ts.tz_localize(tz or KST)
+        ts = ts.tz_convert(KST)
+    except Exception:
+        return ""
+    return f"{kdate(ts)} {ts:%H:%M} KST"
 
 
 def html(markup: str) -> str:
@@ -220,6 +244,18 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 .tj-note.ok {{ background: rgba(63,185,80,0.08); color: #9FE0AA; }}
 .tj-note b {{ color: {TEXT}; }}
 
+/* verdict: the page's "so what" as a row of chips */
+.tj-verdict {{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:.2rem 0 1.4rem; }}
+.tj-verdict .lead {{ color:{MUTED}; font-size:12px; font-weight:560; letter-spacing:.04em; margin-right:4px; }}
+.tj-chip.blue {{ color:#8EC1FF; border-color:rgba(47,128,255,0.34); background:rgba(47,128,255,0.10); }}
+
+/* label / value lines (short explanations) */
+.tj-lines {{ display:grid; grid-template-columns:max-content minmax(0,1fr); column-gap:20px; row-gap:9px; margin:1.3rem 0 1.6rem; font-size:.9rem; line-height:1.5; }}
+.tj-lines .k {{ color:{MUTED}; font-size:12px; font-weight:560; letter-spacing:.04em; padding-top:2px; white-space:nowrap; }}
+.tj-lines .v {{ color:rgba(255,255,255,0.80); min-width:0; }}
+.tj-lines .v b {{ color:{TEXT}; font-weight:640; }}
+@media (max-width:640px) {{ .tj-lines {{ grid-template-columns:1fr; row-gap:2px; }} .tj-lines .v {{ margin-bottom:8px; }} }}
+
 /* tables */
 .tj-table-wrap {{ overflow-x: auto; margin-top: .4rem; }}
 .tj-table {{ width: 100%; border-collapse: collapse; min-width: 620px; font-variant-numeric: tabular-nums; }}
@@ -267,7 +303,7 @@ def hero_html(title: str, updated: str | None = None, dot: str = "live", right: 
     """Page header. `right` and `extra_meta` are trusted HTML fragments."""
     meta = ""
     if updated:
-        meta = f'<span class="k">Updated</span>{escape(updated)}'
+        meta = f'<span class="k">기준</span>{escape(updated)}'
     if extra_meta:
         meta += (f'<span class="sep">·</span>' if meta else "") + extra_meta
     return html(f"""
@@ -283,7 +319,7 @@ def hero_html(title: str, updated: str | None = None, dot: str = "live", right: 
 
 
 def viewers_html(count: int) -> str:
-    return f'<span class="tj-dot"></span><span>Watching <strong>{count:,}</strong></span>'
+    return f'<span class="tj-dot"></span><span>지금 보는 중 <strong>{count:,}</strong></span>'
 
 
 def footer_html() -> str:

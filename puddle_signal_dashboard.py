@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
-from calendar import Calendar, month_name
+import re
+from calendar import Calendar
+from concurrent.futures import ThreadPoolExecutor
 from html import escape
 from io import StringIO
 from pathlib import Path
@@ -19,6 +21,7 @@ from stock_analyzer import (
     calculate_moving_averages,
     calculate_rsi,
     generate_puddle_signals,
+    puddle_label_ko,
 )
 
 
@@ -38,10 +41,14 @@ CSS = ui.html(f"""
 <style>
 .panel-title {{ display:flex; align-items:center; gap:10px; color:{ui.TEXT}; font-weight:650; font-size:1.02rem; margin:2.2rem 0 .9rem; }}
 .chev {{ color:{ui.FAINT}; font-size:1.3rem; line-height:1; }}
-.stage-strip {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:.4rem 0 1.4rem; }}
-.stage {{ border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:14px 16px; background:rgba(255,255,255,.035); }}
+.stage-strip {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:1.1rem 0 0; }}
+.pd-stats {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:28px; row-gap:18px; }}
+.pd-stats .tj-stat {{ padding-top:18px; }}
+.pd-open {{ display:inline-block; margin-top:.9rem; color:#8EC1FF!important; font-size:.84rem; font-weight:600; text-decoration:none!important; }}
+.pd-open:hover {{ color:#B8D7FF!important; }}
+.stage {{ border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:10px 12px; background:rgba(255,255,255,.035); min-width:0; }}
 .stage .name {{ color:rgba(255,255,255,.82); font-weight:620; font-size:.86rem; }}
-.stage .count {{ margin-top:.4rem; font-variant-numeric:tabular-nums; color:{ui.TEXT}; font-size:1.26rem; font-weight:620; }}
+.stage .count {{ margin-top:.25rem; font-variant-numeric:tabular-nums; color:{ui.TEXT}; font-size:1.26rem; font-weight:620; }}
 .stage .desc {{ margin-top:.3rem; color:rgba(255,255,255,.46); font-size:.78rem; }}
 .calendar-shell {{ width:100%; max-width:100%; overflow:hidden; }}
 .calendar-head {{ display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:12px; margin:.2rem 0 .9rem; }}
@@ -61,9 +68,7 @@ CSS = ui.html(f"""
 .signal-chart-subtitle {{ margin-top:.25rem; color:rgba(255,255,255,.46); font-size:12px; font-weight:500; letter-spacing:.035em; text-transform:uppercase; }}
 .signal-chart-note, .empty-note {{ color:rgba(255,255,255,.46); padding:1rem 0 .2rem; font-size:.86rem; }}
 div[data-testid="stDownloadButton"] {{ margin-top:1rem; }}
-@media (max-width:900px) {{ .stage-strip {{ grid-template-columns:repeat(2,minmax(0,1fr)); }} }}
 @media (max-width:640px) {{
-    .stage-strip {{ grid-template-columns:1fr; }}
     .calendar-head {{ grid-template-columns:38px minmax(0,1fr) 38px; gap:6px; margin:.1rem 0 .55rem; }}
     .calendar-grid-static {{ gap:4px; margin-bottom:.28rem; }}
     .calendar-dow {{ font-size:.58rem; letter-spacing:0; padding:.16rem 0; }}
@@ -169,6 +174,23 @@ def load_scan_csv(path: str, mtime_ns: int | None = None) -> pd.DataFrame:
         df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
     return df
 
+def count_scan_rows(path: str) -> int | None:
+    try:
+        if path.startswith(("http://", "https://")):
+            response = requests.get(path, headers={"User-Agent": "30s-tech-j-streamlit"}, timeout=12)
+            response.raise_for_status()
+            return len(pd.read_csv(StringIO(response.text)))
+        return len(pd.read_csv(path))
+    except Exception:
+        return None
+
+@st.cache_data(show_spinner=False, ttl=CHART_CACHE_TTL_SECONDS)
+def load_scan_counts(files: tuple[tuple[str, str, str], ...]) -> dict[str, int | None]:
+    """Signal count for each (date, path, version) — one month's scans, fetched in parallel."""
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        counts = list(pool.map(lambda item: count_scan_rows(item[1]), files))
+    return {item[0]: count for item, count in zip(files, counts)}
+
 def normalize_index_label(value) -> str:
     text = str(value or "").strip()
     normalized = text.replace(" ", "")
@@ -195,16 +217,9 @@ def safe_text(value, fallback="--") -> str:
     text = str(value).strip()
     return text if text and text.lower() != "nan" else fallback
 
-def central_time_label(value) -> str:
-    try:
-        timestamp = pd.to_datetime(value, errors="raise")
-        if timestamp.tzinfo is None:
-            timestamp = timestamp.tz_localize(CENTRAL_TZ)
-        else:
-            timestamp = timestamp.tz_convert(CENTRAL_TZ)
-        return timestamp.strftime("%H:%M CT")
-    except Exception:
-        return "--"
+def scan_time_label(value) -> str:
+    """When the scan ran, in Korean time (naive stamps are Chicago time)."""
+    return ui.kst_time(value, tz=CENTRAL_TZ) or "--"
 
 def first_non_null(row: pd.Series, keys: list[str]):
     for key in keys:
@@ -322,10 +337,10 @@ def build_signal_chart(data: pd.DataFrame, ticker: str) -> go.Figure:
     fig.add_trace(go.Scatter(
         x=data["Date"],
         y=data["Close"],
-        name="Price",
+        name="가격",
         mode="lines",
         line={"color": "#f5f5f7", "width": 2.2},
-        hovertemplate="%{x|%Y-%m-%d}<br>Price %{y:.2f}<extra></extra>",
+        hovertemplate="%{x|%Y-%m-%d}<br>가격 %{y:.2f}<extra></extra>",
     ))
 
     ma_styles = {
@@ -366,9 +381,9 @@ def build_signal_chart(data: pd.DataFrame, ticker: str) -> go.Figure:
         x=signal_points["Date"] if not signal_points.empty else [None],
         y=signal_points["Close"] if not signal_points.empty else [None],
         mode="markers",
-        name="RSI & Puddle",
+        name="RSI+Puddle",
         marker={"symbol": "circle", "size": 8, "color": "#2F80FF", "line": {"width": 1.5, "color": "white"}},
-        hovertemplate="%{x|%Y-%m-%d}<br>RSI & Puddle<br>Price %{y:.2f}<extra></extra>",
+        hovertemplate="%{x|%Y-%m-%d}<br>RSI+Puddle<br>가격 %{y:.2f}<extra></extra>",
     ))
 
     fig.update_layout(
@@ -437,7 +452,7 @@ def render_calendar_nav(current_month, selected_date, month_options: list) -> st
     return (
         "<div class='calendar-head'>"
         f"<a class='{prev_class}' href='{prev_href}' target='_self' aria-label='Previous month'>‹</a>"
-        f"<div class='calendar-title'>{month_name[current_month.month]} {current_month.year}</div>"
+        f"<div class='calendar-title'>{current_month.year}년 {current_month.month}월</div>"
         f"<a class='{next_class}' href='{next_href}' target='_self' aria-label='Next month'>›</a>"
         "</div>"
     )
@@ -464,7 +479,9 @@ def render_calendar_grid(current_month, selected_date, available_dates: set) -> 
         cells.append(f"<div class='calendar-grid-static'>{''.join(day_cells)}</div>")
     return "<div class='calendar-shell'>" + "".join(cells) + "</div>"
 
-def render_calendar_component(current_month, selected_date, available_dates: set, month_options: list):
+def render_calendar_component(current_month, selected_date, available_dates: set, month_options: list,
+                              counts: dict | None = None):
+    counts = counts or {}
     current_idx = month_options.index(current_month)
     weeks = []
     for week in calendar_weeks(current_month):
@@ -475,10 +492,11 @@ def render_calendar_component(current_month, selected_date, available_dates: set
                 "label": str(day.day),
                 "available": day in available_dates,
                 "in_month": day.month == current_month.month,
+                "count": counts.get(day.isoformat()),
             })
         weeks.append(week_cells)
     return calendar_component(
-        title=f"{month_name[current_month.month]} {current_month.year}",
+        title=f"{current_month.year}년 {current_month.month}월",
         current_month=f"{current_month:%Y-%m}",
         selected_date=selected_date.isoformat(),
         prev_month=f"{month_options[current_idx - 1]:%Y-%m}" if current_idx > 0 else None,
@@ -494,11 +512,25 @@ def first_query_value(key: str) -> str | None:
         return value[0] if value else None
     return value
 
+SIGNAL_LABEL = {"RSI & Puddle": "RSI+Puddle", "Puddle": "Puddle"}
+
 def prepare_signal_table_rows(df: pd.DataFrame) -> list[dict]:
     rows = []
     for _, row in df.iterrows():
         company = str(row.get("company_name", "") or "")
+        universe = normalize_index_label(row.get("universe", ""))
+        rank = safe_text(row.get("rank", ""), "")
+        dual = re.fullmatch(r"S(\d+)/N(\d+)", rank)
+        if universe == "Dual" and dual:
+            meta = f"S&P500 {dual.group(1)}위 · NASDAQ100 {dual.group(2)}위"
+        elif universe == "Dual":
+            meta = "S&P500 · NASDAQ100"
+        else:
+            meta = f"{universe} 안 {rank}위" if rank and universe else universe
+        signal = str(row.get("signal", "") or "")
         rows.append({
+            "meta": meta,
+            "signal_label": SIGNAL_LABEL.get(signal, signal),
             "asset_type": str(row.get("asset_type", "") or ""),
             "index": normalize_index_label(row.get("universe", "")),
             "rank": safe_text(row.get("rank", "")),
@@ -508,7 +540,7 @@ def prepare_signal_table_rows(df: pd.DataFrame) -> list[dict]:
             "price": safe_num(first_non_null(row, ["price", "close"])),
             "change": safe_num(first_non_null(row, ["price_change_pct", "change_pct"]), "%"),
             "rsi": safe_num(row.get("rsi")),
-            "puddle": str(row.get("puddle", "") or ""),
+            "puddle": puddle_label_ko(row.get("puddle", "")),
         })
     return rows
 
@@ -528,8 +560,8 @@ def render_signal_table_component(df: pd.DataFrame, selected_ticker: str | None)
     )
 
 def render_signal_chart_section(ticker: str, signal: str, company: str | None = None) -> None:
-    title = f"{ticker} Signals"
-    subtitle_parts = [signal or "Signal", "1Y Trend"]
+    title = f"{ticker} 신호 차트"
+    subtitle_parts = [SIGNAL_LABEL.get(signal, signal) or "신호", "최근 1년"]
     if company and company != "--":
         subtitle_parts.insert(0, company)
     st.markdown(
@@ -539,11 +571,11 @@ def render_signal_chart_section(ticker: str, signal: str, company: str | None = 
         "</div>",
         unsafe_allow_html=True,
     )
-    with st.spinner(f"Loading {ticker} signal chart..."):
+    with st.spinner(f"{ticker} 차트를 불러오는 중..."):
         history = load_signal_history(ticker)
     if history.empty:
         st.markdown(
-            f"<div class='signal-chart-note'>Could not load chart data for {escape(ticker)}.</div>",
+            f"<div class='signal-chart-note'>{escape(ticker)} 차트 데이터를 불러오지 못했어요.</div>",
             unsafe_allow_html=True,
         )
         return
@@ -552,15 +584,22 @@ def render_signal_chart_section(ticker: str, signal: str, company: str | None = 
         use_container_width=True,
         config={"displayModeBar": False, "responsive": True},
     )
+    st.markdown(
+        f"<a class='pd-open' href='?dashboard=us&amp;ticker={quote(ticker)}' target='_self'>"
+        f"미국 시장 페이지에서 {escape(ticker)} 자세히 보기 →</a>",
+        unsafe_allow_html=True,
+    )
 
-def chip_filter(label: str, options: list[str], key: str) -> str:
+def chip_filter(label: str, options: list[str], key: str, labels: dict | None = None) -> str:
+    """Pill buttons; `labels` maps each option to its text (with a count)."""
+    labels = labels or {}
     if key not in st.session_state or st.session_state[key] not in options:
         st.session_state[key] = options[0]
     st.markdown(f"<div class='filter-label'>{label}</div>", unsafe_allow_html=True)
     cols = st.columns([1] * len(options), gap="small")
     for idx, option in enumerate(options):
         with cols[idx]:
-            if st.button(option, key=f"{key}-{option}", type="primary" if st.session_state[key] == option else "secondary"):
+            if st.button(labels.get(option, option), key=f"{key}-{option}", type="primary" if st.session_state[key] == option else "secondary"):
                 st.session_state[key] = option
                 st.rerun()
     return st.session_state[key]
@@ -617,7 +656,7 @@ def main() -> None:
         if not df.empty and timestamp_col in df.columns:
             times = df[timestamp_col].dropna()
             if not times.empty:
-                scan_time = central_time_label(times.iloc[0])
+                scan_time = scan_time_label(times.iloc[0])
                 break
 
     total = len(df)
@@ -625,50 +664,72 @@ def main() -> None:
     stocks = int((df.get("asset_type") == "Stock").sum()) if not df.empty and "asset_type" in df.columns else 0
     etfs = int((df.get("asset_type") == "ETF").sum()) if not df.empty and "asset_type" in df.columns else 0
 
-    right = (f"<span class='tj-dot'></span><span>Selected <strong>{escape(str(selected_date))}</strong></span>"
-             f"<span>·</span><span>Total <strong>{total}</strong></span>")
-    st.markdown(ui.hero_html("Puddle Signal Scanner", scan_time, dot="open", right=right, self_key="puddle"),
-                unsafe_allow_html=True)
+    right = (f"<span class='tj-dot'></span><span>선택 <strong>{escape(ui.kdate(selected_date))}</strong></span>"
+             f"<span>·</span><span>신호 <strong>{total}</strong>개</span>")
+    st.markdown(ui.hero_html("Puddle Signal Scanner", f"{scan_time} 스캔" if scan_time != "--" else None,
+                             dot="open", right=right, self_key="puddle"), unsafe_allow_html=True)
 
-    st.markdown("<div class='tj-label'>Saved dates</div>", unsafe_allow_html=True)
-    render_calendar_component(current_month, selected_date, available_dates, month_options)
-
-    st.markdown("<div class='tj-stats' style='margin-top:1.4rem'>" +
-        f"<div class='tj-stat'><div class='label'>Signals</div><div class='value'>{total}</div><div class='note'>Puddle + RSI &amp; Puddle</div></div>" +
-        f"<div class='tj-stat'><div class='label'>RSI &amp; Puddle</div><div class='value tj-red'>{rsi_puddle}</div><div class='note'>stronger warning</div></div>" +
-        f"<div class='tj-stat'><div class='label'>Stocks</div><div class='value'>{stocks}</div><div class='note'>S&amp;P500 + NASDAQ100</div></div>" +
-        f"<div class='tj-stat'><div class='label'>ETFs</div><div class='value'>{etfs}</div><div class='note'>representative set</div></div>" +
-        "</div>", unsafe_allow_html=True)
-
+    # Summary first (left), calendar beside it (right); on a phone the summary
+    # comes first, so the day's result is visible without scrolling past a month.
+    month_files = tuple(
+        (row["date"].isoformat(), str(row["path"]), str(row.get("mtime_ns", "")))
+        for _, row in file_df.iterrows() if row["date"].replace(day=1) == current_month
+    )
+    counts = load_scan_counts(month_files)
+    counts[selected_date.isoformat()] = total
+    stage_counts = {}
     if not df.empty:
         df["_stage"] = df.get("puddle", pd.Series(dtype=str)).apply(parse_stage)
-        counts = df["_stage"].value_counts().to_dict()
-        st.markdown("<div class='panel-title'><span class='chev'>›</span><span>Puddle Overview</span></div>", unsafe_allow_html=True)
-        st.markdown("<div class='stage-strip'>" +
-            f"<div class='stage'><div class='name'>1st · MA20</div><div class='count'>{counts.get('1st',0)}</div><div class='desc'>short-term break</div></div>" +
-            f"<div class='stage'><div class='name'>2nd · MA60</div><div class='count'>{counts.get('2nd',0)}</div><div class='desc'>mid-term break</div></div>" +
-            f"<div class='stage'><div class='name'>3rd · MA120</div><div class='count'>{counts.get('3rd',0)}</div><div class='desc'>longer trend warning</div></div>" +
-            f"<div class='stage'><div class='name'>4th · MA200</div><div class='count'>{counts.get('4th',0)}</div><div class='desc'>MA200 + RSI</div></div>" +
-            "</div>", unsafe_allow_html=True)
+        stage_counts = df["_stage"].value_counts().to_dict()
+
+    summary_col, calendar_col = st.columns([1, 1.05], gap="large")
+    with summary_col:
+        st.markdown(f"<div class='tj-label'>{escape(ui.kdate(selected_date))} 스캔 결과</div>", unsafe_allow_html=True)
+        stats = [
+            ("전체 신호", total, "", "Puddle + RSI+Puddle"),
+            ("RSI+Puddle", rsi_puddle, "tj-red", "과매도까지 겹친 신호"),
+            ("주식", stocks, "", "S&amp;P500 + NASDAQ100"),
+            ("ETF", etfs, "", "대표 ETF"),
+        ]
+        stages = [("1차", "MA20", "1st"), ("2차", "MA60", "2nd"), ("3차", "MA120", "3rd"), ("4차", "MA200", "4th")]
+        st.markdown(
+            "<div class='pd-stats'>" + "".join(
+                f"<div class='tj-stat'><div class='label'>{label}</div><div class='value {cls}'>{value}</div><div class='note'>{note}</div></div>"
+                for label, value, cls, note in stats
+            ) + "</div><div class='stage-strip'>" + "".join(
+                f"<div class='stage'><div class='name'>{name} · {ma}</div><div class='count'>{stage_counts.get(key, 0)}</div></div>"
+                for name, ma, key in stages
+            ) + "</div>",
+            unsafe_allow_html=True,
+        )
+    with calendar_col:
+        st.markdown("<div class='tj-label'>스캔 날짜 · 숫자는 그날 신호 수</div>", unsafe_allow_html=True)
+        render_calendar_component(current_month, selected_date, available_dates, month_options, counts)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='tj-label'>Filter</div>", unsafe_allow_html=True)
+    st.markdown("<div class='tj-label'>필터</div>", unsafe_allow_html=True)
     filter_cols = st.columns([1.2, 1.8, 3.4])
+    has_puddle = df.get("puddle", pd.Series(dtype=str)).apply(has_text_signal) if not df.empty else pd.Series(dtype=bool)
     with filter_cols[0]:
-        type_filter = chip_filter("Type", ["Stock", "ETF"], "type_filter")
+        type_counts = df["asset_type"].value_counts().to_dict() if "asset_type" in df.columns else {}
+        type_filter = chip_filter("종류", ["Stock", "ETF"], "type_filter",
+                                  {"Stock": f"주식 {type_counts.get('Stock', 0)}", "ETF": f"ETF {type_counts.get('ETF', 0)}"})
+    in_type = df[df["asset_type"] == type_filter] if "asset_type" in df.columns else df
     with filter_cols[1]:
-        signal_filter = chip_filter("Signal", ["RSI & Puddle", "Puddle"], "signal_filter")
+        all_count = int(has_puddle.reindex(in_type.index, fill_value=False).sum()) if len(in_type) else 0
+        strong_count = int((in_type.get("signal") == "RSI & Puddle").sum()) if "signal" in in_type.columns else 0
+        signal_filter = chip_filter("신호", ["Puddle", "RSI & Puddle"], "signal_filter",
+                                    {"Puddle": f"전체 {all_count}", "RSI & Puddle": f"RSI+Puddle {strong_count}"})
 
-    filtered = df.copy()
-    if "asset_type" in filtered.columns:
-        filtered = filtered[filtered["asset_type"] == type_filter]
+    filtered = in_type.copy()
     if "signal" in filtered.columns:
         if signal_filter == "Puddle":
             filtered = filtered[filtered.get("puddle", pd.Series(dtype=str)).apply(has_text_signal)]
         else:
             filtered = filtered[filtered["signal"] == signal_filter]
 
-    st.markdown("<div class='panel-title'><span class='chev'>›</span><span>Signal List</span></div>", unsafe_allow_html=True)
+    st.markdown("<div class='panel-title'><span class='chev'>›</span><span>신호 목록</span>"
+                "<span class='tj-caption' style='margin:0 0 0 6px'>행을 누르면 차트가 열려요</span></div>", unsafe_allow_html=True)
     clicked_ticker, _ = parse_signal_table_value(st.session_state.get("signal_table_picker"))
     available_tickers = set(filtered.get("ticker", pd.Series(dtype=str)).astype(str).str.upper())
     selected_chart_ticker = clicked_ticker if clicked_ticker in available_tickers else None
@@ -680,7 +741,7 @@ def main() -> None:
             str(chart_row.get("signal", "")),
             str(chart_row.get("company_name", "")),
         )
-    st.download_button("Download selected CSV", data=filtered.drop(columns=["_stage"], errors="ignore").to_csv(index=False).encode("utf-8"), file_name=selected_row["filename"], mime="text/csv", use_container_width=True)
+    st.download_button("이 목록 CSV 다운로드", data=filtered.drop(columns=["_stage"], errors="ignore").to_csv(index=False).encode("utf-8"), file_name=selected_row["filename"], mime="text/csv", use_container_width=True)
     st.markdown(ui.footer_html(), unsafe_allow_html=True)
 
 if __name__ == "__main__":

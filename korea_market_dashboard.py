@@ -24,6 +24,7 @@ LISTING_PATH = Path(__file__).resolve().parent / "korea_stock_list.csv"
 ETF_LIST_PATH = Path(__file__).resolve().parent / "korea_etf_list.csv"
 
 SIGNAL_COLOR = {"green": ui.GREEN, "yellow": ui.YELLOW, "red": ui.RED}
+SEARCH_MODE = "search"  # third option of the 보기 picker
 # Validated pair on the chart surface (dataviz validator): blue + neutral grey
 # stay apart in normal and color-blind vision; the old blue/violet pair did not.
 CLOSE_COLOR, MA5_COLOR, MA10_COLOR = ui.TEXT, "#6EA8FF", "#7D828C"
@@ -246,7 +247,9 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
 
     _style(fig, 460)
     fig.update_layout(bargap=0, margin={"l": 10, "r": 12, "t": 36, "b": 24})
-    fig.update_yaxes(tickformat=",.0f", row=1, col=1)
+    # Log scale: a 10% move is the same height in 2021 and in 2026, so older
+    # crossings aren't flattened by the recent rally.
+    fig.update_yaxes(type="log", tickformat=",.0f", nticks=6, row=1, col=1)
     fig.update_yaxes(visible=False, range=[0, 1], showgrid=False, row=2, col=1)
     fig.update_xaxes(showgrid=False, row=2, col=1)
     fig.update_xaxes(tickformat="%y.%m", range=[x.iloc[0] - pd.Timedelta(days=35), seg_end + pd.Timedelta(days=5)])
@@ -262,7 +265,8 @@ def signal_key_html() -> str:
     line = lambda sig: (f"<span style='display:inline-block;width:14px;height:3px;border-radius:2px;"
                         f"background:{SIGNAL_COLOR[sig]};margin:0 6px 0 0;vertical-align:3px'></span>")
     return (f"<div class='tj-caption' style='margin-top:-.2rem'>{line('green')}{line('red')}오른쪽 끝 짧은 선 = 이번 달 말 초록불·빨간불 기준 가격 (위 숫자와 같아요)<br>"
-            f"아래 띠 = 매달 말 확정된 신호, 같은 신호는 이어서 표시{items}<span style='margin-left:10px'>· 흐린 끝 = 이번 달 진행 중</span></div>")
+            f"아래 띠 = 매달 말 확정된 신호, 같은 신호는 이어서 표시{items}<span style='margin-left:10px'>· 흐린 끝 = 이번 달 진행 중</span><br>"
+            f"세로축은 로그 눈금이라 같은 % 움직임이 같은 높이로 보여요.</div>")
 
 
 def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
@@ -372,7 +376,7 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
         </div>
     """)
     items = [
-        ("최근 종가", fmt_num(status.last_close, d), status.last_date.strftime("%Y-%m-%d"), ""),
+        ("최근 종가", fmt_num(status.last_close, d), f"{ui.kdate(status.last_date)} 종가", ""),
         ("이달 말 초록불 기준", f"≥ {fmt_num(status.green_above, d)}", f"최근 종가 대비 {fmt_pct((status.green_above / status.last_close - 1) * 100)}", "tj-green"),
         ("이달 말 빨간불 기준", f"< {fmt_num(status.red_below, d)}", f"최근 종가 대비 {fmt_pct((status.red_below / status.last_close - 1) * 100)}", "tj-red"),
         (f"과열(이격도 {engine.DEV_THRESHOLD:.0f}) 가격", fmt_num(trigger, d), f"오늘 이 가격 이상이면 비중 한 단계↓ ({fmt_pct(trigger_move)})", ""),
@@ -383,15 +387,25 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
     ) + "</div>")
 
     live = f"{engine.SIGNAL_EMOJI[status.live_signal]} {engine.SIGNAL_LABEL[status.live_signal]}"
-    base_note = (f"지난달 말({month_label(status.confirmed_month)}) 종가 {fmt_num(status.confirmed_close, d)}가 "
-                 f"5개월선 {fmt_num(status.ma5, d)} / 10개월선 {fmt_num(status.ma10, d)}과 비교돼 "
-                 f"<b>{engine.SIGNAL_LABEL[status.signal]}</b>(기본 비중 {weight_text(status.base_weight)})입니다.")
+    sig = status.signal
+    base_line = (f"{month_label(status.confirmed_month)} 월말 {fmt_num(status.confirmed_close, d)} · "
+                 f"5개월선 {fmt_num(status.ma5, d)} · 10개월선 {fmt_num(status.ma10, d)} → "
+                 f"<b>{engine.SIGNAL_EMOJI[sig]} {engine.SIGNAL_LABEL[sig]} (주식 {weight_text(status.base_weight)})</b>")
+    live_line = (f"지금 수준으로 끝나면 {live} · {which}까지 {fmt_pct(move)}{urgency}<br>"
+                 f"<span style='color:rgba(255,255,255,.52)'>초록불 {fmt_num(status.green_above, d)} 이상 · "
+                 f"빨간불 {fmt_num(status.red_below, d)} 아래</span>")
     if status.overlay_active:
-        overlay_note = f" 지금 60일 이격도가 {fmt_num(status.disparity, 1)}로 과열이라 한 단계 낮춘 <b>{weight_text(status.final_weight)}</b>가 권장 비중이에요."
+        heat_line = (f"이격도 {fmt_num(status.disparity, 1)} — 🔥 과열({engine.DEV_THRESHOLD:.0f}↑)이라 한 단계 낮춘 "
+                     f"<b>주식 {weight_text(status.final_weight)}</b>가 권장 비중")
     else:
-        overlay_note = f" 60일 이격도 {fmt_num(status.disparity, 1)}는 과열 기준({engine.DEV_THRESHOLD:.0f}) 아래라 비중을 더 줄이지 않아요."
-    live_note = f" 지금 수준으로 이달이 끝나면 {live}이고, {which}로 바뀌려면 {fmt_pct(move)} 움직여야 해요{urgency}."
-    md(f"<div class='kr-sentence'>{base_note}{overlay_note}{live_note}</div>")
+        heat_line = f"이격도 {fmt_num(status.disparity, 1)} — 과열 기준 {engine.DEV_THRESHOLD:.0f} 아래, 비중 그대로"
+    md(f"""
+        <div class="tj-lines">
+          <div class="k">지난달 판정</div><div class="v">{base_line}</div>
+          <div class="k">이번 달 전망</div><div class="v">{live_line}</div>
+          <div class="k">과열 체크</div><div class="v">{heat_line}</div>
+        </div>
+    """)
 
 
 def render_backtest_table(backtests: dict) -> None:
@@ -545,7 +559,7 @@ def main() -> None:
     st.markdown(PAGE_CSS, unsafe_allow_html=True)
     st.markdown(ui.nav_html("korea"), unsafe_allow_html=True)
     hero_slot = st.empty()
-    hero_slot.markdown(ui.hero_html("Korea Market Signals", "loading", self_key="korea",
+    hero_slot.markdown(ui.hero_html("Korea Market Signals", "불러오는 중", self_key="korea",
                                     extra_meta="코스피 · 코스닥 주식/현금 비중"), unsafe_allow_html=True)
 
     dailies, statuses, monthly_by_key, errors = {}, {}, {}, []
@@ -564,7 +578,7 @@ def main() -> None:
     updated = max((s.last_date for s in statuses.values()), default=None)
     hero_slot.markdown(ui.hero_html(
         "Korea Market Signals",
-        f"{updated:%Y-%m-%d} 종가" if updated is not None else "불러오기 실패",
+        f"{ui.kdate(updated)} 종가" if updated is not None else "불러오기 실패",
         dot="live" if statuses else "closed", self_key="korea",
         extra_meta="코스피 · 코스닥 주식/현금 비중",
     ), unsafe_allow_html=True)
@@ -577,24 +591,33 @@ def main() -> None:
     render_banners(list(statuses.values()), monthly_by_key, today)
     md("<div class='kr-panels'>" + "".join(index_panel(s) for s in statuses.values()) + "</div>")
 
-    md("<div class='tj-label'>종목 · ETF 검색</div>")
-    query = st.text_input(
-        "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
-        placeholder="종목·ETF 이름 또는 코드 · 예: 삼성전자, 005930, KODEX 레버리지, 미국나스닥100",
+    options = [*statuses.keys(), SEARCH_MODE]
+    selected = st.radio(
+        "보기", options, horizontal=True, key="kr_index",
+        format_func=lambda k: "🔍 종목·ETF 검색" if k == SEARCH_MODE else f"{engine.INDEXES[k]['label']} {k}",
     )
-    target = resolve_search(query, today, day_key) if query.strip() else None
-
-    if target is not None:
+    target = None
+    if selected == SEARCH_MODE:
+        query = st.text_input(
+            "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
+            placeholder="종목·ETF 이름 또는 코드 · 예: 삼성전자, 005930, KODEX 레버리지, 미국나스닥100",
+        )
+        if not query.strip():
+            md("<div class='tj-caption'>코스피·코스닥 종목이나 국내 ETF를 이름 일부나 6자리 코드로 찾아보세요. 같은 5개월선 + 이격도 규칙을 적용해 보여줘요.</div>")
+            render_rule()
+            st.markdown(ui.footer_html(), unsafe_allow_html=True)
+            return
+        target = resolve_search(query, today, day_key)
+        if target is None:
+            render_rule()
+            st.markdown(ui.footer_html(), unsafe_allow_html=True)
+            return
         md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market)) + "</div>")
         md("<div class='tj-note'>ℹ️ 이 규칙은 코스피·코스닥 <b>지수</b>로 검증했어요. 지수를 따라가는 ETF는 비슷하게 움직이지만, "
-           "개별 종목이나 레버리지·테마 ETF는 결과가 크게 다를 수 있으니 아래 <b>백테스트</b> 탭에서 꼭 같이 보세요. "
-           "검색창을 비우면 지수로 돌아가요.</div>")
+           "개별 종목이나 레버리지·테마 ETF는 결과가 크게 다를 수 있으니 아래 <b>백테스트</b> 탭에서 꼭 같이 보세요.</div>")
         kind = "ETF" if target.market == "ETF" else f"{market_text(target.market)} 종목"
         eyebrow = f"이번 달 체크 · {kind}"
     else:
-        options = list(statuses.keys())
-        selected = st.radio("지수", options, horizontal=True, key="kr_index",
-                            format_func=lambda k: f"{engine.INDEXES[k]['label']} {k}")
         cfg = engine.INDEXES[selected]
         target = Target(statuses[selected], dailies[selected], monthly_by_key[selected], cfg["symbol"], cfg["start_year"], selected)
         eyebrow = "이번 달 체크 · 지수"
