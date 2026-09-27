@@ -130,6 +130,9 @@ div[data-testid="stRadio"] div[role="radiogroup"] label > div:first-child {{ dis
 /* Newer Streamlit wraps the input in a hidden <span>, so the dot is one level deeper. */
 div[data-testid="stRadio"] label[data-testid="stRadioOption"] > div > div:first-child:not([data-testid]) {{ display: none !important; }}
 div[data-testid="stRadio"] label[data-testid="stRadioOption"] > div {{ gap: 0 !important; }}
+/* Pill text never breaks inside a pill (it went one letter per line on phones). */
+div[data-testid="stRadio"] div[role="radiogroup"] > div {{ flex-shrink: 0; }}
+div[data-testid="stRadio"] label[data-testid="stRadioOption"] p {{ white-space: nowrap !important; }}
 div[data-testid="stRadio"] div[role="radiogroup"] label {{
     display: inline-flex !important; align-items: center !important; justify-content: center !important;
     min-height: 35px !important; height: 35px !important; padding: 0 12px !important; margin: 0 !important;
@@ -253,6 +256,11 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 .tj-verdict .lead {{ color:{MUTED}; font-size:12px; font-weight:560; letter-spacing:.04em; margin-right:12px; }}
 .tj-verdict .item + .item::before {{ content:"·"; margin:0 9px; color:rgba(255,255,255,0.24); }}
 .tj-verdict .item.em {{ color:{TEXT}; font-weight:600; }}
+@media (max-width:640px) {{
+    .tj-verdict {{ flex-direction:column; align-items:flex-start; gap:4px; }}
+    .tj-verdict .lead {{ margin-bottom:2px; }}
+    .tj-verdict .item + .item::before {{ content:none; }}
+}}
 
 /* label / value lines (short explanations) */
 .tj-lines {{ display:grid; grid-template-columns:max-content minmax(0,1fr); column-gap:20px; row-gap:9px; margin:1.3rem 0 1.6rem; font-size:.9rem; line-height:1.5; }}
