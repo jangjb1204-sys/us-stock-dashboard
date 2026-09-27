@@ -122,6 +122,9 @@ div[data-testid="stRadio"] div[role="radiogroup"] {{
     width: fit-content; max-width: 100%; padding: 0 !important; background: transparent !important; border: 0;
 }}
 div[data-testid="stRadio"] div[role="radiogroup"] label > div:first-child {{ display: none !important; }}
+/* Newer Streamlit wraps the input in a hidden <span>, so the dot is one level deeper. */
+div[data-testid="stRadio"] label[data-testid="stRadioOption"] > div > div:first-child:not([data-testid]) {{ display: none !important; }}
+div[data-testid="stRadio"] label[data-testid="stRadioOption"] > div {{ gap: 0 !important; }}
 div[data-testid="stRadio"] div[role="radiogroup"] label {{
     display: inline-flex !important; align-items: center !important; justify-content: center !important;
     min-height: 35px !important; height: 35px !important; padding: 0 12px !important; margin: 0 !important;
@@ -274,6 +277,7 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
     margin: 3.2rem 0 0.2rem; padding-top: 1.2rem; border-top: 1px solid rgba(255,255,255,0.045);
     color: rgba(255,255,255,0.34); font-size: 0.78rem; font-weight: 500;
 }}
+.tj-footer .sep {{ margin: 0 8px; color: rgba(255,255,255,0.22); }}
 .tj-footer a {{ color: rgba(255,255,255,0.48) !important; text-decoration: none !important; }}
 .tj-footer a:hover {{ color: rgba(255,255,255,0.72) !important; }}
 
@@ -322,8 +326,12 @@ def viewers_html(count: int) -> str:
     return f'<span class="tj-dot"></span><span>지금 보는 중 <strong>{count:,}</strong></span>'
 
 
+DISCLAIMER = "과거 데이터로 규칙을 계산한 참고 자료이며 투자 권유가 아닙니다."
+
+
 def footer_html() -> str:
-    return f'<div class="tj-footer">by <a href="{THREADS_URL}" target="_blank" rel="noopener noreferrer">30s_tech_j</a></div>'
+    return (f'<div class="tj-footer">{DISCLAIMER}<span class="sep">·</span>'
+            f'by <a href="{THREADS_URL}" target="_blank" rel="noopener noreferrer">30s_tech_j</a></div>')
 
 
 def header(st, active: str, title: str, **hero_kwargs) -> None:

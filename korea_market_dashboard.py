@@ -149,6 +149,21 @@ def is_last_weekday_of_month(day: date) -> bool:
     return nxt.month != day.month
 
 
+def closed_weekdays_text(last_date, today: date) -> str:
+    """Weekdays between the last close and today with no data — market
+    holidays (e.g. Chuseok) — as '9/24~9/25 휴장', or ''."""
+    last = pd.Timestamp(last_date).date()
+    gap, cur = [], last + timedelta(days=1)
+    while cur < today:
+        if cur.weekday() < 5:
+            gap.append(cur)
+        cur += timedelta(days=1)
+    if not gap:
+        return ""
+    span = f"{gap[0].month}/{gap[0].day}" + (f"~{gap[-1].month}/{gap[-1].day}" if len(gap) > 1 else "")
+    return f"{span} 휴장"
+
+
 def weekdays_left_in_month(day: date) -> int:
     count, cur = 0, day
     while cur.month == day.month:
@@ -550,6 +565,18 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
     return Target(status, found["daily"], monthly, found["symbol"], engine.STOCK_START_YEAR, pick.get("market") or None)
 
 
+def sync_query_param(query: str) -> None:
+    """Keep ?q= in the address bar equal to the search, so the URL can be shared."""
+    current = st.query_params.get("q") or ""
+    if query == current:
+        return
+    if query:
+        st.query_params["q"] = query
+        st.session_state["_kr_q_seen"] = query
+    elif "q" in st.query_params:
+        del st.query_params["q"]
+
+
 # ── Page ───────────────────────────────────────────────────────────────────────
 def main() -> None:
     today = engine.kst_today()
@@ -578,7 +605,8 @@ def main() -> None:
     updated = max((s.last_date for s in statuses.values()), default=None)
     hero_slot.markdown(ui.hero_html(
         "Korea Market Signals",
-        f"{ui.kdate(updated)} 종가" if updated is not None else "불러오기 실패",
+        (f"{ui.kdate(updated)} 종가" + (f" · {closed}" if (closed := closed_weekdays_text(updated, today)) else ""))
+        if updated is not None else "불러오기 실패",
         dot="live" if statuses else "closed", self_key="korea",
         extra_meta="코스피 · 코스닥 주식/현금 비중",
     ), unsafe_allow_html=True)
@@ -592,6 +620,11 @@ def main() -> None:
     md("<div class='kr-panels'>" + "".join(index_panel(s) for s in statuses.values()) + "</div>")
 
     options = [*statuses.keys(), SEARCH_MODE]
+    shared_q = st.query_params.get("q")
+    if shared_q and st.session_state.get("_kr_q_seen") != shared_q:
+        st.session_state["_kr_q_seen"] = shared_q
+        st.session_state["kr_index"] = SEARCH_MODE
+        st.session_state["kr_query"] = str(shared_q)[:40]
     selected = st.radio(
         "보기", options, horizontal=True, key="kr_index",
         format_func=lambda k: "🔍 종목·ETF 검색" if k == SEARCH_MODE else f"{engine.INDEXES[k]['label']} {k}",
@@ -602,6 +635,7 @@ def main() -> None:
             "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
             placeholder="종목·ETF 이름 또는 코드 · 예: 삼성전자, 005930, KODEX 레버리지, 미국나스닥100",
         )
+        sync_query_param(query.strip())
         if not query.strip():
             md("<div class='tj-caption'>코스피·코스닥 종목이나 국내 ETF를 이름 일부나 6자리 코드로 찾아보세요. 같은 5개월선 + 이격도 규칙을 적용해 보여줘요.</div>")
             render_rule()
@@ -618,6 +652,7 @@ def main() -> None:
         kind = "ETF" if target.market == "ETF" else f"{market_text(target.market)} 종목"
         eyebrow = f"이번 달 체크 · {kind}"
     else:
+        sync_query_param("")
         cfg = engine.INDEXES[selected]
         target = Target(statuses[selected], dailies[selected], monthly_by_key[selected], cfg["symbol"], cfg["start_year"], selected)
         eyebrow = "이번 달 체크 · 지수"
