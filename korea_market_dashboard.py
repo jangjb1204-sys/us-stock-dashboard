@@ -21,6 +21,7 @@ import ui_theme as ui
 
 CACHE_TTL_SECONDS = 60 * 60 * 3
 LISTING_PATH = Path(__file__).resolve().parent / "korea_stock_list.csv"
+ETF_LIST_PATH = Path(__file__).resolve().parent / "korea_etf_list.csv"
 
 SIGNAL_COLOR = {"green": ui.GREEN, "yellow": ui.YELLOW, "red": ui.RED}
 MA5_COLOR, MA10_COLOR = "#5aa6ff", "#b58cff"
@@ -58,12 +59,19 @@ def load_daily(key: str, day_key: str) -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
 def load_listing(day_key: str) -> tuple[pd.DataFrame, bool]:
-    """KRX's list of KOSPI/KOSDAQ companies; (listing, is_live). Falls back to
-    the copy shipped in the repo when KIND can't be reached."""
+    """Every KOSPI/KOSDAQ company (KRX KIND) and every Korean ETF (Naver), as
+    (listing, both_live). Each half falls back to the copy shipped in the repo
+    when its source can't be reached."""
+    live = True
     try:
-        return engine.fetch_krx_listing(), True
+        companies = engine.fetch_krx_listing()
     except Exception:
-        return engine.load_listing_csv(LISTING_PATH), False
+        companies, live = engine.load_listing_csv(LISTING_PATH), False
+    try:
+        etfs = engine.fetch_etf_listing()
+    except Exception:
+        etfs, live = engine.load_listing_csv(ETF_LIST_PATH), False
+    return pd.concat([companies, etfs], ignore_index=True).drop_duplicates("code"), live
 
 
 @st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
@@ -398,8 +406,8 @@ def render_rule() -> None:
             이격도는 130·125보다 120일 때 수익률과 낙폭이 함께 좋아졌어요(코스닥은 역대 130을 한 번도 넘지 않음).
             RSI 70을 더하면 너무 자주 발동해 코스피 수익률이 크게 깎여서 뺐어요.<br><br>
             <b>개별 종목</b> 검색한 종목에도 같은 계산을 그대로 적용해요. 규칙 자체는 지수로 검증했으니 종목마다 백테스트 결과를 같이 보세요.
-            종목은 KRX(KIND) 상장법인 목록으로, ETF는 Yahoo 종목 검색으로 찾아요(ETF는 영문 이름으로 올라가 있어서 "레버리지"→Leverage처럼 흔한 단어는 바꿔서 찾아요).
-            이름으로 안 나오면 6자리 코드로 검색해 보세요.<br><br>
+            종목은 KRX(KIND) 상장법인 목록, ETF는 네이버 금융 ETF 목록의 한글 이름으로 찾아요(둘 다 매일 새로 받음).
+            띄어 쓴 단어는 각각 찾아서 "KODEX 나스닥"처럼 일부만 써도 돼요. 이름으로 안 나오면 6자리 코드로 검색해 보세요.<br><br>
             <b>한계</b> 한 달 안에 몰아치는 급락은 월간 신호로 피할 수 없고, 헛신호도 있어요.
             과거 데이터로 만든 규칙을 기계적으로 계산한 결과이며 투자 권유가 아닙니다.
             </div>
@@ -438,16 +446,19 @@ def resolve_search(query: str, today: date, day_key: str) -> Target | None:
 
     if hits.empty:
         if not engine.CODE_PATTERN.match(code):
-            hint = "" if live else " (KRX 목록을 지금 못 받아 저장된 목록으로 찾았어요 — 최근 상장 종목은 종목코드로 검색해 주세요.)"
-            st.info(f"'{q}'에 맞는 코스피·코스닥 종목이나 ETF가 없어요. ETF는 영문 이름(예: KODEX 200)이나 6자리 코드(예: 069500)로도 찾을 수 있어요.{hint}")
+            hint = "" if live else " (종목 목록을 지금 새로 받지 못해 저장된 목록으로 찾았어요 — 최근 상장한 종목은 6자리 코드로 검색해 주세요.)"
+            st.info(f"'{q}'에 맞는 코스피·코스닥 종목이나 ETF가 없어요. 이름 일부(예: 나스닥100, 코스닥150)나 6자리 코드(예: 069500)로도 찾아보세요.{hint}")
             return None
         pick = {"code": code, "name": "", "market": ""}
     elif len(hits) == 1:
         pick = hits.iloc[0].to_dict()
     else:
+        # An exact name/code match opens right away; the rest stay in the list.
+        wanted = "".join(engine.query_tokens(q))
+        exact_first = (engine.normalize_text(hits.at[0, "name"]) == wanted) or (hits.at[0, "code"].lower() == wanted)
         label = f"검색 결과 {len(hits)}개" + (" · 더 있으면 이름을 더 입력해 주세요" if len(hits) >= 30 else "")
         idx = st.selectbox(
-            label, list(hits.index), index=None, placeholder="종목을 골라 주세요",
+            label, list(hits.index), index=0 if exact_first else None, placeholder="종목을 골라 주세요",
             format_func=lambda i: f"{hits.at[i, 'name']} · {hits.at[i, 'code']} · {market_text(hits.at[i, 'market'])}",
             key=f"kr_pick_{engine.normalize_text(q)}",
         )
@@ -518,7 +529,7 @@ def main() -> None:
     md("<div class='tj-label'>종목 · ETF 검색</div>")
     query = st.text_input(
         "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
-        placeholder="종목·ETF 이름 또는 코드 · 예: 삼성전자, 005930, KODEX 200, TIGER 미국S&P500",
+        placeholder="종목·ETF 이름 또는 코드 · 예: 삼성전자, 005930, KODEX 레버리지, 미국나스닥100",
     )
     target = resolve_search(query, today, day_key) if query.strip() else None
 

@@ -203,26 +203,76 @@ def load_listing_csv(path) -> pd.DataFrame:
     return frame[LISTING_COLUMNS].drop_duplicates("code").reset_index(drop=True)
 
 
+NAVER_ETF_URL = "https://finance.naver.com/api/sise/etfItemList.nhn"
+
+
+def parse_naver_etf_list(payload: dict) -> pd.DataFrame:
+    """Naver's ETF list: {"result": {"etfItemList": [{"itemcode", "itemname", ...}]}}."""
+    items = ((payload or {}).get("result") or {}).get("etfItemList") or []
+    rows = []
+    for item in items:
+        code = str(item.get("itemcode") or "").strip().upper()
+        name = " ".join(str(item.get("itemname") or "").split())
+        if CODE_PATTERN.match(code) and name:
+            rows.append({"code": code, "name": name, "market": "ETF", "industry": "ETF", "listed": ""})
+    return pd.DataFrame(rows, columns=LISTING_COLUMNS).drop_duplicates("code").reset_index(drop=True)
+
+
+def fetch_etf_listing() -> pd.DataFrame:
+    """Every Korean-listed ETF with its Korean name, from Naver Finance."""
+    response = requests.get(NAVER_ETF_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+    response.raise_for_status()
+    frame = parse_naver_etf_list(response.json())
+    if len(frame) < 100:
+        raise ValueError(f"Naver returned only {len(frame)} ETFs")
+    return frame
+
+
 def normalize_text(text: str) -> str:
     return "".join(str(text).split()).lower()
 
 
+# Hangul spellings of ETF brands -> the Latin brand used in listed names.
+BRAND_ALIASES = {
+    "코덱스": "kodex", "타이거": "tiger", "에이스": "ace", "라이즈": "rise", "하나로": "hanaro",
+    "키움": "kiwoom", "플러스": "plus", "아리랑": "arirang", "케이비스타": "kbstar", "솔": "sol", "쏠": "sol",
+}
+
+
+def query_tokens(query: str) -> list[str]:
+    tokens = []
+    for raw in str(query).split():
+        tok = raw.lower()
+        tok = BRAND_ALIASES.get(tok, tok)
+        tokens.append(tok)
+    return tokens
+
+
 def search_listing(listing: pd.DataFrame, query: str, limit: int = 30) -> pd.DataFrame:
-    """Code match first, then names: exact, starts-with, contains (shorter names first)."""
-    q = normalize_text(query)
+    """Code match first, then names: exact, starts-with, contains, then every
+    word contained ("KODEX 나스닥" finds "KODEX 미국나스닥100"). Shorter names
+    first within a rank; companies before ETFs on ties."""
+    tokens = query_tokens(query)
+    q = "".join(tokens)
     if not q or listing.empty:
         return listing.iloc[0:0]
     codes = listing["code"].str.lower()
     names = listing["name"].map(normalize_text)
     rank = pd.Series(99, index=listing.index)
+    if len(tokens) > 1:
+        all_words = pd.Series(True, index=listing.index)
+        for tok in tokens:
+            all_words &= names.str.contains(tok, regex=False)
+        rank[all_words] = 4
     rank[names.str.contains(q, regex=False)] = 3
     rank[names.str.startswith(q)] = 2
     rank[names == q] = 1
     rank[codes.str.startswith(q)] = rank[codes.str.startswith(q)].clip(upper=2)
     rank[codes == q] = 0
-    hits = listing.assign(_rank=rank, _len=names.str.len())
-    hits = hits[hits["_rank"] < 99].sort_values(["_rank", "_len", "name"])
-    return hits.drop(columns=["_rank", "_len"]).head(limit)
+    is_etf = (listing["market"] == "ETF").astype(int)
+    hits = listing.assign(_rank=rank, _len=names.str.len(), _etf=is_etf)
+    hits = hits[hits["_rank"] < 99].sort_values(["_rank", "_len", "_etf", "name"])
+    return hits.drop(columns=["_rank", "_len", "_etf"]).head(limit).reset_index(drop=True)
 
 
 # ── ETF search (Yahoo) ─────────────────────────────────────────────────────────
@@ -254,10 +304,10 @@ def etf_search_query(query: str) -> str:
     return " ".join(q.split())
 
 
-def should_search_etfs(query: str, krx_hits: pd.DataFrame) -> bool:
-    """Latin letters (ETF brands are KODEX, TIGER, ACE, ...), a known ETF word,
-    or nothing found among companies."""
-    return bool(ETF_BRAND_PATTERN.search(query)) or krx_hits.empty or any(t in query for t in ETF_TERMS)
+def should_search_etfs(query: str, hits: pd.DataFrame) -> bool:
+    """Only when the full list (companies + ETFs) found nothing — e.g. an ETF
+    listed after the list was last refreshed."""
+    return hits.empty and bool(etf_search_query(query))
 
 
 def parse_yahoo_etf_quotes(payload: dict) -> pd.DataFrame:
