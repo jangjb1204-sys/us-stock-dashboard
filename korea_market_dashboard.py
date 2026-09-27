@@ -68,6 +68,9 @@ div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(
 .kr-ticks {{ position:relative; height:1.4rem; margin-top:.35rem; font-variant-numeric:tabular-nums; font-size:.8rem; color:rgba(255,255,255,.62); }}
 .kr-ticks span {{ position:absolute; transform:translateX(-50%); white-space:nowrap; }}
 .kr-zone-foot {{ margin-top:.35rem; color:rgba(255,255,255,.5); font-size:.8rem; }}
+.kr-bt {{ margin:-0.9rem 0 1.9rem; color:rgba(255,255,255,.46); font-size:.8rem; font-variant-numeric:tabular-nums; }}
+.kr-bt b {{ color:{ui.TEXT}; font-weight:600; }}
+.kr-bt .sep {{ margin:0 8px; color:rgba(255,255,255,.22); }}
 .kr-zone-foot b {{ color:{ui.TEXT}; font-weight:600; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
@@ -130,7 +133,6 @@ def load_backtests(symbol: str, start_year: int, day_key: str) -> dict:
     daily = load_history(symbol, start_year, day_key)[0]
     return {
         "overlay": engine.run_backtest(daily, engine.DEV_THRESHOLD),
-        "base": engine.run_backtest(daily, None),
     }
 
 
@@ -335,30 +337,6 @@ def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) 
     return fig
 
 
-def build_backtest_chart(backtests: dict) -> go.Figure:
-    over = backtests["overlay"]["curve"]
-    base = backtests["base"]["curve"]
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.72, 0.28], vertical_spacing=0.05)
-    fig.add_trace(go.Scatter(x=over["Date"], y=over["Hold"], name="그냥 보유", mode="lines",
-                             line={"color": "rgba(245,245,247,0.45)", "width": 1.4},
-                             hovertemplate="그냥 보유 %{y:.2f}배<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=base["Date"], y=base["System"], name="5개월선만", mode="lines",
-                             line={"color": MA5_COLOR, "width": 1.5},
-                             hovertemplate="5개월선만 %{y:.2f}배<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=over["Date"], y=over["System"], name=f"5개월선 + 이격도{engine.DEV_THRESHOLD:.0f}",
-                             mode="lines", line={"color": ui.TEXT, "width": 2},
-                             hovertemplate="5개월선+이격도 %{y:.2f}배<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=over["Date"], y=over["Weight"] * 100, name="주식 비중(%)", mode="lines",
-                             line={"color": "rgba(242,245,248,0.7)", "width": 1, "shape": "hv"}, fill="tozeroy",
-                             fillcolor="rgba(242,245,248,0.10)", showlegend=False,
-                             hovertemplate="주식 비중 %{y:.0f}%<extra></extra>"), row=2, col=1)
-    _style(fig, 520)
-    fig.update_yaxes(type="log", row=1, col=1)
-    fig.update_yaxes(range=[-5, 105], tickvals=[0, 50, 100], ticksuffix="%", row=2, col=1)
-    fig.update_xaxes(tickformat="%Y")
-    return fig
-
-
 # ── Sections ───────────────────────────────────────────────────────────────────
 def md(markup: str) -> None:
     st.markdown(ui.html(markup), unsafe_allow_html=True)
@@ -372,7 +350,7 @@ def index_panel(status: engine.IndexStatus, tag: str | None = None, selected: bo
     name = f"{status.label} {status.key}" + (f" · {tag}" if tag else "")
     return f"""
       <div class="kr-panel{' sel' if selected else ''}">
-        <div class="top"><span>{escape(name)}</span><span>{month_label(status.confirmed_month)} 확정</span></div>
+        <div class="top"><span>{escape(name)}</span><span>{month_label(status.confirmed_month + 1)} 비중 · {month_label(status.confirmed_month)} 말 확정</span></div>
         <div class="weight">{weight_text(status.final_weight)}<small>주식 · 현금 {weight_text(cash)}</small></div>
         <div class="meta">{meta}</div>
       </div>
@@ -434,7 +412,7 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
                 f"주식 {weight_text(status.final_weight)}로 한 단계 낮춤</div>")
     md(f"""
         <div class="kr-zone">
-          <div class="kr-zone-head"><span>이달 말 비중</span>
+          <div class="kr-zone-head"><span>{month_label(status.last_date.to_period("M") + 1)} 비중 예상 · 이달 말 종가 기준</span>
             <span>현재 <b>{fmt_num(close, d)}</b> · {ui.kdate(status.last_date)}</span></div>
           <div class="kr-bar">
             <div class="seg{' on' if live == 'red' else ''}">{w('red')}</div>
@@ -452,29 +430,14 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
     """)
 
 
-def render_backtest_table(backtests: dict) -> None:
-    over, base = backtests["overlay"], backtests["base"]
-    rows = [
-        ("그냥 보유", over["hold"], "-", False),
-        ("5개월선만", base["system"], f"{base['trades']}회", False),
-        (f"5개월선 + 이격도{engine.DEV_THRESHOLD:.0f}", over["system"], f"{over['trades']}회", True),
-    ]
-    body = "".join(
-        f"<tr class='{'best' if best else ''}'><td>{escape(name)}</td>"
-        f"<td class='num'>{fmt_pct(stats['cagr'] * 100, 2, sign=False)}</td>"
-        f"<td class='num'>{fmt_pct(stats['mdd'] * 100, 1, sign=False)}</td>"
-        f"<td class='num'>{stats['total'] + 1:,.2f}배</td><td class='num'>{trades}</td></tr>"
-        for name, stats, trades, best in rows
-    )
-    md(
-        f"""
-        <div class="tj-table-wrap"><table class="tj-table">
-          <thead><tr><th>방식</th><th>연 수익률</th><th>최대 낙폭</th><th>누적</th><th>비중 변경</th></tr></thead>
-          <tbody>{body}</tbody>
-        </table></div>
-        <div class="tj-caption">{over['start']:%Y.%m} ~ {over['end']:%Y.%m} · 배당 제외 · 매매비용 0.1% · 과거 성과는 미래를 보장하지 않음</div>
-        """
-    )
+def backtest_line(backtests: dict) -> str:
+    """Past results of the rule vs just holding, for whatever is on screen."""
+    over = backtests["overlay"]
+    rule, hold = over["system"], over["hold"]
+    pct = lambda v: fmt_pct(v * 100, 1, sign=False)
+    return (f"<div class='kr-bt'>과거 성과 {over['start']:%Y}~"
+            f"<span class='sep'>·</span>이 규칙 연 <b>{pct(rule['cagr'])}</b> · 최대 낙폭 {pct(rule['mdd'])}"
+            f"<span class='sep'>|</span>그냥 보유 연 {pct(hold['cagr'])} · 최대 낙폭 {pct(hold['mdd'])}</div>")
 
 
 def render_rule() -> None:
@@ -490,7 +453,7 @@ def render_rule() -> None:
             『돈을 불러오는 TIP』의 비중 규칙(이격도 130, 5개월선, 주봉 RSI 70)을 코스피 2004~·코스닥 2001~ 일봉으로 검증.
             5개월선이 뼈대, 이격도는 120에서 수익률·낙폭 모두 개선(코스닥은 130 도달 이력 없음). RSI 70은 과다 발동으로 제외.<br><br>
             <b>개별 종목</b><br>
-            같은 계산 적용. 규칙은 지수 기준 검증이므로 백테스트 함께 확인. 종목은 KRX(KIND), ETF는 네이버 금융 목록(매일 갱신).<br><br>
+            같은 계산 적용. 규칙은 지수 기준 검증이므로 과거 성과 함께 확인. 종목은 KRX(KIND), ETF는 네이버 금융 목록(매일 갱신).<br><br>
             <b>한계</b><br>
             월중 급락은 피할 수 없음 · 헛신호 있음 · 투자 권유 아님.
             </div>
@@ -653,7 +616,7 @@ def main() -> None:
             st.markdown(ui.footer_html(), unsafe_allow_html=True)
             return
         md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market), selected=True) + "</div>")
-        md("<div class='tj-caption' style='margin:.2rem 0 0'>규칙은 지수 기준으로 검증 · 개별 종목은 백테스트 참고</div>")
+        md("<div class='tj-caption' style='margin:.2rem 0 0'>규칙은 지수 기준으로 검증 · 아래 과거 성과 참고</div>")
         eyebrow = ""
     else:
         selected = st.session_state["kr_index"]
@@ -665,7 +628,14 @@ def main() -> None:
     digits = price_digits(status.key)
     render_detail(status, today, eyebrow)
 
-    tab_month, tab_disp, tab_bt = st.tabs(["월봉 신호", "이격도", "백테스트"])
+    try:
+        backtests = load_backtests(target.symbol, target.start_year, day_key)
+    except Exception:
+        backtests = None
+    if backtests:
+        md(backtest_line(backtests))
+
+    tab_month, tab_disp = st.tabs(["월봉 신호", "이격도"])
     with tab_month:
         st.plotly_chart(build_monthly_chart(monthly, status, digits=digits), use_container_width=True, config=PLOT_CONFIG)
         md(signal_key_html())
@@ -680,15 +650,5 @@ def main() -> None:
         )
     with tab_disp:
         st.plotly_chart(build_disparity_chart(daily, digits=digits), use_container_width=True, config=PLOT_CONFIG)
-    with tab_bt:
-        try:
-            backtests = load_backtests(target.symbol, target.start_year, day_key)
-        except Exception:
-            backtests = None
-            st.info("백테스트 계산 실패")
-        if backtests:
-            st.plotly_chart(build_backtest_chart(backtests), use_container_width=True, config=PLOT_CONFIG)
-            render_backtest_table(backtests)
-
     render_rule()
     st.markdown(ui.footer_html(), unsafe_allow_html=True)
