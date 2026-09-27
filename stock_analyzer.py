@@ -4,6 +4,7 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import logging
 import requests
+import re
 import json
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
@@ -336,6 +337,39 @@ def generate_puddle_signals(data: pd.DataFrame) -> pd.DataFrame:
         }.get(max(timings)) if timings else '')
     data['Puddle'] = alerts
     return data
+
+
+PUDDLE_LABEL_PATTERN = re.compile(r"^\s*(\d)\w*:\s*(MA\d+)(.*)$")
+
+
+def parse_puddle_label(label) -> dict | None:
+    """'2nd: MA60, 50% cash, 5d' -> {stage: 2, ma: 'MA60', cash: 50, days: 5, rsi: False}."""
+    match = PUDDLE_LABEL_PATTERN.match(str(label or ""))
+    if not match:
+        return None
+    rest = match.group(3)
+    cash = re.search(r"(\d+)%\s*cash", rest)
+    days = re.search(r"(\d+)d\b", rest)
+    return {
+        "stage": int(match.group(1)),
+        "ma": match.group(2),
+        "cash": int(cash.group(1)) if cash else None,
+        "days": int(days.group(1)) if days else None,
+        "rsi": "RSI" in rest,
+    }
+
+
+def puddle_label_ko(label, short: bool = False) -> str:
+    """'2nd: MA60, 50% cash, 5d' -> '2차 · MA60 이탈 · 현금 50% · 5일'."""
+    info = parse_puddle_label(label)
+    if not info:
+        return str(label or "")
+    parts = [f"{info['stage']}차", f"{info['ma']} 이탈" + (" + RSI≤30" if info["rsi"] and not short else "")]
+    if info["cash"] is not None:
+        parts.append(f"현금 {info['cash']}%")
+    if info["days"] and not short:
+        parts.append(f"{info['days']}일")
+    return " · ".join(parts)
 
 
 def add_rsi_puddle_signal(data: pd.DataFrame, lookback: int = RSI_PUDDLE_LOOKBACK_DAYS) -> pd.DataFrame:

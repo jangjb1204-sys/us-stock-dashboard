@@ -18,6 +18,8 @@ from stock_analyzer import (
     fetch_stock_data,
     process_stock_frame,
     fetch_ticker_display_name,
+    parse_puddle_label,
+    puddle_label_ko,
 )
 
 CENTRAL_TZ = ZoneInfo("America/Chicago")
@@ -39,7 +41,7 @@ def central_timestamp_label() -> str:
 # ── 페이지 설정 ────────────────────────────────────────────────────────────────
 dashboard_param = st.query_params.get("dashboard")
 st.set_page_config(
-    page_title="Korea Market Signals" if dashboard_param == "korea" else "US Market Signals",
+    page_title={"korea": "Korea Market Signals", "puddle": "Puddle Signal Scanner"}.get(dashboard_param, "US Market Signals"),
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -1266,9 +1268,10 @@ st.markdown("""
     }
     .summary-top {
         display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 18px;
+        align-items: flex-end;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 6px 18px;
         padding-bottom: 24px;
         border-bottom: 1px solid rgba(255,255,255,0.07);
     }
@@ -1287,11 +1290,13 @@ st.markdown("""
         font-weight: 620;
         letter-spacing: -0.01em;
     }
-    .summary-change.safe,
     .summary-status.safe,
     .summary-status.opportunity { color: #3FB950; }
-    .summary-change.caution,
     .summary-status.caution { color: #2F80FF; }
+    .summary-top .summary-change { padding-bottom: 12px; }
+    .summary-change.up { color: #6EA8FF; }
+    .summary-change.down { color: #FF5A5F; }
+    .summary-unit { margin-left: 8px; font-size: 1rem; font-weight: 500; color: rgba(255,255,255,0.46); letter-spacing: 0; }
     .summary-change.risk,
     .summary-status.risk { color: #FF5A5F; }
     .summary-grid {
@@ -1817,9 +1822,24 @@ def finite_float(value):
         return None
     return result if np.isfinite(result) else None
 
-def fmt_price(v):
+def fmt_price(v, is_index: bool = False):
+    """Index levels are points, not dollars: 7,743.41 vs $457.20."""
     f = finite_float(v)
-    return f"${f:.2f}" if f is not None else "N/A"
+    if f is None:
+        return "N/A"
+    return f"{f:,.2f}" if is_index else f"${f:,.2f}"
+
+def fmt_change(close, prev, pct, is_index: bool = False) -> str:
+    """'+38.90 (+0.51%)' — the move in price units, then percent."""
+    c, p_, pc = finite_float(close), finite_float(prev), finite_float(pct)
+    if pc is None:
+        return "N/A"
+    if c is None or p_ is None:
+        return f"{pc:+.2f}%"
+    diff = c - p_
+    unit = "" if is_index else "$"
+    sign = "+" if diff >= 0 else "−"
+    return f"{sign}{unit}{abs(diff):,.2f} ({pc:+.2f}%)"
 
 def fmt_pct(v, sign=False):
     f = finite_float(v)
@@ -1891,7 +1911,7 @@ def resolve_symbol_search(raw: str) -> tuple[dict | None, str]:
     if not query:
         return None, ""
     if query.upper().endswith((".KS", ".KQ")):
-        return None, "Korean-listed stocks and ETFs are on the 🇰🇷 KOSPI · KOSDAQ page (link at the top)."
+        return None, "한국 종목·ETF는 위쪽 🇰🇷 코스피 · 코스닥 페이지에서 볼 수 있어요."
     candidates = load_symbol_candidates(query)
     typed = us_symbol_search.normalize(query)
     exact = next((row for row in candidates if row["symbol"] == typed), None)
@@ -1899,7 +1919,7 @@ def resolve_symbol_search(raw: str) -> tuple[dict | None, str]:
         return exact or candidates[0], ""
     if candidates:
         pick = st.selectbox(
-            f"{len(candidates)} matches",
+            f"검색 결과 {len(candidates)}개",
             candidates,
             index=0,
             format_func=format_symbol_candidate,
@@ -1911,7 +1931,7 @@ def resolve_symbol_search(raw: str) -> tuple[dict | None, str]:
         return {"symbol": normalize_ticker(query), "name": ""}, ""
     if us_symbol_search._HANGUL.search(query):
         return None, "한글 이름은 주요 종목만 지원해요. 영어 이름이나 티커로 검색해 보세요 (예: Nvidia, NVDA)."
-    return None, f"No US stock or ETF found for “{query}”."
+    return None, f"‘{query}’에 맞는 미국 주식·ETF가 없어요. 영어 이름이나 티커로도 찾아보세요."
 
 def unique_tickers(tickers) -> list[str]:
     result = []
@@ -2053,7 +2073,7 @@ X_GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.055)', zeroline=False
 Y_GRID = dict(showgrid=True, gridcolor='rgba(255,255,255,0.075)', zeroline=False)
 X_TICK_FONT = dict(color='rgba(245,245,247,0.54)', size=10)
 Y_TICK_FONT = dict(color='rgba(245,245,247,0.46)', size=10)
-MAIN_CHART_HEIGHT = 460
+MAIN_CHART_HEIGHT = 540
 SIGNAL_CHART_HEIGHT = 460
 
 def get_date_axis(df: pd.DataFrame) -> dict:
@@ -2083,16 +2103,41 @@ def get_date_axis(df: pd.DataFrame) -> dict:
         tick = dates.iloc[pos]
         if not tick_dates or tick != tick_dates[-1]:
             tick_dates.append(tick)
+    # The first/last data day is only labelled when it isn't crowding the
+    # nearest regular tick (03/30 printed on top of 04/01 before).
+    if len(tick_dates) >= 3:
+        step = (tick_dates[2] - tick_dates[1]).days or 1
+        if (tick_dates[1] - tick_dates[0]).days < step * 0.5:
+            tick_dates.pop(0)
+        if (tick_dates[-1] - tick_dates[-2]).days < step * 0.5:
+            tick_dates.pop()
 
-    right_pad = pd.Timedelta(days=max(2, min(14, span_days * 0.035)))
+    def tick_label(d):
+        if freq == 'MS' and d.day <= 3:
+            return f"{d.month}월"
+        return d.strftime(label_format)
+
+    right_pad = pd.Timedelta(days=max(3, min(16, span_days * 0.05)))
     return dict(
         tickmode='array',
         tickvals=tick_dates,
-        ticktext=[d.strftime(label_format) for d in tick_dates],
+        ticktext=[tick_label(d) for d in tick_dates],
+        tickangle=0,
         range=[dates.iloc[0], dates.iloc[-1] + right_pad],
     )
 
 # ── 보조 패널 (Chart / Signals 탭에서 공용) ─────────────────────────────────────
+def add_panel_label(fig: go.Figure, row: int, text: str) -> None:
+    """Name + latest value in the panel's top-left corner (a rotated 10px axis
+    title on a thin panel was hard to read)."""
+    axis = '' if row == 1 else str(row)
+    fig.add_annotation(
+        xref=f'x{axis} domain', yref=f'y{axis} domain', x=0.005, y=0.97,
+        xanchor='left', yanchor='top', showarrow=False, text=text,
+        font=dict(color='rgba(245,245,247,0.78)', size=11), bgcolor='rgba(5,7,13,0.72)', borderpad=2,
+    )
+
+
 def add_rsi_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
     if 'RSI' in df.columns and df['RSI'].notna().any():
         fig.add_trace(go.Scatter(
@@ -2103,11 +2148,9 @@ def add_rsi_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
         ), row=row, col=1)
         fig.add_hline(y=70, line=dict(color='#FF5A5F', width=1, dash='dot'), row=row, col=1)
         fig.add_hline(y=30, line=dict(color='#2F80FF', width=1, dash='dot'), row=row, col=1)
-        fig.update_yaxes(
-            title_text='RSI', range=[0, 100], row=row, col=1,
-            tickfont=Y_TICK_FONT,
-            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
-        )
+        fig.update_yaxes(range=[0, 100], tickvals=[30, 70], row=row, col=1, tickfont=Y_TICK_FONT)
+        latest = df['RSI'].dropna().iloc[-1]
+        add_panel_label(fig, row, f"RSI <b>{latest:.1f}</b>")
 
 
 def add_fg_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
@@ -2136,11 +2179,11 @@ def add_fg_panel(fig: go.Figure, df: pd.DataFrame, row: int) -> None:
         for level in [25, 45, 55, 75]:
             fig.add_hline(y=level, line=dict(color='rgba(255,255,255,0.075)', width=1, dash='dot'), row=row, col=1)
         fig.add_hline(y=50, line=dict(color='#2F80FF', width=1.2, dash='solid'), row=row, col=1)
-        fig.update_yaxes(
-            title_text='F&G', range=[0, 100], row=row, col=1,
-            tickfont=Y_TICK_FONT,
-            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
-        )
+        fig.update_yaxes(range=[0, 100], tickvals=[25, 50, 75], row=row, col=1, tickfont=Y_TICK_FONT)
+        add_panel_label(fig, row, f"공포·탐욕 <b>{fg_df['FG index'].iloc[-1]:.0f}</b>")
+
+
+BADGE_CLUSTER_DAYS = 5  # Puddle signals this many trading days apart share one badge
 
 
 def add_puddle_badges(fig: go.Figure, df: pd.DataFrame) -> None:
@@ -2158,13 +2201,30 @@ def add_puddle_badges(fig: go.Figure, df: pd.DataFrame) -> None:
     span = float(df['High'].max() - df['Low'].min()) if df['High'].notna().any() else 0.0
     pad = span * 0.05
 
+    # Signals a few trading days apart were drawn as overlapping badges; show
+    # one badge per burst (its first day, highest stage) with a ×n count.
+    pos = pd.Series(range(len(df)), index=df.index)
+    puddle_df['pos'] = pos.loc[puddle_df.index].values
+    puddle_df['cluster'] = (puddle_df['pos'].diff().fillna(BADGE_CLUSTER_DAYS + 1) > BADGE_CLUSTER_DAYS).cumsum()
+    clusters = []
+    for _, group in puddle_df.groupby('cluster'):
+        first = group.iloc[0].copy()
+        first['stage'] = group['stage'].max()
+        first['Low'] = group['Low'].min()
+        first['count'] = len(group)
+        first['Puddle'] = '<br>'.join(
+            f"{pd.Timestamp(d):%m/%d} {puddle_label_ko(label)}" for d, label in zip(group['Date'], group['Puddle'])
+        )
+        clusters.append(first)
+    puddle_df = pd.DataFrame(clusters)
+
     for signal_date in puddle_df['Date']:
         fig.add_vline(x=signal_date, line=dict(color='rgba(242,245,248,0.16)', width=1), layer='below', row='all', col=1)
 
     styles = [
-        ('Puddle 1st', puddle_df['stage'] == '1',
+        ('Puddle 1차', puddle_df['stage'] == '1',
          dict(size=17, color='#05070d', line=dict(width=1.5, color='#F2F5F8')), '#F2F5F8', 10),
-        ('Puddle 2nd+', puddle_df['stage'] != '1',
+        ('Puddle 2차+', puddle_df['stage'] != '1',
          dict(size=19, color='#F2F5F8', line=dict(width=2, color='#05070d')), '#05070B', 11),
     ]
     for name, mask, marker, text_color, text_size in styles:
@@ -2176,7 +2236,16 @@ def add_puddle_badges(fig: go.Figure, df: pd.DataFrame) -> None:
             text=part['stage'], textposition='middle center',
             textfont=dict(color=text_color, size=text_size),
             marker=marker, customdata=part['Puddle'],
-            hovertemplate='%{x|%Y-%m-%d}<br>Puddle %{customdata}<extra></extra>',
+            hovertemplate='%{customdata}<extra>Puddle</extra>',
+        ), row=1, col=1)
+    many = puddle_df[puddle_df['count'] > 1]
+    if not many.empty:
+        # Nudged right of the badge by ~1.3% of the visible range.
+        nudge = (df['Date'].iloc[-1] - df['Date'].iloc[0]) * 0.013
+        fig.add_trace(go.Scatter(
+            x=many['Date'] + nudge, y=many['Low'] - pad, mode='text', text=[f"×{n}" for n in many['count']],
+            textposition='middle right', textfont=dict(color='rgba(242,245,248,0.72)', size=10),
+            hoverinfo='skip', showlegend=False,
         ), row=1, col=1)
 
 
@@ -2185,13 +2254,13 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
     date_axis = get_date_axis(df)
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True,
-        row_heights=[0.68, 0.16, 0.16],
-        vertical_spacing=0.025,
+        row_heights=[0.62, 0.19, 0.19],
+        vertical_spacing=0.03,
     )
 
     fig.add_trace(go.Candlestick(
         x=df['Date'], open=df['Open'], high=df['High'],
-        low=df['Low'], close=df['Close'], name='Price',
+        low=df['Low'], close=df['Close'], name='가격',
         increasing_line_color='#2F80FF', increasing_fillcolor='#2F80FF',
         decreasing_line_color='#FF5A5F', decreasing_fillcolor='#FF5A5F',
         whiskerwidth=0.4,
@@ -2217,11 +2286,8 @@ def build_candlestick_chart(df: pd.DataFrame, name: str) -> go.Figure:
             showlegend=False,
         ), row=3, col=1)
         fig.add_hline(y=25, line=dict(color='#2F80FF', width=1, dash='dot'), row=3, col=1)
-        fig.update_yaxes(
-            title_text='VIX', row=3, col=1,
-            tickfont=Y_TICK_FONT,
-            title=dict(font=dict(color='rgba(245,245,247,0.46)', size=10), standoff=2),
-        )
+        fig.update_yaxes(row=3, col=1, tickfont=Y_TICK_FONT, nticks=3)
+        add_panel_label(fig, 3, f"VIX <b>{df['VIX'].dropna().iloc[-1]:.1f}</b>")
 
     # After the lower panels exist, so the date lines run through all of them.
     add_puddle_badges(fig, df)
@@ -2255,7 +2321,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
     )
 
     fig.add_trace(go.Scatter(
-        x=df['Date'], y=df['Close'], name='Price',
+        x=df['Date'], y=df['Close'], name='가격',
         line=dict(color='#f5f5f7', width=2),
     ), row=1, col=1)
 
@@ -2290,7 +2356,7 @@ def build_line_chart(df: pd.DataFrame, name: str) -> go.Figure:
         if not overlap.empty:
             fig.add_trace(go.Scatter(
                 x=overlap['Date'], y=overlap['Close'],
-                mode='markers', name='RSI & Puddle',
+                mode='markers', name='RSI+Puddle',
                 marker=dict(symbol='circle', size=8, color='#2F80FF',
                             line=dict(width=1.5, color='white')),
             ), row=1, col=1)
@@ -2520,14 +2586,14 @@ def market_summary_label(summary_df: pd.DataFrame) -> str:
     for _, row in summary_df.iterrows():
         name = str(row.get('Name', ''))
         if has_rsi_puddle_signal(row.get('RSI_Puddle_Signal')):
-            parts.append(f"{name} RSI & Puddle")
+            parts.append(f"{name} RSI+Puddle")
             continue
         puddle = row.get('Puddle')
         puddle = str(puddle) if pd.notna(puddle) else ''
         if any(ch.isalpha() for ch in puddle):
             # "2nd: MA60, 50% cash, 5d" -> "2nd"
-            parts.append(f"{name} {puddle.split(':', 1)[0].strip()}")
-    return " · ".join(["Market Overview", *parts])
+            parts.append(f"{name} {puddle_label_ko(puddle, short=True).split(' · ')[0]}")
+    return " · ".join(["전체 종목 요약", *parts])
 
 
 def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers: tuple[str, ...] = ()):
@@ -2537,11 +2603,11 @@ def render_market_summary(period: str, delta: int, cache_key: str, extra_tickers
     # click opens it (no separate "Load" button, which the old version had).
     # Data is loaded up front because the header depends on it;
     # load_market_summary_rows is cached (30 min), so repeat visits are instant.
-    with st.spinner("Loading market overview..."):
+    with st.spinner("전체 종목 요약을 불러오는 중..."):
         summary_df = load_market_summary_rows(period, delta, cache_key, extra_tickers)
 
     if summary_df.empty:
-        st.info("Market overview data is not available yet.")
+        st.info("전체 종목 요약을 아직 불러오지 못했어요.")
         return
 
     columns = ['Name', 'Close', 'Change(%)', '2sigma(%)', 'RSI', 'FG/RSI signal']
@@ -2603,11 +2669,13 @@ def render_signal_cards(df: pd.DataFrame):
 
     signal_rows = []
     for date, value in puddle_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Signal', 'signal', 'Puddle', value))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '현금↑', 'signal', 'Puddle', puddle_label_ko(value)))
     for date, value in rsi_puddle_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Buy', 'buy', 'RSI & Puddle', value))
+        rsi_part, _, puddle_part = value.partition(' · ')
+        detail = f"{rsi_part} · {puddle_label_ko(puddle_part, short=True)}" if puddle_part else value
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '매수', 'buy', 'RSI+Puddle', detail))
     for date, value in vix_items:
-        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, 'Buy', 'buy', 'VIX1D > VIX', 'Volatility trigger'))
+        signal_rows.append((pd.to_datetime(date, format='%y.%m.%d'), date, '매수', 'buy', 'VIX1D > VIX', '단기 변동성 역전'))
 
     signal_rows = sorted(signal_rows, key=lambda item: item[0], reverse=True)[:10]
     if signal_rows:
@@ -2624,7 +2692,7 @@ def render_signal_cards(df: pd.DataFrame):
             for _, date, action, tone, title, detail in signal_rows
         )
     else:
-        body = "<div class='signal-empty-feed'>No recent actionable signals. Market state looks calm.</div>"
+        body = "<div class='signal-empty-feed'>최근 신호가 없어요. 시장이 조용한 편이에요.</div>"
 
     st.markdown(
         f"""
@@ -2632,6 +2700,62 @@ def render_signal_cards(df: pd.DataFrame):
         """,
         unsafe_allow_html=True,
     )
+
+
+VERDICT_LOOKBACK_DAYS = 60  # trading days; older Puddle signals aren't "current"
+
+
+def puddle_mask(frame: pd.DataFrame) -> pd.Series:
+    return frame['Puddle'].astype(str).str.contains(r'[a-zA-Z]', na=False)
+
+
+def verdict_chips(full_df: pd.DataFrame) -> list[str]:
+    """The page's answer to "so what now?", from the Puddle rule itself:
+    the latest Puddle signal, what the rule says to hold in cash and for how
+    long, and whether price is back above the moving average it broke."""
+    if full_df.empty or 'Puddle' not in full_df.columns:
+        return []
+    data = full_df.copy()
+    data['Date'] = pd.to_datetime(data['Date'])
+    data = data.sort_values('Date').reset_index(drop=True)
+    last = data.iloc[-1]
+    chips = []
+    hits = data.index[puddle_mask(data)]
+    info = parse_puddle_label(data.at[hits[-1], 'Puddle']) if len(hits) else None
+    ago = len(data) - 1 - hits[-1] if len(hits) else None
+    if info and ago <= VERDICT_LOOKBACK_DAYS:
+        when = "오늘" if ago == 0 else f"{ago}거래일 전"
+        chips.append(f"<span class='tj-chip'>{ui.kdate(data.at[hits[-1], 'Date'])} Puddle {info['stage']}차 · "
+                     f"{info['ma']} 이탈 · {when}</span>")
+        rule = f"규칙: 현금 {info['cash']}%" if info['cash'] is not None else "규칙"
+        if info['days']:
+            left = info['days'] - ago
+            rule += f" · {left}일 남음" if left > 0 else f" · {info['days']}일 기간 끝"
+            tone = 'yellow' if left > 0 else ''
+        else:
+            tone = 'yellow'
+        chips.append(f"<span class='tj-chip {tone}'>{escape(rule)}</span>")
+        ma_val, close = safe_float(last.get(info['ma'])), safe_float(last.get('Close'))
+        if ma_val is not None and close is not None:
+            gap = (close / ma_val - 1) * 100
+            if close >= ma_val:
+                chips.append(f"<span class='tj-chip green'>지금 {info['ma']} 위로 회복 ({gap:+.1f}%)</span>")
+            else:
+                chips.append(f"<span class='tj-chip red'>지금 {info['ma']} 아래 ({gap:+.1f}%)</span>")
+    else:
+        chips.append(f"<span class='tj-chip green'>최근 {VERDICT_LOOKBACK_DAYS}거래일 Puddle 신호 없음</span>")
+    if has_rsi_puddle_signal(last.get('RSI_Puddle_Signal')):
+        chips.append("<span class='tj-chip blue'>RSI+Puddle 과매도 신호 진행 중</span>")
+    if 'VIX1D>VIX' in data.columns and (data['VIX1D>VIX'].tail(5) == 'BUY').any():
+        chips.append("<span class='tj-chip blue'>최근 5일 VIX1D&gt;VIX 매수 신호</span>")
+    return chips
+
+
+def render_verdict(full_df: pd.DataFrame) -> None:
+    chips = verdict_chips(full_df)
+    if chips:
+        st.markdown("<div class='tj-verdict'><span class='lead'>지금 상태</span>" + "".join(chips) + "</div>",
+                    unsafe_allow_html=True)
 
 
 def status_color(level: str) -> str:
@@ -2663,7 +2787,7 @@ def render_risk_metrics(metrics):
           <div class="summary-top">
             <div>
               <div class="summary-label">{escape(primary['label'])}</div>
-              <div class="summary-price">{escape(primary['value'])}</div>
+              <div class="summary-price">{escape(primary['value'])}{primary.get('unit_html', '')}</div>
             </div>
             <div class="summary-change {escape(primary['level'])}">{escape(primary['status'])}</div>
           </div>
@@ -2676,62 +2800,72 @@ def render_risk_metrics(metrics):
 
 def rsi_status(value):
     if value is None:
-        return ('neutral', 'N/A', 'No data')
+        return ('neutral', 'N/A', '데이터 없음')
     if value <= 30:
-        return ('opportunity', 'Oversold', 'Potential rebound zone')
+        return ('opportunity', '과매도', '반등 구간일 수 있음')
     if value >= 70:
-        return ('risk', 'Overbought', 'Short-term heat')
-    return ('neutral', 'Neutral', 'Trend confirmation')
+        return ('risk', '과매수', '단기 과열')
+    return ('neutral', '중립', '추세 확인 중')
 
 
 def vix_status(value):
     if value is None:
-        return ('neutral', 'N/A', 'No data')
+        return ('neutral', 'N/A', '데이터 없음')
     if value > 25:
-        return ('opportunity', 'Volatility Spike', 'Fear-driven opportunity')
+        return ('opportunity', '변동성 급등', '공포 속 기회 구간')
     if value < 15:
-        return ('safe', 'Calm', 'Low volatility')
-    return ('neutral', 'Normal', 'Average volatility')
+        return ('safe', '안정', '변동성 낮음')
+    return ('neutral', '보통', '평균 수준 변동성')
 
 
 def fg_status(value):
     if value is None:
-        return ('neutral', 'N/A', 'No data')
+        return ('neutral', 'N/A', '데이터 없음')
     if value >= 75:
-        return ('risk', 'Extreme Greed', 'Overheat risk')
+        return ('risk', '극단적 탐욕', '과열 위험')
     if value >= 55:
-        return ('caution', 'Greed', 'Chasing risk')
+        return ('caution', '탐욕', '추격 매수 주의')
     if value <= 25:
-        return ('opportunity', 'Extreme Fear', 'Contrarian watch')
+        return ('opportunity', '극단적 공포', '역발상 관찰 구간')
     if value <= 45:
-        return ('safe', 'Fear', 'Scale-in zone')
-    return ('neutral', 'Neutral', 'Direction pending')
+        return ('safe', '공포', '분할 매수 구간')
+    return ('neutral', '중립', '방향 탐색 중')
 
 
 def skew_status(value):
     if value is None:
-        return ('neutral', 'N/A', 'No data')
+        return ('neutral', 'N/A', '데이터 없음')
     if value >= 155:
-        return ('risk', 'High Risk', 'Tail risk elevated')
+        return ('risk', '위험 높음', '급락 대비 수요 증가')
     if value <= 127:
-        return ('safe', 'Low Risk', 'Skew pressure eased')
-    return ('neutral', 'Normal', 'Average risk')
+        return ('safe', '위험 낮음', '급락 대비 수요 완화')
+    return ('neutral', '보통', '평균 수준')
 
 
 def treasury_status(value):
     if value is None:
-        return ('neutral', 'N/A', 'No data')
+        return ('neutral', 'N/A', '데이터 없음')
     if value >= 5:
-        return ('risk', 'High Yield', 'Valuation pressure')
+        return ('risk', '고금리', '밸류에이션 부담')
     if value >= 4.5:
-        return ('caution', 'Rate Pressure', 'Growth discount risk')
+        return ('caution', '금리 부담', '성장주 할인 위험')
     if value <= 3.5:
-        return ('safe', 'Easing', 'Lower rate pressure')
-    return ('neutral', 'Normal', 'Neutral rate zone')
+        return ('safe', '완화', '금리 부담 낮음')
+    return ('neutral', '보통', '중립 금리 구간')
 
 
-def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str):
-    updated_short = f"{updated_at[11:16]} CT" if len(updated_at) >= 19 else updated_at
+def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str,
+                data_date=None):
+    """Header. updated_at is 'YYYY-MM-DD HH:MM:SS CT' (Chicago); shown in Korean time."""
+    if len(updated_at) >= 19:
+        fetched = ui.kst_time(updated_at[:19], tz=CENTRAL_TZ)
+        if data_date is not None:
+            session = "장중" if market_dot_class == "open" else "종가"
+            updated_short = f"{ui.kdate(data_date)} {session} · {fetched[-9:]} 갱신"
+        else:
+            updated_short = f"{fetched} 갱신"
+    else:
+        updated_short = "불러오는 중" if updated_at == "loading" else updated_at
     container.markdown(
         ui.hero_html(
             "US Market Signals",
@@ -2759,15 +2893,20 @@ render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")
 range_col, search_col = st.columns([1.1, 1])
 with range_col:
     delta_label = st.radio(
-        "Range",
+        "기간",
         options=list(DELTA_OPTIONS.keys()),
         index=list(DELTA_OPTIONS.keys()).index("180D"),
         horizontal=True,
     )
+# ?ticker=ROP (links from the Puddle scanner) fills the search box once.
+ticker_param = st.query_params.get("ticker")
+if ticker_param and st.session_state.get("_ticker_param_seen") != ticker_param:
+    st.session_state["_ticker_param_seen"] = ticker_param
+    st.session_state["direct_ticker_query"] = str(ticker_param)[:40]
 with search_col:
     raw_custom_ticker = st.text_input(
-        "Search",
-        placeholder="Ticker or name, e.g. AAPL, Nvidia, 테슬라, S&P 500",
+        "검색",
+        placeholder="티커나 이름 · 예: AAPL, 엔비디아, Tesla, S&P 500",
         key="direct_ticker_query",
     )
     search_pick, search_note = resolve_symbol_search(raw_custom_ticker)
@@ -2786,7 +2925,7 @@ saved_default = st.session_state.get("saved_ticker_radio") or st.session_state.g
 if saved_default not in ticker_options:
     saved_default = ticker_options[0]
 preset_ticker = st.radio(
-    "Saved Tickers",
+    "관심 종목",
     ticker_options,
     index=ticker_options.index(saved_default),
     format_func=ticker_name,
@@ -2809,14 +2948,14 @@ st.markdown("---")
 st.markdown(
     f"""
     <div class="focus-title">
-      <div class="eyebrow">Watchlist</div>
+      <div class="eyebrow">{'검색 종목' if search_pick else '관심 종목'}</div>
       <div class="name">{escape(selected_name)} <span class="ticker">{escape(selected_ticker)}</span></div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-with st.spinner(f"Loading {selected_name} data..."):
+with st.spinner(f"{selected_name} 데이터를 불러오는 중..."):
     table_df, updated_at = load_ticker_data(
         selected_ticker,
         selected_name,
@@ -2826,10 +2965,11 @@ with st.spinner(f"Loading {selected_name} data..."):
     )
     df = filter_by_delta(table_df, delta)
 
-render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at)
+render_hero(hero_slot, total_views, active_viewers, market_dot_class, updated_at,
+            data_date=df['Date'].iloc[-1] if not df.empty else None)
 
 if df.empty:
-    st.error(f"{selected_ticker} data is not available right now. Please try again shortly.")
+    st.error(f"{selected_ticker} 데이터를 지금 불러올 수 없어요. 잠시 후 다시 시도해 주세요.")
     st.stop()
 
 latest = df.iloc[-1]
@@ -2843,20 +2983,23 @@ fg_val       = safe_float(latest.get('FG index'))
 skew_val     = safe_float(latest.get('SKEW'))
 treasury_val = safe_float(latest.get('10Y Treasury'))
 
-change_level = 'safe' if change_val is not None and change_val > 0 else \
-               'caution' if change_val is not None and change_val < 0 else 'neutral'
+change_level = 'up' if change_val is not None and change_val > 0 else \
+               'down' if change_val is not None and change_val < 0 else 'neutral'
 rsi_level, rsi_state, rsi_caption = rsi_status(rsi_val)
 vix_level, vix_state, vix_caption = vix_status(vix_val)
 fg_level, fg_state, fg_caption = fg_status(fg_val)
 skew_level, skew_state, skew_caption = skew_status(skew_val)
 treasury_level, treasury_state, treasury_caption = treasury_status(treasury_val)
 
+is_index = selected_ticker.startswith('^')
+prev_close = safe_float(df['Close'].iloc[-2]) if len(df) >= 2 else None
 render_risk_metrics([
     {
-        'label': 'Price',
-        'value': fmt_price(close_val),
-        'status': fmt_pct(change_val, sign=True) if change_val is not None else 'N/A',
-        'caption': 'Daily change',
+        'label': '지수' if is_index else '가격',
+        'value': fmt_price(close_val, is_index),
+        'unit_html': "<span class='summary-unit'>pt</span>" if is_index else '',
+        'status': fmt_change(close_val, prev_close, change_val, is_index),
+        'caption': '전일 대비',
         'level': change_level,
     },
     {
@@ -2896,11 +3039,13 @@ render_risk_metrics([
     },
 ])
 
+render_verdict(table_df)
+
 # ── 탭 ────────────────────────────────────────────────────────────────────────
 # The chart sits directly under the price block: it is the reason people open a
 # market dashboard, and it previously started ~1,800px down the page, below the
 # signal feed, so it was two full scrolls out of view on a laptop.
-tab1, tab2, tab3 = st.tabs(["Chart", "Signals", "Metrics"])
+tab1, tab2, tab3 = st.tabs(["차트", "신호", "지표"])
 
 with tab1:
     st.plotly_chart(
@@ -2932,14 +3077,14 @@ with tab3:
     if 'Date' in csv.columns:
         csv['Date'] = pd.to_datetime(csv['Date']).dt.strftime('%Y-%m-%d')
     st.download_button(
-        label="Download CSV",
+        label="CSV 다운로드",
         data=csv.to_csv(index=False, encoding='utf-8-sig'),
         file_name=f"{selected_name}_{central_now().strftime('%Y%m%d')}.csv",
         mime="text/csv",
     )
 
 # ── 최근 신호 ──────────────────────────────────────────────────────────────────
-st.markdown("<div class='section-heading'>Signal Feed</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-heading'>최근 신호</div>", unsafe_allow_html=True)
 render_signal_cards(df)
 
 st.markdown(ui.footer_html(), unsafe_allow_html=True)

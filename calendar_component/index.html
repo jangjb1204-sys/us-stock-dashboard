@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -22,9 +22,14 @@
     .calendar-nav.disabled { opacity:.34; pointer-events:none; }
     .calendar-grid-static { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-bottom:.45rem; max-width:100%; }
     .calendar-dow { color:rgba(255,255,255,.46); text-align:center; font-size:12px; font-weight:500; letter-spacing:.035em; text-transform:uppercase; padding:.25rem 0; }
-    .calendar-empty { min-height:46px; border:1px solid rgba(255,255,255,.035); border-radius:12px; background:rgba(255,255,255,.012); color:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:.8rem; box-sizing:border-box; }
+    .calendar-empty { min-height:44px; border:1px solid rgba(255,255,255,.035); border-radius:12px; background:rgba(255,255,255,.012); color:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:.8rem; box-sizing:border-box; }
     .calendar-empty.out { opacity:.28; }
-    .calendar-day { min-height:46px; border-radius:12px; }
+    .calendar-day { min-height:44px; border-radius:12px; flex-direction:column; gap:1px; }
+    .calendar-day .n { line-height:1.1; }
+    .calendar-day .c { font-size:.66rem; font-weight:600; line-height:1; color:#8EC1FF; }
+    .calendar-day .c.zero { color:rgba(255,255,255,.30); }
+    .calendar-day.selected .c { color:#1F4F99; }
+    .calendar-day.selected .c.zero { color:rgba(5,7,11,.45); }
     .calendar-day.selected { background:rgba(242,245,248,.76); color:#05070B; border-color:rgba(242,245,248,.54); }
     @media (max-width:640px){
       .calendar-shell{margin-left:-.1rem;margin-right:-.1rem;}
@@ -33,7 +38,8 @@
       .calendar-nav{min-height:34px; padding:0; font-size:.95rem;}
       .calendar-grid-static{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; margin-bottom:.28rem;}
       .calendar-dow{font-size:.58rem; letter-spacing:0; padding:.16rem 0;}
-      .calendar-empty,.calendar-day{min-height:34px; border-radius:10px; font-size:.72rem; padding:0;}
+      .calendar-empty,.calendar-day{min-height:40px; border-radius:10px; font-size:.72rem; padding:0;}
+      .calendar-day .c{font-size:.6rem;}
     }
   </style>
 </head>
@@ -69,13 +75,16 @@
 
     function render(args) {
       currentArgs = args || currentArgs || {};
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const days = ["일", "월", "화", "수", "목", "금", "토"];
       const header = days.map((day) => `<div class="calendar-dow">${day}</div>`).join("");
       const rows = (currentArgs.weeks || []).map((week) => {
         const cells = week.map((day) => {
           if (day.available) {
             const selected = day.date === currentArgs.selected_date ? " selected" : "";
-            return `<button class="calendar-day${selected}" type="button" data-date="${day.date}" data-month="${currentArgs.current_month}">${day.label}</button>`;
+            const hasCount = day.count !== null && day.count !== undefined;
+            const count = hasCount ? `<span class="c${day.count ? "" : " zero"}">${day.count ? day.count + "개" : "0"}</span>` : "";
+            const title = hasCount ? ` title="신호 ${day.count}개"` : "";
+            return `<button class="calendar-day${selected}" type="button"${title} data-date="${day.date}" data-month="${currentArgs.current_month}"><span class="n">${day.label}</span>${count}</button>`;
           }
           const out = day.in_month ? "" : " out";
           return `<div class="calendar-empty${out}">${day.in_month ? day.label : ""}</div>`;
@@ -88,9 +97,9 @@
       document.getElementById("root").innerHTML = `
         <div class="calendar-shell">
           <div class="calendar-head">
-            <button class="${prevClass}" type="button" data-month="${currentArgs.prev_month || ""}" aria-label="Previous month">‹</button>
+            <button class="${prevClass}" type="button" data-month="${currentArgs.prev_month || ""}" aria-label="이전 달">‹</button>
             <div class="calendar-title">${currentArgs.title || ""}</div>
-            <button class="${nextClass}" type="button" data-month="${currentArgs.next_month || ""}" aria-label="Next month">›</button>
+            <button class="${nextClass}" type="button" data-month="${currentArgs.next_month || ""}" aria-label="다음 달">›</button>
           </div>
           <div class="calendar-grid-static">${header}</div>
           ${rows}
