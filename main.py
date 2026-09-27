@@ -1815,16 +1815,12 @@ st.markdown("""
             padding: 11px 0 !important;
         }
         .signal-entry .signal-detail { grid-column: 2; }
-        /* Ten ticker pills: one swipeable row instead of three wrapped rows. */
-        .st-key-saved_ticker_radio div[role="radiogroup"] {
-            flex-wrap: nowrap !important; overflow-x: auto; width: 100% !important;
-            scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px !important;
+        /* Ten ticker pills wrap onto rows (no sideways scrolling); slightly
+           smaller on phones so they take two or three short rows. */
+        .st-key-saved_ticker_radio div[role="radiogroup"] { flex-wrap: wrap !important; gap: 6px !important; }
+        .st-key-saved_ticker_radio label[data-testid="stRadioOption"] {
+            min-height: 32px !important; height: 32px !important; padding: 0 11px !important;
         }
-        .st-key-saved_ticker_radio div[role="radiogroup"]::-webkit-scrollbar { display: none; }
-        /* Newer Streamlit wraps each option in its own div; that wrapper shrank
-           in the no-wrap row and stacked the text one letter per line. */
-        .st-key-saved_ticker_radio div[role="radiogroup"] > div,
-        .st-key-saved_ticker_radio div[role="radiogroup"] label { flex: 0 0 auto !important; }
         .section-heading { margin: 1.1rem 0 0.5rem; }
     }
 </style>
