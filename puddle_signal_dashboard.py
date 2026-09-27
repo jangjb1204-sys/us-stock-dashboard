@@ -41,13 +41,14 @@ CSS = ui.html(f"""
 <style>
 .panel-title {{ display:flex; align-items:center; gap:10px; color:{ui.TEXT}; font-weight:650; font-size:1.02rem; margin:2.2rem 0 .9rem; }}
 .chev {{ color:{ui.FAINT}; font-size:1.3rem; line-height:1; }}
-.stage-strip {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:1.1rem 0 0; }}
+.stage-strip {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:8px; margin:1.1rem 0 0; }}
 .pd-stats {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:28px; row-gap:18px; }}
 .pd-stats .tj-stat {{ padding-top:18px; }}
 .pd-open {{ display:inline-block; margin-top:.9rem; color:#8EC1FF!important; font-size:.84rem; font-weight:600; text-decoration:none!important; }}
 .pd-open:hover {{ color:#B8D7FF!important; }}
 .stage {{ border:1px solid rgba(255,255,255,.05); border-radius:12px; padding:10px 12px; background:rgba(255,255,255,.035); min-width:0; }}
-.stage .name {{ color:rgba(255,255,255,.82); font-weight:620; font-size:.86rem; }}
+.stage .name {{ color:rgba(255,255,255,.82); font-weight:620; font-size:.86rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.stage .name span {{ color:rgba(255,255,255,.46); font-weight:520; font-size:.76rem; margin-left:2px; }}
 .stage .count {{ margin-top:.25rem; font-variant-numeric:tabular-nums; color:{ui.TEXT}; font-size:1.26rem; font-weight:620; }}
 .stage .desc {{ margin-top:.3rem; color:rgba(255,255,255,.46); font-size:.78rem; }}
 .calendar-shell {{ width:100%; max-width:100%; overflow:hidden; }}
@@ -697,7 +698,7 @@ def main() -> None:
                 f"<div class='tj-stat'><div class='label'>{label}</div><div class='value {cls}'>{value}</div><div class='note'>{note}</div></div>"
                 for label, value, cls, note in stats
             ) + "</div><div class='stage-strip'>" + "".join(
-                f"<div class='stage'><div class='name'>{name} · {ma}</div><div class='count'>{stage_counts.get(key, 0)}</div></div>"
+                f"<div class='stage'><div class='name'>{name} <span>{ma}</span></div><div class='count'>{stage_counts.get(key, 0)}</div></div>"
                 for name, ma, key in stages
             ) + "</div>",
             unsafe_allow_html=True,
@@ -708,7 +709,7 @@ def main() -> None:
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='tj-label'>필터</div>", unsafe_allow_html=True)
-    filter_cols = st.columns([1.2, 1.8, 3.4])
+    filter_cols = st.columns([1.3, 2.2, 2.5])
     has_puddle = df.get("puddle", pd.Series(dtype=str)).apply(has_text_signal) if not df.empty else pd.Series(dtype=bool)
     with filter_cols[0]:
         type_counts = df["asset_type"].value_counts().to_dict() if "asset_type" in df.columns else {}
