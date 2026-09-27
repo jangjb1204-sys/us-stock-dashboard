@@ -10,6 +10,7 @@ import uuid
 from zoneinfo import ZoneInfo
 
 import ui_theme as ui
+import us_symbol_search
 from stock_analyzer import (
     TICKER_CONFIGS,
     fetch_batch_stock_data,
@@ -1866,6 +1867,52 @@ def clear_recent_tickers():
 def clear_direct_ticker_input():
     st.session_state.direct_ticker_query = ""
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def load_symbol_candidates(query: str) -> list[dict]:
+    """Name/ticker search: Korean aliases + Yahoo symbol search (US listings only)."""
+    try:
+        yahoo = us_symbol_search.yahoo_search(query)
+    except Exception:
+        yahoo = []
+    return us_symbol_search.merge_results(query, us_symbol_search.alias_matches(query), yahoo)
+
+def format_symbol_candidate(row: dict) -> str:
+    parts = [row["symbol"], row.get("name") or ""]
+    if row.get("exchange"):
+        parts.append(row["exchange"])
+    return " · ".join(p for p in parts if p)
+
+def resolve_symbol_search(raw: str) -> tuple[dict | None, str]:
+    """Turn the search box text into a symbol, showing a picker when it's ambiguous.
+
+    Returns (picked row or None, caption to show under the box).
+    """
+    query = " ".join(str(raw or "").split())
+    if not query:
+        return None, ""
+    if query.upper().endswith((".KS", ".KQ")):
+        return None, "Korean-listed stocks and ETFs are on the 🇰🇷 KOSPI · KOSDAQ page (link at the top)."
+    candidates = load_symbol_candidates(query)
+    typed = us_symbol_search.normalize(query)
+    exact = next((row for row in candidates if row["symbol"] == typed), None)
+    if exact or len(candidates) == 1:
+        return exact or candidates[0], ""
+    if candidates:
+        pick = st.selectbox(
+            f"{len(candidates)} matches",
+            candidates,
+            index=0,
+            format_func=format_symbol_candidate,
+            key=f"symbol_pick_{typed}",
+        )
+        return pick, ""
+    if us_symbol_search.looks_like_ticker(query):
+        # Search found nothing (or Yahoo was unreachable): try it as a raw ticker.
+        return {"symbol": normalize_ticker(query), "name": ""}, ""
+    if us_symbol_search._HANGUL.search(query):
+        return None, "한글 이름은 주요 종목만 지원해요. 영어 이름이나 티커로 검색해 보세요 (예: Nvidia, NVDA)."
+    return None, f"No US stock or ETF found for “{query}”."
+
 def unique_tickers(tickers) -> list[str]:
     result = []
     for ticker in tickers:
@@ -2720,9 +2767,12 @@ with range_col:
 with search_col:
     raw_custom_ticker = st.text_input(
         "Search",
-        placeholder="US stock / ETF ticker, e.g. AAPL, NVDA, VOO",
+        placeholder="Ticker or name, e.g. AAPL, Nvidia, 테슬라, S&P 500",
         key="direct_ticker_query",
     )
+    search_pick, search_note = resolve_symbol_search(raw_custom_ticker)
+    if search_note:
+        st.caption(search_note)
 delta = DELTA_OPTIONS[delta_label]
 
 
@@ -2745,13 +2795,9 @@ preset_ticker = st.radio(
     on_change=clear_direct_ticker_input,
 )
 
-custom_ticker = normalize_ticker(raw_custom_ticker)
-if raw_custom_ticker.strip() and not custom_ticker:
-    st.caption("Korean-listed stocks and ETFs are on the 🇰🇷 KOSPI · KOSDAQ page (link at the top).")
-
-if custom_ticker:
-    selected_ticker = custom_ticker
-    selected_name = load_ticker_display_name(custom_ticker)
+if search_pick:
+    selected_ticker = search_pick["symbol"]
+    selected_name = TICKER_CONFIGS.get(selected_ticker) or search_pick.get("name") or load_ticker_display_name(selected_ticker)
 else:
     selected_ticker = preset_ticker
     selected_name = load_ticker_display_name(selected_ticker)
