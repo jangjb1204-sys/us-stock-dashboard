@@ -239,11 +239,19 @@ def signal_runs(data: pd.DataFrame) -> list[dict]:
     return runs
 
 
-def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years: int = 6, digits: int = 2) -> go.Figure:
-    """Month-end close with its 5/10-month averages, and each month's signal as
-    a thin ribbon under the chart (runs of the same signal drawn as one
-    segment). This month: the latest close as one dot, plus the two closing
-    lines it has to clear."""
+def panel_label(fig: go.Figure, row: int, text: str, middle: bool = False) -> None:
+    axis = "" if row == 1 else str(row)
+    fig.add_annotation(xref=f"x{axis} domain", yref=f"y{axis} domain", x=0.005, y=0.5 if middle else 0.97,
+                       xanchor="left", yanchor="middle" if middle else "top", showarrow=False, text=text,
+                       font={"color": "rgba(245,245,247,0.78)", "size": 11}, bgcolor="rgba(5,7,13,0.72)", borderpad=2)
+
+
+def build_combined_chart(monthly: pd.DataFrame, daily: pd.DataFrame, status: engine.IndexStatus,
+                         years: int = 2, digits: int = 2) -> go.Figure:
+    """One chart, three panels on a shared date axis, read top to bottom:
+    month-end close with its 5/10-month averages and this month's two
+    threshold lines; the 60-day disparity with overheated days as dots; and
+    each month's stock weight as a ribbon."""
     yfmt = f"%{{y:,.{digits}f}}"
     cutoff = status.confirmed_month - 12 * years
     data = monthly[monthly["Month"] >= cutoff].copy()
@@ -251,12 +259,16 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
     month_start = status.last_date.to_period("M").to_timestamp(how="start")
     month_end = (status.last_date + pd.offsets.MonthEnd(0)).normalize()
     last_confirmed_x = x.iloc[-1]
-    sig_text = data["Signal"].map(lambda sgn: f"다음 달 {level_name(sgn)}")
-    live_color = ui.TEXT
-
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.93, 0.07], vertical_spacing=0.03)
     seg_end = month_end + pd.Timedelta(days=25)  # a little room so this month's lines read as lines
+    sig_text = data["Signal"].map(lambda sgn: f"다음 달 {level_name(sgn)}")
+    disp = engine.add_disparity(daily)
+    disp = disp[disp["Date"] >= x.iloc[0] - pd.Timedelta(days=31)]
+    hot = disp[disp["Disparity"] >= engine.DEV_THRESHOLD]
+
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, row_heights=[0.64, 0.28, 0.08], vertical_spacing=0.035)
     line = lambda color, dash="solid", width=2: {"color": color, "width": width, "dash": dash, "shape": "linear"}
+
+    # 1) month-end close (solid) and the two averages (dotted)
     fig.add_trace(go.Scatter(x=x, y=data["Close"], name="월말 종가", mode="lines", line=line(CLOSE_COLOR, width=2.2),
                              customdata=sig_text,
                              hovertemplate="월말 종가 " + yfmt + "<br>%{customdata}<extra></extra>"), row=1, col=1)
@@ -264,49 +276,58 @@ def build_monthly_chart(monthly: pd.DataFrame, status: engine.IndexStatus, years
                              hovertemplate="5개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
     fig.add_trace(go.Scatter(x=x, y=data["MA10"], name="10개월선", mode="lines", line=line(MA10_COLOR, "dot", 1.8),
                              hovertemplate="10개월선 " + yfmt + "<extra></extra>"), row=1, col=1)
-
-    # This month so far: a faint link from last month-end, one dot for the latest close.
+    # this month so far: a faint link from last month-end, one dot for the latest close
     fig.add_trace(go.Scatter(x=[last_confirmed_x, status.last_date], y=[data["Close"].iloc[-1], status.last_close],
                              mode="lines", line={"color": "rgba(242,245,248,0.38)", "width": 2, "dash": "dot"},
                              hoverinfo="skip", showlegend=False), row=1, col=1)
-    fig.add_trace(go.Scatter(x=[status.last_date], y=[status.last_close], mode="markers", name="이번 달 최근 종가",
-                             marker={"size": 11, "color": live_color, "line": {"width": 2, "color": ui.PLOT_BG}},
+    fig.add_trace(go.Scatter(x=[status.last_date], y=[status.last_close], mode="markers",
+                             marker={"size": 10, "color": ui.TEXT, "line": {"width": 2, "color": ui.PLOT_BG}},
                              hovertemplate="이번 달 최근 종가 " + yfmt + "<extra></extra>", showlegend=False), row=1, col=1)
-    # The two lines this month's close has to clear, only across this month.
-    # No text in the chart: the prices are in the stat row right above it, and
-    # labels in a side margin got cut off on phones. Hover shows them.
+    # the two lines this month's close has to clear (solid, told apart by color)
     for level, color, name, text in ((status.green_above, LINE_FULL, "100% 기준", f"이달 말 100% 기준 ≥ {status.green_above:,.{digits}f}"),
                                      (status.red_below, LINE_NONE, "0% 기준", f"이달 말 0% 기준 < {status.red_below:,.{digits}f}")):
         fig.add_trace(go.Scatter(x=[last_confirmed_x, seg_end], y=[level, level], mode="lines",
                                  line={"color": color, "width": 2.4}, name=name, hovertemplate=text + "<extra></extra>"),
                       row=1, col=1)
 
-    # Signal ribbon: one continuous segment per run, a 2-day gap between runs;
-    # this month's in-progress segment faded.
+    # 2) 60-day disparity; overheated days (>= threshold) as dots
+    fig.add_trace(go.Scatter(x=disp["Date"], y=disp["Disparity"], name="60일 이격도", mode="lines",
+                             line={"color": "rgba(242,245,248,0.62)", "width": 1.4}, showlegend=False,
+                             hovertemplate="%{x|%Y-%m-%d}<br>이격도 %{y:.1f}<extra></extra>"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=hot["Date"], y=hot["Disparity"], mode="markers", name=f"과열({engine.DEV_THRESHOLD:.0f}↑)",
+                             marker={"size": 5, "color": MA5_COLOR},
+                             hovertemplate="%{x|%Y-%m-%d}<br>과열 · 이격도 %{y:.1f}<extra></extra>"), row=2, col=1)
+    fig.add_hline(y=engine.DEV_THRESHOLD, line={"color": "rgba(255,255,255,0.5)", "width": 1, "dash": "dash"}, row=2, col=1)
+    fig.add_hline(y=100, line={"color": "rgba(255,255,255,0.18)", "width": 1}, row=2, col=1)
+
+    # 3) stock-weight ribbon: one segment per run, this month's faded
     for run in signal_runs(data):
         span = run["end"] - run["start"]
         fig.add_trace(go.Bar(
             x=[run["start"] + span / 2], y=[1], width=[(span - pd.Timedelta(days=2)).total_seconds() * 1000],
             marker={"color": SIGNAL_COLOR[run["sig"]], "line": {"width": 0}},
-            hovertemplate=f"{level_name(run['sig'])} · {run['months']}개월<extra></extra>",
-            showlegend=False,
-        ), row=2, col=1)
+            hovertemplate=f"{level_name(run['sig'])} · {run['months']}개월<extra></extra>", showlegend=False,
+        ), row=3, col=1)
     span = month_end + pd.Timedelta(days=1) - month_start
     fig.add_trace(go.Bar(
         x=[month_start + span / 2], y=[1], width=[(span - pd.Timedelta(days=2)).total_seconds() * 1000],
         marker={"color": SIGNAL_COLOR[status.live_signal], "opacity": 0.35, "line": {"width": 0}},
         hovertemplate="이번 달 진행 중<extra></extra>", showlegend=False,
-    ), row=2, col=1)
+    ), row=3, col=1)
 
-    # Shorter than before: on a phone the old 460px read as a tall strip.
-    _style(fig, 360)
+    panel_label(fig, 1, "월봉")
+    disp_now = f"{status.disparity:.1f}" if status.disparity is not None else "N/A"
+    panel_label(fig, 2, f"이격도 <b>{disp_now}</b> · {engine.DEV_THRESHOLD:.0f} 과열")
+    panel_label(fig, 3, "비중", middle=True)
+
+    _style(fig, 440)
     fig.update_layout(bargap=0, margin={"l": 10, "r": 12, "t": 36, "b": 24})
-    # Log scale: a 10% move is the same height in 2021 and in 2026, so older
-    # crossings aren't flattened by the recent rally.
-    fig.update_yaxes(type="log", tickformat=",.0f", nticks=6, row=1, col=1)
-    fig.update_yaxes(visible=False, range=[0, 1], showgrid=False, row=2, col=1)
-    fig.update_xaxes(showgrid=False, row=2, col=1)
-    fig.update_xaxes(tickformat="%y.%m", range=[x.iloc[0] - pd.Timedelta(days=35), seg_end + pd.Timedelta(days=5)])
+    fig.update_xaxes(showgrid=False, tickformat="%y.%m",
+                     range=[x.iloc[0] - pd.Timedelta(days=20), seg_end + pd.Timedelta(days=5)])
+    # log scale: a 10% move is the same height early and late in the range
+    fig.update_yaxes(type="log", tickformat=",.0f", nticks=5, row=1, col=1)
+    fig.update_yaxes(tickvals=[100, engine.DEV_THRESHOLD], row=2, col=1)
+    fig.update_yaxes(visible=False, range=[0, 1], showgrid=False, row=3, col=1)
     return fig
 
 
@@ -316,32 +337,6 @@ def signal_key_html() -> str:
                           f"background:{SIGNAL_COLOR[sig]};margin:0 5px 0 10px;vertical-align:-1px'></span>")
     items = "".join(f"{swatch(sig)}{weight_text(engine.SIGNAL_WEIGHT[sig])}" for sig in ("green", "yellow", "red"))
     return f"<div class='tj-caption' style='margin-top:-.2rem'>월별 주식 비중{items} · 로그 눈금</div>"
-
-
-def build_disparity_chart(daily: pd.DataFrame, years: int = 3, digits: int = 2) -> go.Figure:
-    yfmt = f"%{{y:,.{digits}f}}"
-    data = engine.add_disparity(daily)
-    data = data[data["Date"] >= data["Date"].iloc[-1] - pd.DateOffset(years=years)]
-    hot = data[data["Disparity"] >= engine.DEV_THRESHOLD]
-
-    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.62, 0.38], vertical_spacing=0.05)
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], name="종가", mode="lines",
-                             line={"color": "#f5f5f7", "width": 1.8},
-                             hovertemplate="%{x|%Y-%m-%d}<br>종가 " + yfmt + "<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["MA60"], name="60일 평균", mode="lines",
-                             line={"color": MA10_COLOR, "width": 1.3, "dash": "dot"},
-                             hovertemplate="60일 평균 " + yfmt + "<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=hot["Date"], y=hot["Close"], name=f"이격도 {engine.DEV_THRESHOLD:.0f}↑ (과열)",
-                             mode="markers", marker={"size": 5, "color": MA5_COLOR},
-                             hovertemplate="과열 " + yfmt + "<extra></extra>"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=data["Date"], y=data["Disparity"], name="60일 이격도", mode="lines",
-                             line={"color": MA5_COLOR, "width": 1.6},
-                             hovertemplate="이격도 %{y:.1f}<extra></extra>"), row=2, col=1)
-    fig.add_hline(y=engine.DEV_THRESHOLD, line={"color": "rgba(255,255,255,0.55)", "width": 1, "dash": "dash"}, row=2, col=1)
-    fig.add_hline(y=100, line={"color": "rgba(255,255,255,0.25)", "width": 1}, row=2, col=1)
-    _style(fig, 400)
-    fig.update_xaxes(tickformat="%y.%m")
-    return fig
 
 
 # ── Sections ───────────────────────────────────────────────────────────────────
@@ -561,30 +556,25 @@ _fragment = getattr(st, "fragment", None) or (lambda func: func)
 
 @_fragment
 def render_charts(status: engine.IndexStatus, daily: pd.DataFrame, monthly: pd.DataFrame, digits: int, today: date) -> None:
-    """Charts with their own range picker (like the US page); changing the
-    range reruns only this part."""
+    """The combined chart with its own range picker (like the US page);
+    changing the range reruns only this part."""
     _, range_col = st.columns([1, 1.2])
     with range_col:
         label = st.radio("기간", list(RANGE_YEARS), index=1, horizontal=True, key="kr_range",
                          label_visibility="collapsed")
     years = RANGE_YEARS[label]
-    tab_month, tab_disp = st.tabs(["월봉 신호", "이격도"])
-    with tab_month:
-        st.plotly_chart(build_monthly_chart(monthly, status, years=years, digits=digits),
-                        use_container_width=True, config=PLOT_CONFIG)
-        md(signal_key_html())
-        export = monthly.copy()
-        export["Month"] = export["Month"].astype(str)
-        export["Date"] = pd.to_datetime(export["Date"]).dt.strftime("%Y-%m-%d")
-        st.download_button(
-            label="월별 기록 CSV",
-            data=export.to_csv(index=False, encoding="utf-8-sig"),
-            file_name=f"{status.key}_monthly_signals_{today:%Y%m%d}.csv",
-            mime="text/csv",
-        )
-    with tab_disp:
-        st.plotly_chart(build_disparity_chart(daily, years=years, digits=digits),
-                        use_container_width=True, config=PLOT_CONFIG)
+    st.plotly_chart(build_combined_chart(monthly, daily, status, years=years, digits=digits),
+                    use_container_width=True, config=PLOT_CONFIG)
+    md(signal_key_html())
+    export = monthly.copy()
+    export["Month"] = export["Month"].astype(str)
+    export["Date"] = pd.to_datetime(export["Date"]).dt.strftime("%Y-%m-%d")
+    st.download_button(
+        label="월별 기록 CSV",
+        data=export.to_csv(index=False, encoding="utf-8-sig"),
+        file_name=f"{status.key}_monthly_signals_{today:%Y%m%d}.csv",
+        mime="text/csv",
+    )
 
 
 # ── Page ───────────────────────────────────────────────────────────────────────
