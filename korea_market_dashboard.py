@@ -16,6 +16,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 from plotly.subplots import make_subplots
 
 import korea_signal_engine as engine
@@ -80,33 +81,6 @@ div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(
 .st-key-kr_range div[role="radiogroup"] {{ margin-left:auto; }}
 .st-key-kr_range label[data-testid="stRadioOption"] {{ min-height:30px!important; height:30px!important; padding:0 10px!important; }}
 .kr-section {{ margin:2.6rem 0 .6rem; color:{ui.TEXT}; font-size:1.05rem; font-weight:650; }}
-.t1 {{ margin:.5rem 0 .8rem; font-variant-numeric:tabular-nums; }}
-.t1-head, .t1-row {{ display:grid; grid-template-columns:34px minmax(0,2.2fr) 1.1fr .9fr .9fr .7fr; align-items:center; column-gap:12px; padding:10px 4px; }}
-.t1-head {{ color:{ui.MUTED}; font-size:12px; font-weight:560; letter-spacing:.03em; border-bottom:1px solid {ui.LINE}; }}
-.t1-row {{ color:rgba(255,255,255,.82)!important; text-decoration:none!important; font-size:.88rem; border-bottom:1px solid rgba(255,255,255,.045); }}
-.t1-row:hover {{ background:rgba(255,255,255,.035); }}
-.t1-row .rk {{ color:rgba(255,255,255,.4); font-size:.8rem; }}
-.t1-row .nm {{ min-width:0; display:flex; flex-direction:column; }}
-.t1-row .nm b {{ color:{ui.TEXT}; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
-.t1-row small {{ color:rgba(255,255,255,.4); font-size:.74rem; margin-top:1px; }}
-.t1-row .val {{ display:flex; flex-direction:column; }}
-.t1-row .val small .up {{ color:#6EA8FF; }} .t1-row .val small .down {{ color:#FF5A5F; }}
-.t1-row .tag {{ margin-left:6px; padding:1px 7px; border:1px solid rgba(255,255,255,.28); border-radius:999px; color:{ui.TEXT}; font-size:.7rem; font-weight:600; white-space:nowrap; }}
-.t1-row .w {{ display:inline-flex; align-items:center; gap:7px; }}
-.t1-row .w i {{ width:8px; height:8px; border-radius:2px; display:inline-block; }}
-.t1-row .w.dim {{ color:rgba(255,255,255,.55); }}
-.t1-row .dp.hot {{ color:{ui.TEXT}; font-weight:650; }}
-.t1-row .na {{ color:rgba(255,255,255,.38); font-size:.78rem; }}
-.t1-row .lab {{ display:none; font-style:normal; color:rgba(255,255,255,.4); font-size:.7rem; margin-right:5px; }}
-@media (max-width:640px) {{
-  .t1-head {{ display:none; }}
-  .t1-row {{ grid-template-columns:26px minmax(0,1fr) auto; grid-template-areas:"rk nm val" "rk w nx" "rk dp dp"; row-gap:4px; padding:11px 2px; }}
-  .t1-row .rk {{ grid-area:rk; align-self:start; padding-top:2px; }}
-  .t1-row .nm {{ grid-area:nm; }} .t1-row .val {{ grid-area:val; text-align:right; align-items:flex-end; }}
-  .t1-row .w {{ grid-area:w; }} .t1-row .w.dim {{ grid-area:nx; justify-content:flex-end; }}
-  .t1-row .dp {{ grid-area:dp; }}
-  .t1-row .lab {{ display:inline; }}
-}}
 .kr-zone-foot b {{ color:{ui.TEXT}; font-weight:600; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
@@ -172,6 +146,8 @@ def load_backtests(symbol: str, start_year: int, day_key: str) -> dict:
     }
 
 
+kr_list_component = components.declare_component(
+    "kr_list", path=str(Path(__file__).resolve().parent / "kr_list_component"))
 SCAN_BASE = "https://raw.githubusercontent.com/jangjb1204-sys/us-stock-dashboard/kr-scans/"
 SCAN_FILES = {"stock": "kr_top100_latest.csv", "etf": "kr_etf30_latest.csv"}
 ETF_KIND_LABEL = {"index": "지수형", "leverage": "레버리지", "inverse": "인버스", "own": "섹터·해외"}
@@ -460,7 +436,7 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
         heat = (f"<div class='tj-note warn' style='margin:.9rem 0 0'>이격도 {fmt_num(status.disparity, 1)} 과열 · "
                 f"주식 {weight_text(status.final_weight)}로 한 단계 낮춤</div>")
     md(f"""
-        <div class="kr-zone">
+        <div class="kr-zone" id="kr-detail">
           <div class="kr-zone-head"><span>{month_label(status.last_date.to_period("M") + 1)} 비중 예상 · 이달 말 종가 기준</span>
             <span>현재 <b>{fmt_num(close, d)}</b> · {ui.kdate(status.last_date)}</span></div>
           <div class="kr-bar">
@@ -518,36 +494,34 @@ def fmt_value_mil(value) -> str:
     return f"{v / 1_000_000:.2f}조" if v >= 1_000_000 else f"{v / 100:,.0f}억"
 
 
-def top100_row(r) -> str:
+def top100_row(r) -> dict:
+    """One list row as plain values for kr_list_component."""
     ok = r.status == "ok"
     kind = getattr(r, "kind", None)
-    meta = f"{escape(r.code)} · {engine.MARKET_LABEL.get(r.market, r.market)}"
+    meta = f"{r.code} · {engine.MARKET_LABEL.get(r.market, r.market)}"
     if isinstance(kind, str):
-        meta = f"{escape(r.code)} · {ETF_KIND_LABEL.get(kind, kind)} · {escape(str(getattr(r, 'basis', '') or ''))} 기준"
-    w = weight_text(r.weight) if ok else "—"
-    nxt = weight_text(r.next_weight) if ok else "—"
-    disp = f"{r.disparity:.1f}" if ok and pd.notna(r.disparity) else "—"
-    hot = " hot" if ok and bool(r.overheated) else ""
-    chg = f"{r.change_pct:+.2f}%" if pd.notna(r.change_pct) else ""
-    tone = "up" if pd.notna(r.change_pct) and r.change_pct > 0 else ("down" if pd.notna(r.change_pct) and r.change_pct < 0 else "")
-    ref_note = getattr(r, "note", None)
-    if r.status == "ref":
-        note = f"<span class='na'>{escape(str(ref_note))}</span>"
-    elif ok and isinstance(ref_note, str) and ref_note:
-        note = f"<span class='na'>{escape(ref_note)}</span>"
-    else:
-        note = "" if ok else "<span class='na'>데이터 부족</span>"
-    lvl = lambda v: f"<i style='background:{SIGNAL_COLOR[{1.0: 'green', 0.5: 'yellow', 0.0: 'red'}[float(v)]]}'></i>" if ok else ""
-    up = " <span class='tag'>상승 전환</span>" if ok and float(r.next_weight) > float(r.weight) else ""
-    price = f"{r.close:,.0f}" if pd.notna(getattr(r, "close", None)) else "—"
-    return (f"<a class='t1-row' href='?dashboard=korea&amp;q={escape(r.code)}' target='_self'>"
-            f"<span class='rk'>{int(r.rank)}</span>"
-            f"<span class='nm'><b>{escape(str(r.name))}</b><small>{meta}</small></span>"
-            f"<span class='val'>{price}<small><span class='{tone}'>{chg}</span> · {fmt_value_mil(r.value_mil)}</small></span>"
-            f"<span class='w'><em class='lab'>이번 달</em>{lvl(r.weight)}{w}{note}</span>"
-            f"<span class='w dim'><em class='lab'>다음 달</em>{lvl(r.next_weight)}{nxt}{up}</span>"
-            f"<span class='dp{hot}'><em class='lab'>이격도</em>{disp}</span>"
-            f"</a>")
+        meta = f"{r.code} · {ETF_KIND_LABEL.get(kind, kind)} · {getattr(r, 'basis', '') or ''} 기준"
+    color = lambda v: SIGNAL_COLOR[{1.0: "green", 0.5: "yellow", 0.0: "red"}[float(v)]] if ok and pd.notna(v) else ""
+    chg = float(r.change_pct) if pd.notna(r.change_pct) else None
+    note = getattr(r, "note", None)
+    return {
+        "code": str(r.code),
+        "rank": int(r.rank),
+        "name": str(r.name),
+        "meta": meta,
+        "price": f"{r.close:,.0f}" if pd.notna(getattr(r, "close", None)) else "—",
+        "chg": f"{chg:+.2f}%" if chg is not None else "",
+        "tone": "up" if chg and chg > 0 else ("down" if chg and chg < 0 else ""),
+        "value": fmt_value_mil(r.value_mil),
+        "w": weight_text(r.weight) if ok else "—",
+        "w_color": color(r.weight),
+        "n": weight_text(r.next_weight) if ok else "—",
+        "n_color": color(r.next_weight),
+        "up": bool(ok and float(r.next_weight) > float(r.weight)),
+        "disp": f"{r.disparity:.1f}" if ok and pd.notna(r.disparity) else "—",
+        "hot": bool(ok and str(r.overheated).lower() == "true"),
+        "note": str(note) if isinstance(note, str) and note else "",
+    }
 
 
 def render_top100() -> None:
@@ -575,10 +549,18 @@ def render_top100() -> None:
     if cand.empty:
         md("<div class='tj-caption'>오늘 매수 후보 없음</div>")
         return
-    rows = cand
-    head = (f"<div class='t1-head'><span>순위</span><span>종목</span><span>가격 · 거래대금</span>"
-            f"<span>{this_m.month}월 비중</span><span>{next_m.month}월 예상</span><span>이격도</span></div>")
-    md("<div class='t1'>" + head + "".join(top100_row(r) for r in rows.itertuples()) + "</div>")
+    picked = kr_list_component(
+        rows=[top100_row(r) for r in cand.itertuples()],
+        head={"w": f"{this_m.month}월 비중", "n": f"{next_m.month}월 예상"},
+        selected=str(st.session_state.get("kr_query") or "").strip(),
+        key=f"kr_list_{kind}", default=None,
+    )
+    # A tap opens that stock in this page: no reload, the search box takes the code.
+    if isinstance(picked, dict) and picked.get("nonce") != st.session_state.get("_kr_pick_nonce"):
+        st.session_state["_kr_pick_nonce"] = picked.get("nonce")
+        st.session_state["_kr_pending_q"] = str(picked.get("code") or "")
+        st.session_state["_kr_scroll_top"] = True
+        st.rerun()
 
 
 # ── Search ─────────────────────────────────────────────────────────────────────
@@ -750,6 +732,9 @@ def main() -> None:
             md(index_panel(statuses[key], selected=(key == st.session_state["kr_index"] and not searching)))
             st.button(f"{engine.INDEXES[key]['label']} 보기", key=f"kr_card_{key}", on_click=pick_index, args=(key,))
 
+    pending = st.session_state.pop("_kr_pending_q", None)
+    if pending:
+        st.session_state["kr_query"] = pending
     query = st.text_input(
         "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
         placeholder="종목 · ETF 검색 · 삼성전자, 005930, KODEX 레버리지",
@@ -773,6 +758,12 @@ def main() -> None:
     status, daily, monthly = target.status, target.daily, target.monthly
     digits = price_digits(status.key)
     render_detail(status, today, eyebrow)
+    if st.session_state.pop("_kr_scroll_top", False):
+        components.html(
+            "<script>setTimeout(function(){try{var d=window.parent.document;var el=d.getElementById('kr-detail');"
+            "if(el){el.scrollIntoView({behavior:'smooth',block:'center'});}}catch(e){}},300);</script>",
+            height=0,
+        )
 
     try:
         backtests = load_backtests(target.symbol, target.start_year, day_key)

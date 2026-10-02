@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Buy-candidate list for the 한국 시장 page. Same look as ui_theme.py.
+       A row tap sends the code back to Streamlit (no page reload). */
+    html, body { margin: 0; padding: 0; background: transparent; color: #F2F5F8;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+    * { box-sizing: border-box; }
+    .head, .row { display: grid; grid-template-columns: 40px minmax(0, 2.2fr) 1.1fr .9fr 1.1fr .7fr; align-items: center; column-gap: 12px; padding: 10px 4px; }
+    .head { color: rgba(255,255,255,.48); font-size: 12px; font-weight: 560; letter-spacing: .03em; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .row { color: rgba(255,255,255,.82); font-size: .88rem; border-bottom: 1px solid rgba(255,255,255,.045); cursor: pointer; }
+    .row:hover { background: rgba(255,255,255,.035); }
+    .row.active { background: rgba(255,255,255,.06); box-shadow: inset 2px 0 0 #F2F5F8; }
+    .row:focus-visible { outline: 1px solid rgba(242,245,248,.6); outline-offset: -1px; }
+    .rk { color: rgba(255,255,255,.4); font-size: .8rem; }
+    .nm { min-width: 0; display: flex; flex-direction: column; }
+    .nm b { color: #F2F5F8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    small { color: rgba(255,255,255,.4); font-size: .74rem; margin-top: 1px; }
+    .val { display: flex; flex-direction: column; }
+    .up { color: #6EA8FF; } .down { color: #FF5A5F; }
+    .w { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .w i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+    .w.dim { color: rgba(255,255,255,.55); }
+    .dp.hot { color: #F2F5F8; font-weight: 650; }
+    .na { color: rgba(255,255,255,.38); font-size: .78rem; }
+    .tag { padding: 1px 7px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; color: #F2F5F8; font-size: .7rem; font-weight: 600; white-space: nowrap; }
+    .lab { display: none; font-style: normal; color: rgba(255,255,255,.4); font-size: .7rem; margin-right: 5px; }
+    @media (max-width: 640px) {
+      .head { display: none; }
+      .row { grid-template-columns: 28px minmax(0,1fr) auto; grid-template-areas: "rk nm val" "rk w nx" "rk dp dp"; row-gap: 4px; padding: 11px 2px; }
+      .rk { grid-area: rk; align-self: start; padding-top: 2px; }
+      .nm { grid-area: nm; } .val { grid-area: val; text-align: right; align-items: flex-end; }
+      .w { grid-area: w; } .w.dim { grid-area: nx; justify-content: flex-end; }
+      .dp { grid-area: dp; }
+      .lab { display: inline; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const Streamlit = {
+      ready() { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*"); },
+      setFrameHeight(h) { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: h }, "*"); },
+      setComponentValue(v) { window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: v, dataType: "json" }, "*"); }
+    };
+    const esc = (v) => String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+    function resize() { Streamlit.setFrameHeight(Math.max(1, Math.ceil(document.getElementById("root").getBoundingClientRect().height))); }
+    function level(color) { return color ? `<i style="background:${esc(color)}"></i>` : ""; }
+    function render(args) {
+      const rows = args.rows || [], h = args.head || {};
+      const html = rows.map((r) => `
+        <div class="row${r.code === args.selected ? " active" : ""}" role="button" tabindex="0" data-code="${esc(r.code)}">
+          <span class="rk">${esc(r.rank)}</span>
+          <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small></span>
+          <span class="val">${esc(r.price)}<small><span class="${esc(r.tone)}">${esc(r.chg)}</span> · ${esc(r.value)}</small></span>
+          <span class="w"><em class="lab">이번 달</em>${level(r.w_color)}${esc(r.w)}${r.note ? `<span class="na">${esc(r.note)}</span>` : ""}</span>
+          <span class="w dim"><em class="lab">다음 달</em>${level(r.n_color)}${esc(r.n)}${r.up ? ' <span class="tag">상승 전환</span>' : ""}</span>
+          <span class="dp${r.hot ? " hot" : ""}"><em class="lab">이격도</em>${esc(r.disp)}</span>
+        </div>`).join("");
+      document.getElementById("root").innerHTML =
+        `<div class="head"><span>순위</span><span>종목</span><span>가격 · 거래대금</span><span>${esc(h.w)}</span><span>${esc(h.n)}</span><span>이격도</span></div>${html}`;
+      document.querySelectorAll(".row").forEach((el) => {
+        const pick = () => {
+          document.querySelectorAll(".row.active").forEach((x) => x.classList.remove("active"));
+          el.classList.add("active");
+          Streamlit.setComponentValue({ code: el.dataset.code, nonce: Date.now() });
+        };
+        el.addEventListener("click", pick);
+        el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+      });
+      resize(); requestAnimationFrame(() => { resize(); requestAnimationFrame(resize); });
+    }
+    window.addEventListener("message", (e) => { if (e.data.type === "streamlit:render") render(e.data.args); });
+    window.addEventListener("resize", resize);
+    Streamlit.ready();
+  </script>
+</body>
+</html>
