@@ -171,16 +171,18 @@ def load_backtests(symbol: str, start_year: int, day_key: str) -> dict:
     }
 
 
-TOP100_URL = "https://raw.githubusercontent.com/jangjb1204-sys/us-stock-dashboard/kr-scans/kr_top100_latest.csv"
+SCAN_BASE = "https://raw.githubusercontent.com/jangjb1204-sys/us-stock-dashboard/kr-scans/"
+SCAN_FILES = {"stock": "kr_top100_latest.csv", "etf": "kr_etf30_latest.csv"}
+ETF_KIND_LABEL = {"index": "지수형", "leverage": "레버리지", "inverse": "인버스", "own": "섹터·해외"}
 TOP100_PREVIEW = 20
 
 
 @st.cache_data(show_spinner=False, ttl=60 * 30)
-def load_top100() -> pd.DataFrame:
-    """Today's top-100 stocks by trading value with the rule applied, written
-    by the weekday GitHub Actions scan (scripts/kr_top100_scan.py)."""
+def load_top100(kind: str = "stock") -> pd.DataFrame:
+    """Today's top stocks (100) or ETFs (30) by trading value with the rule
+    applied, written by the weekday GitHub Actions scan (scripts/kr_top100_scan.py)."""
     try:
-        resp = requests.get(TOP100_URL, headers={"User-Agent": "30s-tech-j-streamlit"}, timeout=12)
+        resp = requests.get(SCAN_BASE + SCAN_FILES[kind], headers={"User-Agent": "30s-tech-j-streamlit"}, timeout=12)
         resp.raise_for_status()
         return pd.read_csv(StringIO(resp.text), dtype={"code": str})
     except Exception:
@@ -518,17 +520,27 @@ def fmt_value_mil(value) -> str:
 
 def top100_row(r) -> str:
     ok = r.status == "ok"
+    kind = getattr(r, "kind", None)
+    meta = f"{escape(r.code)} · {engine.MARKET_LABEL.get(r.market, r.market)}"
+    if isinstance(kind, str):
+        meta = f"{escape(r.code)} · {ETF_KIND_LABEL.get(kind, kind)} · {escape(str(getattr(r, 'basis', '') or ''))} 기준"
     w = weight_text(r.weight) if ok else "—"
     nxt = weight_text(r.next_weight) if ok else "—"
     disp = f"{r.disparity:.1f}" if ok and pd.notna(r.disparity) else "—"
     hot = " hot" if ok and bool(r.overheated) else ""
     chg = f"{r.change_pct:+.2f}%" if pd.notna(r.change_pct) else ""
     tone = "up" if pd.notna(r.change_pct) and r.change_pct > 0 else ("down" if pd.notna(r.change_pct) and r.change_pct < 0 else "")
-    note = "" if ok else "<span class='na'>데이터 부족</span>"
+    ref_note = getattr(r, "note", None)
+    if r.status == "ref":
+        note = f"<span class='na'>{escape(str(ref_note))}</span>"
+    elif ok and isinstance(ref_note, str) and ref_note:
+        note = f"<span class='na'>{escape(ref_note)}</span>"
+    else:
+        note = "" if ok else "<span class='na'>데이터 부족</span>"
     lvl = lambda v: f"<i style='background:{SIGNAL_COLOR[{1.0: 'green', 0.5: 'yellow', 0.0: 'red'}[float(v)]]}'></i>" if ok else ""
     return (f"<a class='t1-row' href='?dashboard=korea&amp;q={escape(r.code)}' target='_self'>"
             f"<span class='rk'>{int(r.rank)}</span>"
-            f"<span class='nm'><b>{escape(str(r.name))}</b><small>{escape(r.code)} · {engine.MARKET_LABEL.get(r.market, r.market)}</small></span>"
+            f"<span class='nm'><b>{escape(str(r.name))}</b><small>{meta}</small></span>"
             f"<span class='val'>{fmt_value_mil(r.value_mil)}<small class='{tone}'>{chg}</small></span>"
             f"<span class='w'><em class='lab'>이번 달</em>{lvl(r.weight)}{w}{note}</span>"
             f"<span class='w dim'><em class='lab'>다음 달</em>{lvl(r.next_weight)}{nxt}</span>"
@@ -537,25 +549,28 @@ def top100_row(r) -> str:
 
 
 def render_top100() -> None:
-    data = load_top100()
-    md("<div class='kr-section'>거래대금 상위 100</div>")
+    md("<div class='kr-section'>거래대금 상위</div>")
+    kind = st.radio("종류", ["stock", "etf"], format_func={"stock": "주식 100", "etf": "ETF 30"}.get,
+                    horizontal=True, key="kr_top_kind", label_visibility="collapsed")
+    data = load_top100(kind)
     if data.empty:
         md("<div class='tj-caption'>목록 준비 중 · 평일 장 마감 후 갱신</div>")
         return
     day = pd.Timestamp(data["date"].iloc[0])
     this_m, next_m = (day.to_period("M")), (day.to_period("M") + 1)
-    md(f"<div class='tj-caption' style='margin:-.3rem 0 .9rem'>{ui.kdate(day)} 거래대금 기준 · 주식만 · 종목을 누르면 상세</div>")
+    scope = "주식만" if kind == "stock" else "채권·금리형 제외 · 지수형은 지수 신호, 레버리지는 100%일 때만, 인버스는 참고"
+    md(f"<div class='tj-caption' style='margin:-.1rem 0 .9rem'>{ui.kdate(day)} 거래대금 기준 · {scope} · 누르면 상세</div>")
     ok = data[data["status"] == "ok"]
     counts = {
         "all": len(data),
         "full": int((ok["weight"] == 1.0).sum()),
         "half": int((ok["weight"] == 0.5).sum()),
         "none": int((ok["weight"] == 0.0).sum()),
-        "hot": int(ok["overheated"].astype(str).str.lower().eq("true").sum()),
+        "hot": int(ok["overheated"].astype(str).str.lower().eq("true").sum()) if "overheated" in ok else 0,
     }
     labels = {"all": f"전체 {counts['all']}", "full": f"100% {counts['full']}", "half": f"50% {counts['half']}",
               "none": f"0% {counts['none']}", "hot": f"과열 {counts['hot']}"}
-    pick = st.radio("필터", list(labels), format_func=labels.get, horizontal=True, key="kr_top_filter",
+    pick = st.radio("필터", list(labels), format_func=labels.get, horizontal=True, key=f"kr_top_filter_{kind}",
                     label_visibility="collapsed")
     view = data
     if pick == "full":
@@ -566,7 +581,7 @@ def render_top100() -> None:
         view = ok[ok["weight"] == 0.0]
     elif pick == "hot":
         view = ok[ok["overheated"].astype(str).str.lower().eq("true")]
-    show_all = st.session_state.get("kr_top_all", False) or pick != "all"
+    show_all = kind == "etf" or st.session_state.get("kr_top_all", False) or pick != "all"
     rows = view if show_all else view.head(TOP100_PREVIEW)
     head = (f"<div class='t1-head'><span>#</span><span>종목</span><span>거래대금</span>"
             f"<span>{this_m.month}월 비중</span><span>{next_m.month}월 예상</span><span>이격도</span></div>")
