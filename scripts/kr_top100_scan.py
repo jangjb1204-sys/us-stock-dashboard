@@ -89,7 +89,10 @@ def fetch_themes() -> dict[str, list[str]]:
     themes: list[tuple[str, str]] = []
     for page in range(1, 12):
         html = _get_text(THEME_LIST_URL, {"page": page})
-        found = re.findall(r'sise_group_detail\.naver\?type=theme&(?:amp;)?no=(\d+)"[^>]*>([^<]+)</a>', html)
+        if page == 1:
+            i = html.find("group_detail")
+            debug["theme_page"] = {"len": len(html), "snippet": html[max(0, i - 200): i + 400] if i >= 0 else html[:600]}
+        found = re.findall(r'sise_group_detail\.(?:naver|nhn)\?type=theme&(?:amp;)?no=(\d+)[^>]*>\s*([^<]+?)\s*</a>', html)
         new = [(no, " ".join(name.split())) for no, name in found if no not in {t[0] for t in themes}]
         if not new:
             break
@@ -101,7 +104,7 @@ def fetch_themes() -> dict[str, list[str]]:
         no, name = theme
         try:
             html = _get_text(THEME_DETAIL_URL, {"type": "theme", "no": no})
-            return name, sorted(set(re.findall(r'/item/main\.naver\?code=(\w{6})', html)))
+            return name, sorted(set(re.findall(r'/item/main\.(?:naver|nhn)\?code=(\w{6})', html)))
         except Exception:
             return name, []
 
