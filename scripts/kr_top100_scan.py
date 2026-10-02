@@ -70,73 +70,6 @@ def fetch_market(market: str) -> list[dict]:
     return rows
 
 
-# ── Naver themes (mobile API): theme list by today's change → member stocks ──
-THEME_LIST_URL = "https://m.stock.naver.com/api/stocks/theme"
-THEME_MEMBERS_URL = "https://m.stock.naver.com/api/stocks/theme/{no}"
-
-
-def fetch_themes() -> dict[str, list[str]]:
-    """code → theme names, broadest theme first."""
-    groups: list[dict] = []
-    for page in range(1, 15):
-        resp = requests.get(THEME_LIST_URL, params={"page": page, "pageSize": 100}, headers=HEADERS, timeout=15)
-        resp.raise_for_status()
-        batch = resp.json().get("groups") or []
-        groups.extend(batch)
-        if len(batch) < 100:
-            break
-        time.sleep(0.15)
-    debug["themes_found"] = len(groups)
-
-    import re
-    def short(name: str) -> str:
-        """'CXL(컴퓨트익스프레스링크)' → 'CXL'; keeps whole words."""
-        return re.sub(r"\s*\(.*?\)", "", " ".join(str(name).split())).strip()
-
-    skip = re.compile(r"신규상장|스팩|SPAC")
-
-    def members(group):
-        codes, page = [], 1
-        try:
-            while page <= 5:
-                resp = requests.get(THEME_MEMBERS_URL.format(no=group["no"]), params={"page": page, "pageSize": 100},
-                                    headers=HEADERS, timeout=15)
-                resp.raise_for_status()
-                payload = resp.json()
-                stocks = payload.get("stocks") or []
-                codes += [str(x.get("itemCode") or "") for x in stocks]
-                if len(stocks) < 100:
-                    break
-                page += 1
-            return group.get("name", ""), codes
-        except Exception as exc:
-            debug.setdefault("theme_member_errors", []).append(f"{group.get('no')}: {type(exc).__name__}")
-            return group.get("name", ""), []
-
-    # Representative themes: the broader ones first (more member stocks), so a
-    # stock shows e.g. 반도체 before a niche theme that merely moved today.
-    size = {g.get("name", ""): int(g.get("totalCount") or 0) for g in groups}
-    by_code: dict[str, list[tuple[int, str]]] = {}
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        for name, codes in pool.map(members, groups):
-            if not name or skip.search(name):
-                continue
-            for code in codes:
-                if code:
-                    by_code.setdefault(code, []).append((size.get(name, 0), short(name)))
-    ranked = {}
-    for code, items in by_code.items():
-        seen, names = set(), []
-        for _, n in sorted(items, key=lambda t: -t[0]):
-            if n and n not in seen:
-                seen.add(n); names.append(n)
-        ranked[code] = names
-    debug["theme_codes"] = len(ranked)
-    if debug.get("theme_member_errors"):
-        debug["theme_member_errors"] = debug["theme_member_errors"][:5]
-    return ranked
-
-
 def listed_all() -> pd.DataFrame:
     frames = [pd.DataFrame(fetch_market(m)) for m in ("KOSPI", "KOSDAQ")]
     return pd.concat(frames, ignore_index=True).dropna(subset=["value_mil"])
@@ -268,12 +201,6 @@ def main() -> None:
         with ThreadPoolExecutor(max_workers=6) as pool:
             rows = list(pool.map(lambda r: signal_row(r, today), top.to_dict("records")))
         result = pd.DataFrame(rows).sort_values("rank")
-        try:
-            themes = fetch_themes()
-        except Exception as exc:
-            themes = {}
-            debug["errors"].append(f"themes: {type(exc).__name__}: {exc}")
-        result["themes"] = result["code"].map(lambda c: "|".join(themes.get(str(c), [])[:2]))
         # label with the trading day the prices are from (a holiday run keeps the last session)
         trade_day = result["last_date"].dropna().mode()
         day = pd.Timestamp(trade_day.iloc[0]).date() if len(trade_day) else today

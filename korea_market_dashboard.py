@@ -81,9 +81,6 @@ div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(
 .st-key-kr_range div[role="radiogroup"] {{ margin-left:auto; }}
 .st-key-kr_range label[data-testid="stRadioOption"] {{ min-height:30px!important; height:30px!important; padding:0 10px!important; }}
 .kr-section {{ margin:2.6rem 0 .6rem; color:{ui.TEXT}; font-size:1.05rem; font-weight:650; }}
-.kr-mix {{ margin:-.3rem 0 .9rem; color:rgba(255,255,255,.62); font-size:.86rem; }}
-.kr-mix b {{ color:{ui.TEXT}; font-weight:620; }}
-.kr-mix .sep {{ margin:0 9px; color:rgba(255,255,255,.22); }}
 .kr-zone-foot b {{ color:{ui.TEXT}; font-weight:600; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
@@ -545,7 +542,7 @@ def top100_row(r, sectors: dict | None = None) -> dict:
     ok = r.status == "ok"
     kind = getattr(r, "kind", None)
     sector = (sectors or {}).get(str(r.code), "")
-    meta = f"{r.code} · {engine.MARKET_LABEL.get(r.market, r.market)}" + (f" · {sector}" if sector else "")
+    meta = f"{r.code} · {engine.MARKET_LABEL.get(r.market, r.market)}"
     if isinstance(kind, str):
         meta = f"{r.code} · {ETF_KIND_LABEL.get(kind, kind)} · {getattr(r, 'basis', '') or ''} 기준"
     color = lambda v: SIGNAL_COLOR[{1.0: "green", 0.5: "yellow", 0.0: "red"}[float(v)]] if ok and pd.notna(v) else ""
@@ -568,6 +565,7 @@ def top100_row(r, sectors: dict | None = None) -> dict:
         "disp": f"{r.disparity:.1f}" if ok and pd.notna(r.disparity) else "—",
         "hot": bool(ok and str(r.overheated).lower() == "true"),
         "note": str(note) if isinstance(note, str) and note else "",
+        "sector": sector,
     }
 
 
@@ -602,11 +600,9 @@ def render_top100() -> None:
             sectors = sector_map(engine.kst_today().isoformat())
         except Exception:
             sectors = {}
-        mix = pd.Series([sectors.get(str(c), "") for c in cand["code"]]).replace("", pd.NA).dropna().value_counts()
-        if len(mix):
-            md("<div class='kr-mix'>" + "<span class='sep'>·</span>".join(
-                f"{escape(name)} <b>{n}</b>" for name, n in mix.head(6).items()) + "</div>")
+    mix = pd.Series([sectors.get(str(c), "") for c in cand["code"]]).replace("", pd.NA).dropna().value_counts()
     picked = kr_list_component(
+        mix=[[str(name), int(n)] for name, n in mix.head(8).items()],
         rows=[top100_row(r, sectors) for r in cand.itertuples()],
         head={"w": f"{this_m.month}월 비중", "n": f"{next_m.month}월 예상"},
         selected=str(st.session_state.get("kr_query") or "").strip(),

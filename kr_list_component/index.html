@@ -28,6 +28,15 @@
     .dp.hot { color: #F2F5F8; font-weight: 650; }
     .na { color: rgba(255,255,255,.38); font-size: .78rem; }
     .tag { padding: 1px 7px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; color: #F2F5F8; font-size: .7rem; font-weight: 600; white-space: nowrap; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+    .chip { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; font-size: .7rem; font-weight: 600; white-space: nowrap;
+      border: 1px solid rgba(255,255,255,.34); color: #F2F5F8; }
+    .mix { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+    .mix button { appearance: none; height: 30px; padding: 0 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.035); color: rgba(255,255,255,.72); font: inherit; font-size: .76rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .mix button b { color: #F2F5F8; font-weight: 650; margin-left: 4px; }
+    .mix button.on { background: rgba(242,245,248,.82); border-color: rgba(242,245,248,.6); color: #05070B; }
+    .mix button.on b { color: #05070B; }
     .lab { display: none; font-style: normal; color: rgba(255,255,255,.4); font-size: .7rem; margin-right: 5px; }
     @media (max-width: 640px) {
       .head { display: none; }
@@ -50,20 +59,37 @@
     };
     const esc = (v) => String(v ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
     function resize() { Streamlit.setFrameHeight(Math.max(1, Math.ceil(document.getElementById("root").getBoundingClientRect().height))); }
+    let sectorFilter = "";
+    function chips(r) {
+      const items = [];
+      if (r.sector) items.push(`<span class="chip">${esc(r.sector)}</span>`);
+      return items.length ? `<span class="chips">${items.join("")}</span>` : "";
+    }
     function level(color) { return color ? `<i style="background:${esc(color)}"></i>` : ""; }
+    let lastArgs = {};
     function render(args) {
-      const rows = args.rows || [], h = args.head || {};
+      lastArgs = args || lastArgs;
+      args = lastArgs;
+      const all = args.rows || [], h = args.head || {};
+      const mix = args.mix || [];
+      if (sectorFilter && !mix.some((m) => m[0] === sectorFilter)) sectorFilter = "";
+      const rows = sectorFilter ? all.filter((r) => r.sector === sectorFilter) : all;
+      const mixHtml = mix.length ? `<div class="mix"><button data-sector="" class="${sectorFilter ? "" : "on"}">전체<b>${all.length}</b></button>` +
+        mix.map((m) => `<button data-sector="${esc(m[0])}" class="${m[0] === sectorFilter ? "on" : ""}">${esc(m[0])}<b>${m[1]}</b></button>`).join("") + `</div>` : "";
       const html = rows.map((r) => `
         <div class="row${r.code === args.selected ? " active" : ""}" role="button" tabindex="0" data-code="${esc(r.code)}">
           <span class="rk">${esc(r.rank)}</span>
-          <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small></span>
+          <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small>${chips(r)}</span>
           <span class="val">${esc(r.price)}<small><span class="${esc(r.tone)}">${esc(r.chg)}</span> · ${esc(r.value)}</small></span>
           <span class="w"><em class="lab">이번 달</em>${level(r.w_color)}${esc(r.w)}${r.note ? `<span class="na">${esc(r.note)}</span>` : ""}</span>
           <span class="w dim"><em class="lab">다음 달</em>${level(r.n_color)}${esc(r.n)}${r.up ? ' <span class="tag">상승 전환</span>' : ""}</span>
           <span class="dp${r.hot ? " hot" : ""}"><em class="lab">이격도</em>${esc(r.disp)}</span>
         </div>`).join("");
-      document.getElementById("root").innerHTML =
+      document.getElementById("root").innerHTML = mixHtml +
         `<div class="head"><span>순위</span><span>종목</span><span>가격 · 거래대금</span><span>${esc(h.w)}</span><span>${esc(h.n)}</span><span>이격도</span></div>${html}`;
+      document.querySelectorAll(".mix button").forEach((b) => {
+        b.addEventListener("click", () => { sectorFilter = b.dataset.sector || ""; render(lastArgs); });
+      });
       document.querySelectorAll(".row").forEach((el) => {
         const pick = () => {
           document.querySelectorAll(".row.active").forEach((x) => x.classList.remove("active"));
