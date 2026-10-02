@@ -9,10 +9,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 from html import escape
+from io import StringIO
 from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
+import requests
 import streamlit as st
 from plotly.subplots import make_subplots
 
@@ -77,6 +79,33 @@ div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(
 .kr-bt .sep {{ margin:0 8px; color:rgba(255,255,255,.22); }}
 .st-key-kr_range div[role="radiogroup"] {{ margin-left:auto; }}
 .st-key-kr_range label[data-testid="stRadioOption"] {{ min-height:30px!important; height:30px!important; padding:0 10px!important; }}
+.kr-section {{ margin:2.6rem 0 .6rem; color:{ui.TEXT}; font-size:1.05rem; font-weight:650; }}
+.t1 {{ margin:.5rem 0 .8rem; font-variant-numeric:tabular-nums; }}
+.t1-head, .t1-row {{ display:grid; grid-template-columns:34px minmax(0,2.2fr) 1.1fr .9fr .9fr .7fr; align-items:center; column-gap:12px; padding:10px 4px; }}
+.t1-head {{ color:{ui.MUTED}; font-size:12px; font-weight:560; letter-spacing:.03em; border-bottom:1px solid {ui.LINE}; }}
+.t1-row {{ color:rgba(255,255,255,.82)!important; text-decoration:none!important; font-size:.88rem; border-bottom:1px solid rgba(255,255,255,.045); }}
+.t1-row:hover {{ background:rgba(255,255,255,.035); }}
+.t1-row .rk {{ color:rgba(255,255,255,.4); font-size:.8rem; }}
+.t1-row .nm {{ min-width:0; display:flex; flex-direction:column; }}
+.t1-row .nm b {{ color:{ui.TEXT}; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.t1-row small {{ color:rgba(255,255,255,.4); font-size:.74rem; margin-top:1px; }}
+.t1-row .val {{ display:flex; flex-direction:column; }}
+.t1-row .val small.up {{ color:#6EA8FF; }} .t1-row .val small.down {{ color:#FF5A5F; }}
+.t1-row .w {{ display:inline-flex; align-items:center; gap:7px; }}
+.t1-row .w i {{ width:8px; height:8px; border-radius:2px; display:inline-block; }}
+.t1-row .w.dim {{ color:rgba(255,255,255,.55); }}
+.t1-row .dp.hot {{ color:{ui.TEXT}; font-weight:650; }}
+.t1-row .na {{ color:rgba(255,255,255,.38); font-size:.78rem; }}
+.t1-row .lab {{ display:none; font-style:normal; color:rgba(255,255,255,.4); font-size:.7rem; margin-right:5px; }}
+@media (max-width:640px) {{
+  .t1-head {{ display:none; }}
+  .t1-row {{ grid-template-columns:26px minmax(0,1fr) auto; grid-template-areas:"rk nm val" "rk w nx" "rk dp dp"; row-gap:4px; padding:11px 2px; }}
+  .t1-row .rk {{ grid-area:rk; align-self:start; padding-top:2px; }}
+  .t1-row .nm {{ grid-area:nm; }} .t1-row .val {{ grid-area:val; text-align:right; align-items:flex-end; }}
+  .t1-row .w {{ grid-area:w; }} .t1-row .w.dim {{ grid-area:nx; justify-content:flex-end; }}
+  .t1-row .dp {{ grid-area:dp; }}
+  .t1-row .lab {{ display:inline; }}
+}}
 .kr-zone-foot b {{ color:{ui.TEXT}; font-weight:600; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
@@ -140,6 +169,22 @@ def load_backtests(symbol: str, start_year: int, day_key: str) -> dict:
     return {
         "overlay": engine.run_backtest(daily, engine.DEV_THRESHOLD),
     }
+
+
+TOP100_URL = "https://raw.githubusercontent.com/jangjb1204-sys/us-stock-dashboard/kr-scans/kr_top100_latest.csv"
+TOP100_PREVIEW = 20
+
+
+@st.cache_data(show_spinner=False, ttl=60 * 30)
+def load_top100() -> pd.DataFrame:
+    """Today's top-100 stocks by trading value with the rule applied, written
+    by the weekday GitHub Actions scan (scripts/kr_top100_scan.py)."""
+    try:
+        resp = requests.get(TOP100_URL, headers={"User-Agent": "30s-tech-j-streamlit"}, timeout=12)
+        resp.raise_for_status()
+        return pd.read_csv(StringIO(resp.text), dtype={"code": str})
+    except Exception:
+        return pd.DataFrame()
 
 
 # ── Formatting helpers ─────────────────────────────────────────────────────────
@@ -463,6 +508,75 @@ def render_rule() -> None:
         )
 
 
+def fmt_value_mil(value) -> str:
+    """Naver's trading value is in 백만원: 3,141,812 → 3.14조, 446,733 → 4,467억."""
+    if value is None or pd.isna(value):
+        return "—"
+    v = float(value)
+    return f"{v / 1_000_000:.2f}조" if v >= 1_000_000 else f"{v / 100:,.0f}억"
+
+
+def top100_row(r) -> str:
+    ok = r.status == "ok"
+    w = weight_text(r.weight) if ok else "—"
+    nxt = weight_text(r.next_weight) if ok else "—"
+    disp = f"{r.disparity:.1f}" if ok and pd.notna(r.disparity) else "—"
+    hot = " hot" if ok and bool(r.overheated) else ""
+    chg = f"{r.change_pct:+.2f}%" if pd.notna(r.change_pct) else ""
+    tone = "up" if pd.notna(r.change_pct) and r.change_pct > 0 else ("down" if pd.notna(r.change_pct) and r.change_pct < 0 else "")
+    note = "" if ok else "<span class='na'>데이터 부족</span>"
+    lvl = lambda v: f"<i style='background:{SIGNAL_COLOR[{1.0: 'green', 0.5: 'yellow', 0.0: 'red'}[float(v)]]}'></i>" if ok else ""
+    return (f"<a class='t1-row' href='?dashboard=korea&amp;q={escape(r.code)}' target='_self'>"
+            f"<span class='rk'>{int(r.rank)}</span>"
+            f"<span class='nm'><b>{escape(str(r.name))}</b><small>{escape(r.code)} · {engine.MARKET_LABEL.get(r.market, r.market)}</small></span>"
+            f"<span class='val'>{fmt_value_mil(r.value_mil)}<small class='{tone}'>{chg}</small></span>"
+            f"<span class='w'><em class='lab'>이번 달</em>{lvl(r.weight)}{w}{note}</span>"
+            f"<span class='w dim'><em class='lab'>다음 달</em>{lvl(r.next_weight)}{nxt}</span>"
+            f"<span class='dp{hot}'><em class='lab'>이격도</em>{disp}</span>"
+            f"</a>")
+
+
+def render_top100() -> None:
+    data = load_top100()
+    md("<div class='kr-section'>거래대금 상위 100</div>")
+    if data.empty:
+        md("<div class='tj-caption'>목록 준비 중 · 평일 장 마감 후 갱신</div>")
+        return
+    day = pd.Timestamp(data["date"].iloc[0])
+    this_m, next_m = (day.to_period("M")), (day.to_period("M") + 1)
+    md(f"<div class='tj-caption' style='margin:-.3rem 0 .9rem'>{ui.kdate(day)} 거래대금 기준 · 주식만 · 종목을 누르면 상세</div>")
+    ok = data[data["status"] == "ok"]
+    counts = {
+        "all": len(data),
+        "full": int((ok["weight"] == 1.0).sum()),
+        "half": int((ok["weight"] == 0.5).sum()),
+        "none": int((ok["weight"] == 0.0).sum()),
+        "hot": int(ok["overheated"].astype(str).str.lower().eq("true").sum()),
+    }
+    labels = {"all": f"전체 {counts['all']}", "full": f"100% {counts['full']}", "half": f"50% {counts['half']}",
+              "none": f"0% {counts['none']}", "hot": f"과열 {counts['hot']}"}
+    pick = st.radio("필터", list(labels), format_func=labels.get, horizontal=True, key="kr_top_filter",
+                    label_visibility="collapsed")
+    view = data
+    if pick == "full":
+        view = ok[ok["weight"] == 1.0]
+    elif pick == "half":
+        view = ok[ok["weight"] == 0.5]
+    elif pick == "none":
+        view = ok[ok["weight"] == 0.0]
+    elif pick == "hot":
+        view = ok[ok["overheated"].astype(str).str.lower().eq("true")]
+    show_all = st.session_state.get("kr_top_all", False) or pick != "all"
+    rows = view if show_all else view.head(TOP100_PREVIEW)
+    head = (f"<div class='t1-head'><span>#</span><span>종목</span><span>거래대금</span>"
+            f"<span>{this_m.month}월 비중</span><span>{next_m.month}월 예상</span><span>이격도</span></div>")
+    md("<div class='t1'>" + head + "".join(top100_row(r) for r in rows.itertuples()) + "</div>")
+    if not show_all and len(view) > TOP100_PREVIEW:
+        if st.button(f"{len(view)}개 모두 보기", key="kr_top_more"):
+            st.session_state["kr_top_all"] = True
+            st.rerun()
+
+
 # ── Search ─────────────────────────────────────────────────────────────────────
 @dataclass
 class Target:
@@ -664,6 +778,7 @@ def main() -> None:
         md(backtest_line(backtests))
 
     render_charts(status, daily, monthly, digits, today)
+    render_top100()
 
     render_rule()
     st.markdown(ui.footer_html(), unsafe_allow_html=True)
