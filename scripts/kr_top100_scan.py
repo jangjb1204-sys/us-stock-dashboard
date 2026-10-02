@@ -76,7 +76,7 @@ THEME_MEMBERS_URL = "https://m.stock.naver.com/api/stocks/theme/{no}"
 
 
 def fetch_themes() -> dict[str, list[str]]:
-    """code → theme names, in Naver's theme order (today's change, best first)."""
+    """code → theme names, broadest theme first."""
     groups: list[dict] = []
     for page in range(1, 15):
         resp = requests.get(THEME_LIST_URL, params={"page": page, "pageSize": 100}, headers=HEADERS, timeout=15)
@@ -87,6 +87,13 @@ def fetch_themes() -> dict[str, list[str]]:
             break
         time.sleep(0.15)
     debug["themes_found"] = len(groups)
+
+    import re
+    def short(name: str) -> str:
+        """'CXL(컴퓨트익스프레스링크)' → 'CXL'; keeps whole words."""
+        return re.sub(r"\s*\(.*?\)", "", " ".join(str(name).split())).strip()
+
+    skip = re.compile(r"신규상장|스팩|SPAC")
 
     def members(group):
         codes, page = [], 1
@@ -106,16 +113,28 @@ def fetch_themes() -> dict[str, list[str]]:
             debug.setdefault("theme_member_errors", []).append(f"{group.get('no')}: {type(exc).__name__}")
             return group.get("name", ""), []
 
-    by_code: dict[str, list[str]] = {}
+    # Representative themes: the broader ones first (more member stocks), so a
+    # stock shows e.g. 반도체 before a niche theme that merely moved today.
+    size = {g.get("name", ""): int(g.get("totalCount") or 0) for g in groups}
+    by_code: dict[str, list[tuple[int, str]]] = {}
     with ThreadPoolExecutor(max_workers=4) as pool:
         for name, codes in pool.map(members, groups):
+            if not name or skip.search(name):
+                continue
             for code in codes:
-                if code and name:
-                    by_code.setdefault(code, []).append(" ".join(str(name).split()))
-    debug["theme_codes"] = len(by_code)
+                if code:
+                    by_code.setdefault(code, []).append((size.get(name, 0), short(name)))
+    ranked = {}
+    for code, items in by_code.items():
+        seen, names = set(), []
+        for _, n in sorted(items, key=lambda t: -t[0]):
+            if n and n not in seen:
+                seen.add(n); names.append(n)
+        ranked[code] = names
+    debug["theme_codes"] = len(ranked)
     if debug.get("theme_member_errors"):
         debug["theme_member_errors"] = debug["theme_member_errors"][:5]
-    return by_code
+    return ranked
 
 
 def listed_all() -> pd.DataFrame:
