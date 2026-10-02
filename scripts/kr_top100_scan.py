@@ -90,7 +90,7 @@ def ranked_stocks(df: pd.DataFrame) -> pd.DataFrame:
 # ── ETFs: each kind gets its own basis ─────────────────────────────────────────
 CASH_LIKE = r"CD금리|KOFR|SOFR|머니마켓|MMF|국고채|국채|채권|금리|단기|회사채|크레딧|통안|은행채|특수채|전단채"
 DOMESTIC_INDEX = r"200|코스피|KOSPI|코스닥|KOSDAQ|KRX\s?300|TOP\s?10|밸류업"
-SECTOR_HINT = r"반도체|은행|바이오|헬스|2차전지|자동차|증권|건설|철강|IT|미디어|게임|조선|방산|화학|에너지|소비|리츠|로봇|AI|원자력|전력"
+SECTOR_HINT = r"단일종목|반도체|은행|바이오|헬스|2차전지|자동차|증권|건설|철강|IT|미디어|게임|조선|방산|화학|에너지|소비|리츠|로봇|AI|원자력|전력"
 FOREIGN_HINT = r"미국|나스닥|S&P|차이나|중국|일본|인도|베트남|유로|글로벌|선진|신흥|원유|금|은|구리|달러|엔"
 
 
@@ -101,7 +101,7 @@ def etf_kind(name: str) -> tuple[str, str | None]:
         return "cash", None
     foreign = re.search(FOREIGN_HINT, name)
     sector = re.search(SECTOR_HINT, name)
-    domestic = re.search(DOMESTIC_INDEX, name) and not foreign
+    domestic = re.search(DOMESTIC_INDEX, name) and not foreign and not sector
     # plain "KODEX 레버리지" / "KODEX 인버스" track KOSPI 200
     plain_kospi_derivative = re.search(r"레버리지|인버스", name) and not foreign and not sector
     underlying = None
