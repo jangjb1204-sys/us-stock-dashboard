@@ -1,0 +1,34 @@
+{
+ "https://m.stock.naver.com/api/stocks/theme?page=1&pageSize=20": {
+  "status": 200,
+  "head": "{\"stockListSortType\":\"THEME\",\"groups\":[{\"no\":586,\"name\":\"광통신(광케이블/광섬유 등)\",\"totalCount\":15,\"changeRate\":\"9.38\",\"riseCount\":15,\"fallCount\":0,\"steadyCount\":0},{\"no\":185,\"name\":\"정유\",\"totalCount\":3,\"changeRate\":\"7.35\",\"riseCount\":3,\"fallCount\":0,\"steadyCount\":0},{\"no\":92,\"name\":\"통신장비\",\"totalCount\":47,\"changeRate\":\"6.17\",\"riseCount\":42,\"fallCount\":5,\"steadyCount\":0},{\"no\":521,\"name\":\"애플페이\",\"totalCount\":8,\"changeRate\":\"4.66\",\"riseCount\":8,\"fallCount\":0,\"steadyCount\":0},{\"no\":584,\"name\":\"스페이스X(SpaceX)\",\"totalCount\":14,\"changeRate\":\"4.40\",\"riseCount\":12,\"fallCount\":2,\"steadyCount\":0},{\"no\":449,\"name\":\"2차전지(생산)\",\"totalCount\":3,\"changeRate\":\"4.35\",\"riseCount\":3,\"fallCount\":0,\"steadyCount\":0},{\"no\":523,"
+ },
+ "https://m.stock.naver.com/api/stocks/themes?page=1&pageSize=20": {
+  "status": 404,
+  "head": ""
+ },
+ "https://m.stock.naver.com/api/stocks/theme/list?page=1&pageSize=20": {
+  "status": 404,
+  "head": ""
+ },
+ "https://m.stock.naver.com/front-api/stocks/theme?page=1&pageSize=20": {
+  "status": 404,
+  "head": "{\"message\":\"Route GET:/front-api/stocks/theme?page=1&pageSize=20 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+ },
+ "https://stock.naver.com/api/domestic/market/theme?page=1&pageSize=20": {
+  "status": 404,
+  "head": "{\"message\":\"Route GET:/api/domestic/market/theme?page=1&pageSize=20 not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+ },
+ "https://m.stock.naver.com/api/stock/005930/integration": {
+  "status": 200,
+  "head": "{\"stockEndType\":\"stock\",\"itemCode\":\"005930\",\"reutersCode\":\"005930\",\"stockName\":\"삼성전자\",\"totalInfos\":[{\"code\":\"lastClosePrice\",\"key\":\"전일\",\"value\":\"276,000\"},{\"code\":\"openPrice\",\"key\":\"시가\",\"value\":\"275,500\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"highPrice\",\"key\":\"고가\",\"value\":\"277,000\",\"compareToPreviousPrice\":{\"code\":\"2\",\"text\":\"상승\",\"name\":\"RISING\"}},{\"code\":\"lowPrice\",\"key\":\"저가\",\"value\":\"271,500\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"accumulatedTradingVolume\",\"key\":\"거래량\",\"value\":\"16,915,343\"},{\"code\":\"accumulatedTradingValue\",\"key\":\"대금\",\"value\":\"4조 6,573억\"},{\"code\":\"marketValue\",\"key\":\"시총\",\"value\":\"1,613조 5,729억\"},{\"c"
+ },
+ "https://m.stock.naver.com/api/stock/005930/basic": {
+  "status": 200,
+  "head": "{\"stockEndType\":\"stock\",\"itemCode\":\"005930\",\"reutersCode\":\"005930\",\"stockName\":\"삼성전자\",\"itemLogoUrl\":\"https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock005930.svg\",\"itemLogoPngUrl\":\"https://ssl.pstatic.net/imgstock/fn/real/logo/png/stock/Stock005930.png\",\"sosok\":\"0\",\"closePrice\":\"276,000\",\"compareToPreviousClosePrice\":\"0\",\"compareToPreviousPrice\":{\"code\":\"3\",\"text\":\"보합\",\"name\":\"UNCHANGED\"},\"fluctuationsRatio\":\"0.00\",\"marketStatus\":\"CLOSE\",\"marketStatusDetailType\":\"close\",\"localTradedAt\":\"2026-10-02T20:20:21+09:00\",\"tradeStopType\":{\"code\":\"1\",\"text\":\"운영.Trading\",\"name\":\"TRADING\"},\"tradableStatus\":\"tradable\",\"tradableStatusCode\":\"ok\",\"tradableStatusUpdatedAt\":\"2026-10-02T08:01:48.187+09:"
+ },
+ "hints": [
+  "https://m.stock.naver.com/domestic/home/theme/daily"
+ ],
+ "no_hits": []
+}
