@@ -70,6 +70,50 @@ def fetch_market(market: str) -> list[dict]:
     return rows
 
 
+# ── Naver themes (mobile API) ─────────────────────────────────────────────────
+# Naver lists themes by today's change (strongest first); each stock gets the
+# first theme it belongs to in that order, skipping themes that say nothing.
+THEME_LIST_URL = "https://m.stock.naver.com/api/stocks/theme"
+THEME_MEMBERS_URL = "https://m.stock.naver.com/api/stocks/theme/{no}"
+GENERIC_THEME = r"밸류업|S7|신규상장|스팩|SPAC|대표주|우선주|코스피200|외국인|기관|지주사"
+
+
+def fetch_themes() -> dict[str, str]:
+    """code → today's strongest meaningful theme (short name)."""
+    import re
+    groups: list[dict] = []
+    for page in range(1, 15):
+        resp = requests.get(THEME_LIST_URL, params={"page": page, "pageSize": 100}, headers=HEADERS, timeout=15)
+        resp.raise_for_status()
+        batch = resp.json().get("groups") or []
+        groups.extend(batch)
+        if len(batch) < 100:
+            break
+        time.sleep(0.15)
+    groups = [g for g in groups if g.get("name") and not re.search(GENERIC_THEME, g["name"])]
+    debug["themes_found"] = len(groups)
+
+    def members(group):
+        try:
+            resp = requests.get(THEME_MEMBERS_URL.format(no=group["no"]), params={"page": 1, "pageSize": 100},
+                                headers=HEADERS, timeout=15)
+            resp.raise_for_status()
+            return [str(x.get("itemCode") or "") for x in resp.json().get("stocks") or []]
+        except Exception:
+            return []
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        member_lists = list(pool.map(members, groups))
+    best: dict[str, str] = {}
+    for group, codes in zip(groups, member_lists):  # groups are in today's order
+        name = re.sub(r"\s*\(.*?\)", "", " ".join(str(group["name"]).split())).strip()
+        for code in codes:
+            if code and code not in best:
+                best[code] = name
+    debug["theme_codes"] = len(best)
+    return best
+
+
 def listed_all() -> pd.DataFrame:
     frames = [pd.DataFrame(fetch_market(m)) for m in ("KOSPI", "KOSDAQ")]
     return pd.concat(frames, ignore_index=True).dropna(subset=["value_mil"])
@@ -201,6 +245,12 @@ def main() -> None:
         with ThreadPoolExecutor(max_workers=6) as pool:
             rows = list(pool.map(lambda r: signal_row(r, today), top.to_dict("records")))
         result = pd.DataFrame(rows).sort_values("rank")
+        try:
+            themes = fetch_themes()
+        except Exception as exc:  # the page falls back to the KRX sector
+            themes = {}
+            debug["errors"].append(f"themes: {type(exc).__name__}: {exc}")
+        result["theme"] = result["code"].map(lambda c: themes.get(str(c), ""))
         # label with the trading day the prices are from (a holiday run keeps the last session)
         trade_day = result["last_date"].dropna().mode()
         day = pd.Timestamp(trade_day.iloc[0]).date() if len(trade_day) else today
