@@ -95,6 +95,10 @@
           document.querySelectorAll(".row.active").forEach((x) => x.classList.remove("active"));
           el.classList.add("active");
           Streamlit.setComponentValue({ code: el.dataset.code, nonce: Date.now() });
+          try {
+            const target = window.parent.document.getElementById("kr-detail");
+            if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (e) { /* cross-origin: stay where we are */ }
         };
         el.addEventListener("click", pick);
         el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });

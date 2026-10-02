@@ -541,7 +541,9 @@ def top100_row(r, sectors: dict | None = None) -> dict:
     """One list row as plain values for kr_list_component."""
     ok = r.status == "ok"
     kind = getattr(r, "kind", None)
-    sector = (sectors or {}).get(str(r.code), "")
+    theme = getattr(r, "theme", "")
+    theme = theme if isinstance(theme, str) and theme and theme.lower() != "nan" else ""
+    sector = theme or (sectors or {}).get(str(r.code), "")  # today's theme; KRX sector when none
     meta = f"{r.code} · {engine.MARKET_LABEL.get(r.market, r.market)}"
     if isinstance(kind, str):
         meta = f"{r.code} · {ETF_KIND_LABEL.get(kind, kind)} · {getattr(r, 'basis', '') or ''} 기준"
@@ -600,7 +602,8 @@ def render_top100() -> None:
             sectors = sector_map(engine.kst_today().isoformat())
         except Exception:
             sectors = {}
-    mix = pd.Series([sectors.get(str(c), "") for c in cand["code"]]).replace("", pd.NA).dropna().value_counts()
+    labels = [top100_row(r, sectors)["sector"] for r in cand.itertuples()]
+    mix = pd.Series(labels).replace("", pd.NA).dropna().value_counts()
     picked = kr_list_component(
         mix=[[str(name), int(n)] for name, n in mix.head(8).items()],
         rows=[top100_row(r, sectors) for r in cand.itertuples()],
@@ -608,12 +611,11 @@ def render_top100() -> None:
         selected=str(st.session_state.get("kr_query") or "").strip(),
         key=f"kr_list_{kind}", default=None,
     )
-    # A tap opens that stock in this page: no reload, the search box takes the code.
+    # A tap opens that stock in this page. The search box is created after this
+    # (see main), so setting it here takes effect in the same run.
     if isinstance(picked, dict) and picked.get("nonce") != st.session_state.get("_kr_pick_nonce"):
         st.session_state["_kr_pick_nonce"] = picked.get("nonce")
-        st.session_state["_kr_pending_q"] = str(picked.get("code") or "")
-        st.session_state["_kr_scroll_top"] = True
-        st.rerun()
+        st.session_state["kr_query"] = str(picked.get("code") or "")
 
 
 # ── Search ─────────────────────────────────────────────────────────────────────
@@ -777,6 +779,21 @@ def main() -> None:
     keys = list(statuses.keys())
     if st.session_state.get("kr_index") not in keys:
         st.session_state["kr_index"] = keys[0]
+
+    # Upper part (cards, search, detail, chart) is drawn above the candidate
+    # list, but the list runs first: a tap on a candidate then sets the search
+    # box in this same run — one rerun, nothing inserted, nothing reloaded.
+    upper, lower = st.container(), st.container()
+    with lower:
+        render_top100()
+    with upper:
+        render_upper(statuses, dailies, monthly_by_key, keys, today, day_key)
+
+    render_rule()
+    st.markdown(ui.footer_html(), unsafe_allow_html=True)
+
+
+def render_upper(statuses: dict, dailies: dict, monthly_by_key: dict, keys: list, today: date, day_key: str) -> None:
     searching = bool(str(st.session_state.get("kr_query") or "").strip())
 
     # The index cards are the picker: a tap selects (an invisible button covers each card).
@@ -785,9 +802,6 @@ def main() -> None:
             md(index_panel(statuses[key], selected=(key == st.session_state["kr_index"] and not searching)))
             st.button(f"{engine.INDEXES[key]['label']} 보기", key=f"kr_card_{key}", on_click=pick_index, args=(key,))
 
-    pending = st.session_state.pop("_kr_pending_q", None)
-    if pending:
-        st.session_state["kr_query"] = pending
     query = st.text_input(
         "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
         placeholder="종목 · ETF 검색 · 삼성전자, 005930, KODEX 레버리지",
@@ -796,8 +810,6 @@ def main() -> None:
     if query.strip():
         target = resolve_search(query, today, day_key)
         if target is None:
-            render_rule()
-            st.markdown(ui.footer_html(), unsafe_allow_html=True)
             return
         md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market), selected=True) + "</div>")
         md("<div class='tj-caption' style='margin:.2rem 0 0'>규칙은 지수 기준으로 검증 · 아래 과거 성과 참고</div>")
@@ -811,12 +823,6 @@ def main() -> None:
     status, daily, monthly = target.status, target.daily, target.monthly
     digits = price_digits(status.key)
     render_detail(status, today, eyebrow)
-    if st.session_state.pop("_kr_scroll_top", False):
-        components.html(
-            "<script>setTimeout(function(){try{var d=window.parent.document;var el=d.getElementById('kr-detail');"
-            "if(el){el.scrollIntoView({behavior:'smooth',block:'center'});}}catch(e){}},300);</script>",
-            height=0,
-        )
 
     try:
         backtests = load_backtests(target.symbol, target.start_year, day_key)
@@ -826,7 +832,3 @@ def main() -> None:
         md(backtest_line(backtests))
 
     render_charts(status, daily, monthly, digits, today)
-    render_top100()
-
-    render_rule()
-    st.markdown(ui.footer_html(), unsafe_allow_html=True)
