@@ -81,6 +81,9 @@ div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(
 .st-key-kr_range div[role="radiogroup"] {{ margin-left:auto; }}
 .st-key-kr_range label[data-testid="stRadioOption"] {{ min-height:30px!important; height:30px!important; padding:0 10px!important; }}
 .kr-section {{ margin:2.6rem 0 .6rem; color:{ui.TEXT}; font-size:1.05rem; font-weight:650; }}
+.kr-mix {{ margin:-.3rem 0 .9rem; color:rgba(255,255,255,.62); font-size:.86rem; }}
+.kr-mix b {{ color:{ui.TEXT}; font-weight:620; }}
+.kr-mix .sep {{ margin:0 9px; color:rgba(255,255,255,.22); }}
 .kr-zone-foot b {{ color:{ui.TEXT}; font-weight:600; }}
 @media (max-width:640px) {{ .kr-panels {{ grid-template-columns:1fr; }} .kr-panel .weight {{ font-size:40px; }} }}
 </style>
@@ -486,6 +489,49 @@ def render_rule() -> None:
         )
 
 
+# KRX(KIND) 업종 → short sector names (KSIC labels are long and generic).
+SECTOR_SHORT = [
+    ("반도체", "반도체"), ("전자부품", "전자부품"), ("특수 목적용 기계", "산업장비"), ("일반 목적용 기계", "기계"),
+    ("이차전지", "2차전지"), ("절연선", "전선·케이블"), ("전동기", "전력기기"), ("기타 전기장비", "전기장비"),
+    ("통신 및 방송 장비", "통신장비"), ("전기 통신", "통신"), ("화학", "화학"), ("항공기", "항공우주"),
+    ("석유 정제", "정유"), ("자동차 신품 부품", "자동차부품"), ("자동차", "자동차"), ("선박", "조선"),
+    ("무기", "방산"), ("의약", "제약·바이오"), ("의료용", "의료기기"), ("소프트웨어", "소프트웨어"),
+    ("포털", "인터넷"), ("자료처리", "인터넷"), ("건설", "건설"), ("보험", "보험"), ("은행", "은행"),
+    ("증권", "증권"), ("기타 금융", "지주·금융"), ("철강", "철강"), ("항공 여객", "항공"), ("연구개발", "연구개발"),
+    ("정밀기기", "정밀기기"), ("엔지니어링", "엔지니어링"), ("도매", "유통"), ("소매", "유통"),
+    ("게임", "게임"), ("영화", "미디어"), ("방송", "미디어"), ("식료품", "식품"), ("음료", "식품"),
+    ("화장품", "화장품"), ("운송장비", "운송장비"), ("해상 운송", "해운"),
+    ("컴퓨터 프로그래밍", "소프트웨어"), ("컴퓨터", "IT기기"), ("회사 본부", "지주"), ("전기업", "유틸리티"),
+    ("가스", "유틸리티"), ("부동산", "부동산"), ("광고", "광고"), ("교육", "교육"), ("학원", "교육"),
+    ("플라스틱", "소재"), ("고무", "소재"), ("유리", "소재"), ("시멘트", "소재"), ("비철금속", "비철금속"),
+    ("금속", "금속"), ("의복", "의류"), ("섬유", "섬유"), ("신발", "의류"), ("영상", "미디어"),
+    ("출판", "미디어"), ("숙박", "레저"), ("오락", "레저"), ("여행", "레저"), ("화물 운송", "물류"),
+    ("운송관련", "물류"), ("금융 지원", "금융"), ("신탁", "금융"), ("음향", "IT기기"), ("조명", "전기장비"),
+]
+
+
+def short_sector(industry) -> str:
+    text = " ".join(str(industry or "").split())
+    if not text or text.lower() == "nan":
+        return ""
+    for key, label in SECTOR_SHORT:
+        if key in text:
+            return label
+    # fallback: drop generic words and keep whole words only (no mid-word cuts)
+    for junk in ("그외 ", "기타 ", " 제조업", " 서비스업"):
+        text = text.replace(junk, " ")
+    text = text.split(";")[0].replace(" 및 ", " ").strip()
+    first = text.split()[0] if text.split() else ""
+    return first[:-1] if first.endswith("업") and len(first) > 2 else first
+
+
+@st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
+def sector_map(day_key: str) -> dict:
+    """code → short sector, from the KRX company list (falls back to the bundled copy)."""
+    listing, _ = load_listing(day_key)
+    return {str(c): short_sector(i) for c, i in zip(listing["code"], listing["industry"])}
+
+
 def fmt_value_mil(value) -> str:
     """Naver's trading value is in 백만원: 3,141,812 → 3.14조, 446,733 → 4,467억."""
     if value is None or pd.isna(value):
@@ -494,11 +540,12 @@ def fmt_value_mil(value) -> str:
     return f"{v / 1_000_000:.2f}조" if v >= 1_000_000 else f"{v / 100:,.0f}억"
 
 
-def top100_row(r) -> dict:
+def top100_row(r, sectors: dict | None = None) -> dict:
     """One list row as plain values for kr_list_component."""
     ok = r.status == "ok"
     kind = getattr(r, "kind", None)
-    meta = f"{r.code} · {engine.MARKET_LABEL.get(r.market, r.market)}"
+    sector = (sectors or {}).get(str(r.code), "")
+    meta = f"{r.code} · {engine.MARKET_LABEL.get(r.market, r.market)}" + (f" · {sector}" if sector else "")
     if isinstance(kind, str):
         meta = f"{r.code} · {ETF_KIND_LABEL.get(kind, kind)} · {getattr(r, 'basis', '') or ''} 기준"
     color = lambda v: SIGNAL_COLOR[{1.0: "green", 0.5: "yellow", 0.0: "red"}[float(v)]] if ok and pd.notna(v) else ""
@@ -549,8 +596,18 @@ def render_top100() -> None:
     if cand.empty:
         md("<div class='tj-caption'>오늘 매수 후보 없음</div>")
         return
+    sectors = {}
+    if kind == "stock":
+        try:
+            sectors = sector_map(engine.kst_today().isoformat())
+        except Exception:
+            sectors = {}
+        mix = pd.Series([sectors.get(str(c), "") for c in cand["code"]]).replace("", pd.NA).dropna().value_counts()
+        if len(mix):
+            md("<div class='kr-mix'>" + "<span class='sep'>·</span>".join(
+                f"{escape(name)} <b>{n}</b>" for name, n in mix.head(6).items()) + "</div>")
     picked = kr_list_component(
-        rows=[top100_row(r) for r in cand.itertuples()],
+        rows=[top100_row(r, sectors) for r in cand.itertuples()],
         head={"w": f"{this_m.month}월 비중", "n": f"{next_m.month}월 예상"},
         selected=str(st.session_state.get("kr_query") or "").strip(),
         key=f"kr_list_{kind}", default=None,
