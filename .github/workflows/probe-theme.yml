@@ -1,0 +1,17 @@
+name: probe theme criteria (temporary)
+on: { workflow_dispatch: {} }
+permissions: { contents: write }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pandas requests
+      - run: python scripts/probe_theme_criteria.py out
+      - run: |
+          git config user.name kr-scan-bot; git config user.email kr-scan-bot@users.noreply.github.com
+          cp out/theme_criteria.json /tmp/
+          git fetch origin kr-scans && git checkout -B kr-scans origin/kr-scans
+          cp /tmp/theme_criteria.json . && git add theme_criteria.json && git commit -m probe && git push origin kr-scans
