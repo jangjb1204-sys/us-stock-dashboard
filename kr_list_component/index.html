@@ -21,6 +21,8 @@
     .nm b { color: #F2F5F8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     small { color: rgba(255,255,255,.4); font-size: .74rem; margin-top: 1px; }
     .val { display: flex; flex-direction: column; }
+    .line { color: rgba(255,255,255,.46); }
+    .line.near { color: #F2F5F8; font-weight: 600; }
     .up { color: #6EA8FF; } .down { color: #FF5A5F; }
     .w { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; }
     .w i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
@@ -80,13 +82,13 @@
         <div class="row${r.code === args.selected ? " active" : ""}" role="button" tabindex="0" data-code="${esc(r.code)}">
           <span class="rk">${esc(r.rank)}</span>
           <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small>${chips(r)}</span>
-          <span class="val">${esc(r.price)}<small><span class="${esc(r.tone)}">${esc(r.chg)}</span> · ${esc(r.value)}</small></span>
+          <span class="val">${esc(r.price)}<small><span class="${esc(r.tone)}">${esc(r.chg)}</span> · ${esc(r.value)}</small>${r.line ? `<small class="line${r.near ? " near" : ""}">${esc(r.line)}</small>` : ""}</span>
           <span class="w"><em class="lab">이번 달</em>${level(r.w_color)}${esc(r.w)}${r.note ? `<span class="na">${esc(r.note)}</span>` : ""}</span>
           <span class="w dim"><em class="lab">다음 달</em>${level(r.n_color)}${esc(r.n)}${r.up ? ' <span class="tag">상승 전환</span>' : ""}</span>
           <span class="dp${r.hot ? " hot" : ""}"><em class="lab">이격도</em>${esc(r.disp)}</span>
         </div>`).join("");
       document.getElementById("root").innerHTML = mixHtml +
-        `<div class="head"><span>순위</span><span>종목</span><span>가격 · 거래대금</span><span>${esc(h.w)}</span><span>${esc(h.n)}</span><span>이격도</span></div>${html}`;
+        `<div class="head"><span>순위</span><span>종목</span><span>가격 · 100% 선</span><span>${esc(h.w)}</span><span>${esc(h.n)}</span><span>이격도</span></div>${html}`;
       document.querySelectorAll(".mix button").forEach((b) => {
         b.addEventListener("click", () => { sectorFilter = b.dataset.sector || ""; render(lastArgs); });
       });

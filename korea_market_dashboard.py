@@ -568,7 +568,23 @@ def top100_row(r, sectors: dict | None = None) -> dict:
         "hot": bool(ok and str(r.overheated).lower() == "true"),
         "note": str(note) if isinstance(note, str) and note else "",
         "sector": sector,
+        **line_fields(r, ok),
     }
+
+
+def line_fields(r, ok: bool) -> dict:
+    """The 100% line in price terms and how far today's close sits above it.
+    Index-based ETFs have no line of their own (their signal is the index's)."""
+    close = getattr(r, "close", None)
+    line = getattr(r, "full_line", None)
+    if (line is None or pd.isna(line)) and ok and pd.notna(getattr(r, "to_full_pct", None)) and pd.notna(close):
+        if str(getattr(r, "basis", "") or "").endswith("지수"):
+            return {"line": "", "near": False}
+        line = float(close) * (1 + float(r.to_full_pct) / 100)
+    if not ok or line is None or pd.isna(line) or not pd.notna(close) or float(line) <= 0:
+        return {"line": "", "near": False}
+    margin = (float(close) / float(line) - 1) * 100
+    return {"line": f"선 {float(line):,.0f} · {margin:+.1f}%", "near": margin < 1.0}
 
 
 def render_top100() -> None:

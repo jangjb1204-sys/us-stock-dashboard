@@ -225,6 +225,8 @@ def signal_row(row: dict, today) -> dict:
             "disparity": round(status.disparity, 1) if status.disparity is not None else None,
             "overheated": bool(status.overlay_active),
             "to_full_pct": round((status.green_above / status.last_close - 1) * 100, 1),
+            "full_line": round(status.green_above, 2),   # price the month-end close must reach for 100%
+            "none_line": round(status.red_below, 2),     # below this at month-end → 0%
             "to_none_pct": round((status.red_below / status.last_close - 1) * 100, 1),
             "last_date": status.last_date.date().isoformat(),
             "status": "ok",
