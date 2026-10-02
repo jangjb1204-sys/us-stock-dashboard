@@ -1,5 +1,5 @@
 {
- "started": "2026-10-02T14:10:59.890448+00:00",
+ "started": "2026-10-02T14:21:48.443564+00:00",
  "pages": {
   "KOSPI": {
    "keys": [
@@ -351,8 +351,8 @@
   "etf": 1115,
   "etn": 194
  },
- "themes_found": 264,
- "theme_codes": 2322,
+ "themes_found": 251,
+ "theme_codes": 2259,
  "rows": 100,
  "etf_kinds_all": {
   "own": 703,
