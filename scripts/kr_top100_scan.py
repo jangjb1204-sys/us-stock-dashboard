@@ -70,50 +70,51 @@ def fetch_market(market: str) -> list[dict]:
     return rows
 
 
-# ── Naver themes: theme list (today's strongest first) → member stocks ───────
-THEME_LIST_URL = "https://finance.naver.com/sise/theme.naver"
-THEME_DETAIL_URL = "https://finance.naver.com/sise/sise_group_detail.naver"
-PC_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
-              "Referer": "https://finance.naver.com/"}
-
-
-def _get_text(url: str, params: dict) -> str:
-    resp = requests.get(url, params=params, headers=PC_HEADERS, timeout=15)
-    resp.raise_for_status()
-    return resp.content.decode("euc-kr", errors="replace")
+# ── Naver themes (mobile API): theme list by today's change → member stocks ──
+THEME_LIST_URL = "https://m.stock.naver.com/api/stocks/theme"
+THEME_MEMBERS_URL = "https://m.stock.naver.com/api/stocks/theme/{no}"
 
 
 def fetch_themes() -> dict[str, list[str]]:
-    """code → theme names, in the order Naver lists themes (today's change, best first)."""
-    import re
-    themes: list[tuple[str, str]] = []
-    for page in range(1, 12):
-        html = _get_text(THEME_LIST_URL, {"page": page})
-        if page == 1:
-            i = html.find("group_detail")
-            debug["theme_page"] = {"len": len(html), "snippet": html[max(0, i - 200): i + 400] if i >= 0 else html[:600]}
-        found = re.findall(r'sise_group_detail\.(?:naver|nhn)\?type=theme&(?:amp;)?no=(\d+)[^>]*>\s*([^<]+?)\s*</a>', html)
-        new = [(no, " ".join(name.split())) for no, name in found if no not in {t[0] for t in themes}]
-        if not new:
+    """code → theme names, in Naver's theme order (today's change, best first)."""
+    groups: list[dict] = []
+    for page in range(1, 15):
+        resp = requests.get(THEME_LIST_URL, params={"page": page, "pageSize": 100}, headers=HEADERS, timeout=15)
+        resp.raise_for_status()
+        batch = resp.json().get("groups") or []
+        groups.extend(batch)
+        if len(batch) < 100:
             break
-        themes.extend(new)
-        time.sleep(0.2)
-    debug["themes_found"] = len(themes)
+        time.sleep(0.15)
+    debug["themes_found"] = len(groups)
 
-    def members(theme):
-        no, name = theme
+    def members(group):
+        codes, page = [], 1
         try:
-            html = _get_text(THEME_DETAIL_URL, {"type": "theme", "no": no})
-            return name, sorted(set(re.findall(r'/item/main\.(?:naver|nhn)\?code=(\w{6})', html)))
-        except Exception:
-            return name, []
+            while page <= 5:
+                resp = requests.get(THEME_MEMBERS_URL.format(no=group["no"]), params={"page": page, "pageSize": 100},
+                                    headers=HEADERS, timeout=15)
+                resp.raise_for_status()
+                payload = resp.json()
+                stocks = payload.get("stocks") or []
+                codes += [str(x.get("itemCode") or "") for x in stocks]
+                if len(stocks) < 100:
+                    break
+                page += 1
+            return group.get("name", ""), codes
+        except Exception as exc:
+            debug.setdefault("theme_member_errors", []).append(f"{group.get('no')}: {type(exc).__name__}")
+            return group.get("name", ""), []
 
     by_code: dict[str, list[str]] = {}
     with ThreadPoolExecutor(max_workers=4) as pool:
-        for name, codes in pool.map(members, themes):
+        for name, codes in pool.map(members, groups):
             for code in codes:
-                by_code.setdefault(code, []).append(name)
+                if code and name:
+                    by_code.setdefault(code, []).append(" ".join(str(name).split()))
     debug["theme_codes"] = len(by_code)
+    if debug.get("theme_member_errors"):
+        debug["theme_member_errors"] = debug["theme_member_errors"][:5]
     return by_code
 
 
