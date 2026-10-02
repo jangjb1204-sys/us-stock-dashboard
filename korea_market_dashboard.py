@@ -48,11 +48,15 @@ PAGE_CSS = ui.html(f"""
 .kr-panel {{ transition: border-color .15s ease; }}
 .kr-panel:not(.sel) .weight, .kr-panel:not(.sel) .meta {{ opacity:.45; }}
 .kr-panel.sel {{ border-top-color:rgba(242,245,248,.85); }}
-div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]) {{ position:relative; }}
-div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(.sel) .weight,
-div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(.sel) .meta {{ opacity:.75; }}
-[class*="st-key-kr_card_"] {{ position:absolute!important; inset:0; width:100%!important; height:100%!important; z-index:3; margin:0!important; }}
-[class*="st-key-kr_card_"] button {{ width:100%!important; height:100%!important; opacity:0; cursor:pointer; }}
+/* Card = picker. The invisible button only covers its own card: it is
+   positioned inside a keyed wrapper, never against the page (an earlier rule
+   could stretch it over everything below and swallow clicks). If the wrapper
+   class is missing the rules don't match and a plain button shows instead. */
+[class*="st-key-kr_wrap_"] {{ position:relative!important; }}
+[class*="st-key-kr_wrap_"]:hover .kr-panel:not(.sel) .weight,
+[class*="st-key-kr_wrap_"]:hover .kr-panel:not(.sel) .meta {{ opacity:.75; }}
+[class*="st-key-kr_wrap_"] [class*="st-key-kr_card_"] {{ position:absolute!important; inset:0; width:100%!important; height:100%!important; z-index:3; margin:0!important; }}
+[class*="st-key-kr_wrap_"] [class*="st-key-kr_card_"] button {{ width:100%!important; height:100%!important; opacity:0; cursor:pointer; }}
 .kr-panel .meta {{ margin-top:.8rem; color:rgba(255,255,255,.5); font-size:.84rem; }}
 .kr-panel .meta b {{ color:{ui.TEXT}; font-weight:600; }}
 .kr-level {{ display:inline-flex; align-items:center; gap:7px; font-variant-numeric:tabular-nums; }}
@@ -551,20 +555,15 @@ def sync_query_param(query: str) -> None:
         del st.query_params["q"]
 
 
-_fragment = getattr(st, "fragment", None) or (lambda func: func)
-
-
-@_fragment
 def render_charts(status: engine.IndexStatus, daily: pd.DataFrame, monthly: pd.DataFrame, digits: int, today: date) -> None:
-    """The combined chart with its own range picker (like the US page);
-    changing the range reruns only this part."""
+    """The combined chart with its own range picker (like the US page)."""
     _, range_col = st.columns([1, 1.2])
     with range_col:
         label = st.radio("기간", list(RANGE_YEARS), index=1, horizontal=True, key="kr_range",
                          label_visibility="collapsed")
     years = RANGE_YEARS[label]
     st.plotly_chart(build_combined_chart(monthly, daily, status, years=years, digits=digits),
-                    use_container_width=True, config=PLOT_CONFIG)
+                    use_container_width=True, config=PLOT_CONFIG, key=f"kr_chart_{status.key}_{years}")
     md(signal_key_html())
     export = monthly.copy()
     export["Month"] = export["Month"].astype(str)
@@ -629,8 +628,13 @@ def main() -> None:
     # The index cards are the picker: a tap selects (an invisible button covers each card).
     for col, key in zip(st.columns(len(keys), gap="large"), keys):
         with col:
-            md(index_panel(statuses[key], selected=(key == st.session_state["kr_index"] and not searching)))
-            st.button(f"{engine.INDEXES[key]['label']} 보기", key=f"kr_card_{key}", on_click=pick_index, args=(key,))
+            try:
+                wrap = st.container(key=f"kr_wrap_{key}")
+            except TypeError:  # older Streamlit: no keyed containers → plain visible button
+                wrap = st.container()
+            with wrap:
+                md(index_panel(statuses[key], selected=(key == st.session_state["kr_index"] and not searching)))
+                st.button(f"{engine.INDEXES[key]['label']} 보기", key=f"kr_card_{key}", on_click=pick_index, args=(key,))
 
     query = st.text_input(
         "종목 · ETF 검색", key="kr_query", label_visibility="collapsed",
