@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import korea_signal_engine as engine  # noqa: E402
 
 TOP_N = 100
+ETF_TOP_N = 30
 PAGE_SIZE = 100
 NAVER_URL = "https://m.stock.naver.com/api/stocks/marketValue/{market}"
 HEADERS = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
@@ -69,9 +70,12 @@ def fetch_market(market: str) -> list[dict]:
     return rows
 
 
-def ranked_stocks() -> pd.DataFrame:
+def listed_all() -> pd.DataFrame:
     frames = [pd.DataFrame(fetch_market(m)) for m in ("KOSPI", "KOSDAQ")]
-    df = pd.concat(frames, ignore_index=True).dropna(subset=["value_mil"])
+    return pd.concat(frames, ignore_index=True).dropna(subset=["value_mil"])
+
+
+def ranked_stocks(df: pd.DataFrame) -> pd.DataFrame:
     debug["listed"] = int(len(df))
     debug["end_types"] = df["end_type"].value_counts().to_dict()
     # stocks only: drop ETF/ETN rows (by type when given, by name as a backstop)
@@ -81,6 +85,87 @@ def ranked_stocks() -> pd.DataFrame:
     df = df.sort_values("value_mil", ascending=False).drop_duplicates("code").head(TOP_N).reset_index(drop=True)
     df.insert(0, "rank", range(1, len(df) + 1))
     return df
+
+
+# ── ETFs: each kind gets its own basis ─────────────────────────────────────────
+CASH_LIKE = r"CD금리|KOFR|SOFR|머니마켓|MMF|국고채|국채|채권|금리|단기|회사채|크레딧|통안|은행채|특수채|전단채"
+DOMESTIC_INDEX = r"200|코스피|KOSPI|코스닥|KOSDAQ|KRX\s?300|TOP\s?10|밸류업"
+SECTOR_HINT = r"반도체|은행|바이오|헬스|2차전지|자동차|증권|건설|철강|IT|미디어|게임|조선|방산|화학|에너지|소비|리츠|로봇|AI|원자력|전력"
+FOREIGN_HINT = r"미국|나스닥|S&P|차이나|중국|일본|인도|베트남|유로|글로벌|선진|신흥|원유|금|은|구리|달러|엔"
+
+
+def etf_kind(name: str) -> tuple[str, str | None]:
+    """(kind, underlying index key or None). Kinds: cash, inverse, leverage, index, own."""
+    import re
+    if re.search(CASH_LIKE, name):
+        return "cash", None
+    foreign = re.search(FOREIGN_HINT, name)
+    sector = re.search(SECTOR_HINT, name)
+    domestic = re.search(DOMESTIC_INDEX, name) and not foreign
+    # plain "KODEX 레버리지" / "KODEX 인버스" track KOSPI 200
+    plain_kospi_derivative = re.search(r"레버리지|인버스", name) and not foreign and not sector
+    underlying = None
+    if domestic or plain_kospi_derivative:
+        underlying = "KOSDAQ" if re.search(r"코스닥|KOSDAQ", name) else "KOSPI"
+    if "인버스" in name:
+        return "inverse", underlying
+    if "레버리지" in name or re.search(r"2X", name, re.I):
+        return "leverage", underlying
+    if domestic and not sector:
+        return "index", underlying
+    return "own", None
+
+
+def one_step_down(weight: float) -> float:
+    """Leveraged ETFs: hold only on a full (100%) signal; 50% → 0%."""
+    return 1.0 if weight >= 1.0 else 0.0
+
+
+def etf_rows(df: pd.DataFrame, today) -> pd.DataFrame:
+    etfs = df[df["end_type"].str.lower().eq("etf")].copy()
+    etfs["kind"], etfs["underlying"] = zip(*etfs["name"].map(etf_kind)) if len(etfs) else ([], [])
+    debug["etf_kinds_all"] = etfs["kind"].value_counts().to_dict()
+    etfs = etfs[etfs["kind"] != "cash"].sort_values("value_mil", ascending=False).head(ETF_TOP_N).reset_index(drop=True)
+    etfs.insert(0, "rank", range(1, len(etfs) + 1))
+
+    index_status = {}
+    for key, cfg in engine.INDEXES.items():
+        try:
+            daily, _ = engine.fetch_history(cfg["symbol"], today.year - 2)
+            index_status[key] = engine.current_status(key, daily, today)
+        except Exception as exc:
+            debug["errors"].append(f"index {key}: {type(exc).__name__}")
+
+    out = []
+    for row in etfs.to_dict("records"):
+        kind, und = row["kind"], row["underlying"]
+        rec = dict(row)
+        base = index_status.get(und) if und else None
+        if kind in ("index", "leverage", "inverse") and base is not None:
+            w, nxt = base.final_weight, engine.SIGNAL_WEIGHT[base.live_signal]
+            rec.update({"basis": f"{engine.INDEXES[und]['label']} 지수",
+                        "disparity": round(base.disparity, 1) if base.disparity is not None else None,
+                        "overheated": bool(base.overlay_active), "last_date": base.last_date.date().isoformat()})
+            if kind == "index":
+                rec.update({"weight": w, "next_weight": nxt, "status": "ok"})
+            elif kind == "leverage":
+                rec.update({"weight": one_step_down(w), "next_weight": one_step_down(nxt), "status": "ok",
+                            "note": "100%일 때만 보유"})
+            else:  # inverse: reference only, no weight
+                rec.update({"weight": None, "next_weight": None, "status": "ref",
+                            "note": f"기초지수 {int(round(w * 100))}%"})
+        else:
+            r = signal_row(row, today)
+            r["basis"] = "자체 가격"
+            if kind == "leverage" and r.get("status") == "ok":
+                r["weight"], r["next_weight"] = one_step_down(r["weight"]), one_step_down(r["next_weight"])
+                r["note"] = "100%일 때만 보유"
+            if kind == "inverse" and r.get("status") == "ok":
+                r.update({"weight": None, "next_weight": None, "status": "ref", "note": "인버스 · 참고만"})
+            rec = r
+            rec["kind"] = kind
+        out.append(rec)
+    return pd.DataFrame(out)
 
 
 def signal_row(row: dict, today) -> dict:
@@ -111,7 +196,8 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     today = engine.kst_today()
     try:
-        top = ranked_stocks()
+        listed = listed_all()
+        top = ranked_stocks(listed)
         with ThreadPoolExecutor(max_workers=6) as pool:
             rows = list(pool.map(lambda r: signal_row(r, today), top.to_dict("records")))
         result = pd.DataFrame(rows).sort_values("rank")
@@ -123,6 +209,14 @@ def main() -> None:
         result.to_csv(OUT / f"kr_top100_{day:%Y%m%d}.csv", index=False, encoding="utf-8")
         result.to_csv(OUT / "kr_top100_latest.csv", index=False, encoding="utf-8")
         debug["rows"] = int(len(result))
+        etf = etf_rows(listed, today)
+        if not etf.empty:
+            etf.insert(0, "date", day.isoformat())
+            etf["scanned_at"] = result["scanned_at"].iloc[0]
+            etf.to_csv(OUT / f"kr_etf30_{day:%Y%m%d}.csv", index=False, encoding="utf-8")
+            etf.to_csv(OUT / "kr_etf30_latest.csv", index=False, encoding="utf-8")
+            debug["etf_rows"] = int(len(etf))
+            debug["etf_kinds"] = etf["kind"].value_counts().to_dict()
         debug["status_counts"] = result["status"].value_counts().to_dict()
     except Exception as exc:
         debug["errors"].append(f"{type(exc).__name__}: {exc}")
