@@ -90,7 +90,8 @@ div[data-testid="stColumn"]:has([class*="st-key-kr_card_"]):hover .kr-panel:not(
 .t1-row .nm b {{ color:{ui.TEXT}; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
 .t1-row small {{ color:rgba(255,255,255,.4); font-size:.74rem; margin-top:1px; }}
 .t1-row .val {{ display:flex; flex-direction:column; }}
-.t1-row .val small.up {{ color:#6EA8FF; }} .t1-row .val small.down {{ color:#FF5A5F; }}
+.t1-row .val small .up {{ color:#6EA8FF; }} .t1-row .val small .down {{ color:#FF5A5F; }}
+.t1-row .tag {{ margin-left:6px; padding:1px 7px; border:1px solid rgba(255,255,255,.28); border-radius:999px; color:{ui.TEXT}; font-size:.7rem; font-weight:600; white-space:nowrap; }}
 .t1-row .w {{ display:inline-flex; align-items:center; gap:7px; }}
 .t1-row .w i {{ width:8px; height:8px; border-radius:2px; display:inline-block; }}
 .t1-row .w.dim {{ color:rgba(255,255,255,.55); }}
@@ -538,12 +539,14 @@ def top100_row(r) -> str:
     else:
         note = "" if ok else "<span class='na'>데이터 부족</span>"
     lvl = lambda v: f"<i style='background:{SIGNAL_COLOR[{1.0: 'green', 0.5: 'yellow', 0.0: 'red'}[float(v)]]}'></i>" if ok else ""
+    up = " <span class='tag'>상승 전환</span>" if ok and float(r.next_weight) > float(r.weight) else ""
+    price = f"{r.close:,.0f}" if pd.notna(getattr(r, "close", None)) else "—"
     return (f"<a class='t1-row' href='?dashboard=korea&amp;q={escape(r.code)}' target='_self'>"
             f"<span class='rk'>{int(r.rank)}</span>"
             f"<span class='nm'><b>{escape(str(r.name))}</b><small>{meta}</small></span>"
-            f"<span class='val'>{fmt_value_mil(r.value_mil)}<small class='{tone}'>{chg}</small></span>"
+            f"<span class='val'>{price}<small><span class='{tone}'>{chg}</span> · {fmt_value_mil(r.value_mil)}</small></span>"
             f"<span class='w'><em class='lab'>이번 달</em>{lvl(r.weight)}{w}{note}</span>"
-            f"<span class='w dim'><em class='lab'>다음 달</em>{lvl(r.next_weight)}{nxt}</span>"
+            f"<span class='w dim'><em class='lab'>다음 달</em>{lvl(r.next_weight)}{nxt}{up}</span>"
             f"<span class='dp{hot}'><em class='lab'>이격도</em>{disp}</span>"
             f"</a>")
 
@@ -559,31 +562,42 @@ def render_top100() -> None:
     day = pd.Timestamp(data["date"].iloc[0])
     this_m, next_m = (day.to_period("M")), (day.to_period("M") + 1)
     scope = "주식만" if kind == "stock" else "채권·금리형 제외 · 지수형은 지수 신호, 레버리지는 100%일 때만, 인버스는 참고"
-    md(f"<div class='tj-caption' style='margin:-.1rem 0 .9rem'>{ui.kdate(day)} 거래대금 기준 · {scope} · 누르면 상세</div>")
-    ok = data[data["status"] == "ok"]
+    md(f"<div class='tj-caption' style='margin:-.1rem 0 .9rem'>{ui.kdate(day)} 종가 · 거래대금 기준 · {scope} · 누르면 상세<br>"
+       f"매수 후보 = {next_m.month}월 예상 100% · 과열 아님 · 상승 전환 먼저</div>")
+    ok = data[data["status"] == "ok"].copy()
+    hot_mask = ok["overheated"].astype(str).str.lower().eq("true") if "overheated" in ok else pd.Series(False, index=ok.index)
+    # 매수 후보: projected 100% next month and not overheated; upgrades first,
+    # then the ones that crossed the 100% line most recently (closest above it).
+    cand = ok[(ok["next_weight"] == 1.0) & ~hot_mask].copy()
+    cand["_up"] = (cand["next_weight"] > cand["weight"]).astype(int)
+    sort_cols = ["_up", "to_full_pct"] if "to_full_pct" in cand else ["_up"]
+    cand = cand.sort_values(sort_cols, ascending=[False, False][:len(sort_cols)])
     counts = {
+        "cand": len(cand),
         "all": len(data),
         "full": int((ok["weight"] == 1.0).sum()),
         "half": int((ok["weight"] == 0.5).sum()),
         "none": int((ok["weight"] == 0.0).sum()),
         "hot": int(ok["overheated"].astype(str).str.lower().eq("true").sum()) if "overheated" in ok else 0,
     }
-    labels = {"all": f"전체 {counts['all']}", "full": f"100% {counts['full']}", "half": f"50% {counts['half']}",
+    labels = {"cand": f"매수 후보 {counts['cand']}", "all": f"전체 {counts['all']}", "full": f"100% {counts['full']}", "half": f"50% {counts['half']}",
               "none": f"0% {counts['none']}", "hot": f"과열 {counts['hot']}"}
     pick = st.radio("필터", list(labels), format_func=labels.get, horizontal=True, key=f"kr_top_filter_{kind}",
                     label_visibility="collapsed")
     view = data
-    if pick == "full":
+    if pick == "cand":
+        view = cand
+    elif pick == "full":
         view = ok[ok["weight"] == 1.0]
     elif pick == "half":
         view = ok[ok["weight"] == 0.5]
     elif pick == "none":
         view = ok[ok["weight"] == 0.0]
     elif pick == "hot":
-        view = ok[ok["overheated"].astype(str).str.lower().eq("true")]
-    show_all = kind == "etf" or st.session_state.get("kr_top_all", False) or pick != "all"
+        view = ok[hot_mask]
+    show_all = kind == "etf" or st.session_state.get("kr_top_all", False) or pick not in ("all",)
     rows = view if show_all else view.head(TOP100_PREVIEW)
-    head = (f"<div class='t1-head'><span>#</span><span>종목</span><span>거래대금</span>"
+    head = (f"<div class='t1-head'><span>#</span><span>종목</span><span>가격 · 거래대금</span>"
             f"<span>{this_m.month}월 비중</span><span>{next_m.month}월 예상</span><span>이격도</span></div>")
     md("<div class='t1'>" + head + "".join(top100_row(r) for r in rows.itertuples()) + "</div>")
     if not show_all and len(view) > TOP100_PREVIEW:
