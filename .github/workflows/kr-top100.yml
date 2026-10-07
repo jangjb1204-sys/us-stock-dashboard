@@ -1,10 +1,16 @@
 name: KR top-100 scan
 
-# Weekdays 16:40 KST (07:40 UTC), after the KRX close. Results go to the
+# Weekdays after the KRX close. GitHub often starts scheduled runs hours late,
+# so there are backup times (16:40, 17:20, 18:20, 19:20, 20:20 KST); a run
+# skips itself when today's scan is already published. Results go to the
 # kr-scans branch so data commits never touch main (no app redeploys).
 on:
   schedule:
     - cron: "40 7 * * 1-5"
+    - cron: "20 8 * * 1-5"
+    - cron: "20 9 * * 1-5"
+    - cron: "20 10 * * 1-5"
+    - cron: "20 11 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
@@ -16,14 +22,29 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Skip if today's scan is already published
+        id: check
+        run: |
+          skip=false
+          if [ "${{ github.event_name }}" = "schedule" ] && git fetch -q origin kr-scans 2>/dev/null; then
+            last=$(git show origin/kr-scans:kr_top100_latest.csv 2>/dev/null | python3 -c "import csv,sys; r=next(csv.DictReader(sys.stdin), {}); print(r.get('scanned_at',''))")
+            today=$(date -u +%Y-%m-%d)
+            # published today after 07:00 UTC (16:00 KST) → this backup run has nothing to do
+            if [ -n "$last" ] && [ "${last:0:10}" = "$today" ] && [ "${last:11:2}" -ge 7 ]; then skip=true; fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+          echo "last published: ${last:-none} → skip=$skip"
       - uses: actions/setup-python@v5
+        if: steps.check.outputs.skip != 'true'
         with:
           python-version: "3.12"
       - run: pip install pandas requests
+        if: steps.check.outputs.skip != 'true'
       - name: Scan
+        if: steps.check.outputs.skip != 'true'
         run: python scripts/kr_top100_scan.py out
       - name: Publish to kr-scans branch
-        if: always()
+        if: always() && steps.check.outputs.skip != 'true'
         run: |
           git config user.name "kr-scan-bot"
           git config user.email "kr-scan-bot@users.noreply.github.com"
