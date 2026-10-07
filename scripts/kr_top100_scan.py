@@ -243,6 +243,11 @@ def main() -> None:
     today = engine.kst_today()
     try:
         listed = listed_all()
+        if listed.empty or listed["value_mil"].fillna(0).sum() <= 0:
+            # before the open Naver reports no trading value yet: keep yesterday's files
+            debug["errors"].append("no trading value yet (pre-market) — previous scan kept")
+            print("No trading value yet; keeping the previous scan.")
+            return
         top = ranked_stocks(listed)
         with ThreadPoolExecutor(max_workers=6) as pool:
             rows = list(pool.map(lambda r: signal_row(r, today), top.to_dict("records")))
