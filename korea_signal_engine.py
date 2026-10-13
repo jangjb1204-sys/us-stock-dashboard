@@ -137,7 +137,31 @@ def fetch_history(symbol: str, start_year: int, now: datetime | None = None) -> 
             end = start
     if not frames:
         return pd.DataFrame(columns=["Date", "Close"]), meta
-    return clean_daily(pd.concat(frames, ignore_index=True)), meta
+    daily = clean_daily(pd.concat(frames, ignore_index=True))
+    # Yahoo's daily bars for KRX sometimes lag the quote by a session or more;
+    # the quote (meta) is fresher, so carry it in as the latest bar.
+    price, stamp = meta.get("regularMarketPrice"), meta.get("regularMarketTime")
+    if price and stamp:
+        offset = int(meta.get("gmtoffset") or 32400)
+        day = pd.to_datetime(int(stamp) + offset, unit="s").normalize()
+        daily = with_latest_close(daily, day, float(price), replace=False)
+    return daily, meta
+
+
+def with_latest_close(daily: pd.DataFrame, day, close: float, replace: bool = True) -> pd.DataFrame:
+    """Daily closes with `close` as the bar for `day`: appended when `day` is
+    newer than the last bar; when it is the last bar's day, the close is
+    overwritten only if `replace`. Older days are left alone."""
+    if daily.empty or close is None or not np.isfinite(close) or close <= 0:
+        return daily
+    day = pd.Timestamp(day).normalize()
+    last = daily["Date"].iloc[-1]
+    if day > last:
+        return pd.concat([daily, pd.DataFrame({"Date": [day], "Close": [close]})], ignore_index=True)
+    if day == last and replace:
+        daily = daily.copy()
+        daily.loc[daily.index[-1], "Close"] = close
+    return daily
 
 
 def fetch_daily_closes(symbol: str, start_year: int, now: datetime | None = None) -> pd.DataFrame:

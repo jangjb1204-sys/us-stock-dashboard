@@ -61,6 +61,8 @@ def fetch_market(market: str) -> list[dict]:
                 # 백만원 단위 on Naver
                 "value_mil": num(item.get("accumulatedTradingValue")),
                 "volume": num(item.get("accumulatedTradingVolume")),
+                # KST trading day of closePrice (e.g. "2026-10-13T20:20:23+09:00")
+                "trade_date": str(item.get("localTradedAt") or "")[:10] or None,
             })
         total = payload.get("totalCount") or 0
         if not stocks or page * PAGE_SIZE >= total or page > 40:
@@ -217,6 +219,11 @@ def signal_row(row: dict, today) -> dict:
     suffix = engine.MARKET_SUFFIX.get(row["market"], ".KS")
     try:
         daily, _ = engine.fetch_history(row["code"] + suffix, today.year - 2)
+        yahoo_last = daily["Date"].iloc[-1].date().isoformat() if not daily.empty else None
+        # Naver's close is the price shown everywhere; make it the latest bar so
+        # the signal never runs on a stale Yahoo close.
+        if row.get("close") and row.get("trade_date"):
+            daily = engine.with_latest_close(daily, row["trade_date"], float(row["close"]))
         status = engine.current_status(row["code"], daily, today, label=row["name"])
         out.update({
             "weight": status.final_weight,             # this month (confirmed last month-end, after overheat cut)
@@ -229,6 +236,7 @@ def signal_row(row: dict, today) -> dict:
             "none_line": round(status.red_below, 2),     # below this at month-end → 0%
             "to_none_pct": round((status.red_below / status.last_close - 1) * 100, 1),
             "last_date": status.last_date.date().isoformat(),
+            "yahoo_last": yahoo_last,
             "status": "ok",
         })
     except engine.HistoryTooShort:
@@ -259,7 +267,9 @@ def main() -> None:
             debug["errors"].append(f"themes: {type(exc).__name__}: {exc}")
         result["theme"] = result["code"].map(lambda c: themes.get(str(c), ""))
         # label with the trading day the prices are from (a holiday run keeps the last session)
-        trade_day = result["last_date"].dropna().mode()
+        trade_day = result["trade_date"].dropna().mode()
+        if not len(trade_day):
+            trade_day = result["last_date"].dropna().mode()
         day = pd.Timestamp(trade_day.iloc[0]).date() if len(trade_day) else today
         result.insert(0, "date", day.isoformat())
         result["scanned_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
