@@ -312,19 +312,6 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
     touch-action: pan-y !important;
 }}
 
-/* Installed to the Home Screen (black-translucent status bar + viewport-fit=cover):
-   keep content clear of the notch / Dynamic Island and the home indicator. */
-@media (display-mode: standalone) {{
-    .stApp .block-container {{
-        padding-top: calc(0.9rem + env(safe-area-inset-top)) !important;
-        padding-bottom: calc(2.5rem + env(safe-area-inset-bottom)) !important;
-    }}
-}}
-/* The zero-height iframe that injects the PWA tags must not add a layout gap. */
-.element-container:has(> iframe[height="0"]), [data-testid="stElementContainer"]:has(> iframe[height="0"]) {{
-    position: absolute; width: 0; height: 0; margin: 0; overflow: hidden;
-}}
-
 @media (max-width: 900px) {{ .tj-stats {{ grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }} }}
 @media (max-width: 640px) {{
     .block-container {{ padding-top: 1.3rem !important; padding-left: 0.85rem !important; padding-right: 0.85rem !important; }}
@@ -430,14 +417,19 @@ def inject_pwa() -> None:
     """Make 'Add to Home Screen' open the dashboard full-screen on iOS.
 
     Streamlit renders pages inside its own document, so st.markdown can't put
-    tags in <head>. A zero-height component iframe (same origin) adds them to the
-    parent document instead. Safe to call on every rerun: tags are updated in
-    place, never duplicated. Failures are silent — the page works without it."""
+    tags in <head>. A zero-height component iframe (same origin) adds them
+    instead. On Streamlit Community Cloud the app itself sits in an iframe
+    inside a host page, and Safari reads the HOST (top) document when saving to
+    the Home Screen — so tags go into both the parent and the top document.
+    The status bar is the opaque 'black' style (not black-translucent): content
+    then starts below it and no safe-area handling is needed inside an iframe.
+    Safe to call on every rerun: tags are updated in place. Failures are
+    silent — the page works without it."""
     import streamlit.components.v1 as components
     components.html(f"""<script>
     (function () {{
-      try {{
-        var d = window.parent.document, h = d.head;
+      function apply(d) {{
+        var h = d.head;
         function meta(name, content) {{
           var m = h.querySelector('meta[name="' + name + '"]');
           if (!m) {{ m = d.createElement('meta'); m.setAttribute('name', name); h.appendChild(m); }}
@@ -445,14 +437,22 @@ def inject_pwa() -> None:
         }}
         meta('apple-mobile-web-app-capable', 'yes');
         meta('mobile-web-app-capable', 'yes');
-        meta('apple-mobile-web-app-status-bar-style', 'black-translucent');
+        meta('apple-mobile-web-app-status-bar-style', 'black');
         meta('apple-mobile-web-app-title', '{PWA_APP_TITLE}');
         meta('theme-color', '{PWA_THEME_COLOR}');
-        var vp = h.querySelector('meta[name="viewport"]');
-        if (vp && vp.content.indexOf('viewport-fit') < 0) vp.content += ', viewport-fit=cover';
         var l = h.querySelector('link[rel="apple-touch-icon"]');
         if (!l) {{ l = d.createElement('link'); l.setAttribute('rel', 'apple-touch-icon'); h.appendChild(l); }}
-        l.setAttribute('href', window.parent.location.origin + '{PWA_ICON_PATH}');
+        l.setAttribute('href', d.location.origin + '{PWA_ICON_PATH}');
+      }}
+      var docs = [];
+      try {{ docs.push(window.parent.document); }} catch (e) {{}}
+      try {{ if (window.top.document !== docs[0]) docs.push(window.top.document); }} catch (e) {{}}
+      docs.forEach(function (d) {{ try {{ apply(d); }} catch (e) {{}} }});
+      // Collapse this helper's wrapper so it adds no layout gap (the iframe's
+      // height attribute differs between Streamlit versions, so CSS can't select it).
+      try {{
+        var c = window.frameElement.closest('[data-testid="stElementContainer"], .element-container');
+        if (c) c.style.display = 'none';
       }} catch (e) {{}}
     }})();
     </script>""", height=0)
