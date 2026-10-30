@@ -4,6 +4,8 @@ gatherUsageStats = false
 [server]
 headless = true
 fileWatcherType = "none"
+# Serves ./static (apple-touch-icon for "Add to Home Screen") at /app/static/
+enableStaticServing = true
 
 [client]
 showErrorDetails = "none"

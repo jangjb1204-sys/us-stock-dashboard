@@ -1,7 +1,7 @@
 import pandas as pd
 pd.set_option('future.no_silent_downcasting', True)
 import yfinance as yf
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import logging
 import requests
 import re
@@ -46,6 +46,96 @@ def central_now() -> datetime:
 
 def central_today() -> pd.Timestamp:
     return pd.Timestamp(central_now().date())
+
+# --- US market session -------------------------------------------------------
+EASTERN_TZ = ZoneInfo('America/New_York')
+_PRE_OPEN = (4, 0)        # pre-market starts 04:00 ET
+_REGULAR_OPEN = (9, 30)
+_REGULAR_CLOSE = (16, 0)
+_EARLY_CLOSE = (13, 0)    # half days
+_AFTER_CLOSE = (20, 0)
+_AFTER_CLOSE_EARLY = (17, 0)
+
+
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    """n-th (1-based) `weekday` (Mon=0) of the month; n=-1 means the last one."""
+    if n > 0:
+        first = date(year, month, 1)
+        return first + timedelta(days=(weekday - first.weekday()) % 7 + 7 * (n - 1))
+    nxt = date(year + (month == 12), month % 12 + 1, 1)
+    last = nxt - timedelta(days=1)
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
+
+
+def _observed(d: date) -> date | None:
+    """NYSE rule: a Saturday holiday is observed Friday, a Sunday one Monday."""
+    if d.weekday() == 5:
+        return d - timedelta(days=1)
+    if d.weekday() == 6:
+        return d + timedelta(days=1)
+    return d
+
+
+def nyse_holidays(year: int) -> set[date]:
+    """Full-day NYSE closures for `year` (standard calendar; ad-hoc closures
+    such as days of mourning are not predictable and are not included)."""
+    from dateutil.easter import easter
+    days = {
+        _nth_weekday(year, 1, 0, 3),                 # Martin Luther King Jr. Day
+        _nth_weekday(year, 2, 0, 3),                 # Presidents' Day
+        easter(year) - timedelta(days=2),            # Good Friday
+        _nth_weekday(year, 5, 0, -1),                # Memorial Day
+        _nth_weekday(year, 9, 0, 1),                 # Labor Day
+        _nth_weekday(year, 11, 3, 4),                # Thanksgiving
+        _observed(date(year, 7, 4)),                 # Independence Day
+        _observed(date(year, 12, 25)),               # Christmas
+    }
+    if year >= 2022:
+        days.add(_observed(date(year, 6, 19)))       # Juneteenth
+    new_year = date(year, 1, 1)
+    # A Saturday New Year's Day is NOT observed on the prior Friday.
+    if new_year.weekday() != 5:
+        days.add(new_year + timedelta(days=1) if new_year.weekday() == 6 else new_year)
+    return days
+
+
+def nyse_early_closes(year: int) -> set[date]:
+    """13:00 ET half days: day after Thanksgiving, Dec 24, and Jul 3 when
+    Jul 4 falls Tue-Fri."""
+    days = {_nth_weekday(year, 11, 3, 4) + timedelta(days=1)}
+    dec24 = date(year, 12, 24)
+    if dec24.weekday() < 5:
+        days.add(dec24)
+    jul4 = date(year, 7, 4)
+    if jul4.weekday() in (1, 2, 3, 4):
+        days.add(date(year, 7, 3))
+    return days - nyse_holidays(year)
+
+
+def us_market_state(now: datetime | None = None) -> tuple[str, str]:
+    """(key, Korean label) for the US equity session at `now`.
+
+    key is one of: open, pre, after, closed, holiday.
+    Weekends are 'closed'; full-day weekday closures are 'holiday'."""
+    now = (datetime.now(EASTERN_TZ) if now is None
+           else now.astimezone(EASTERN_TZ) if now.tzinfo
+           else now.replace(tzinfo=CENTRAL_TZ).astimezone(EASTERN_TZ))
+    today = now.date()
+    if today.weekday() >= 5:
+        return 'closed', '장 마감'
+    if today in nyse_holidays(today.year):
+        return 'holiday', '휴장'
+    hm = (now.hour, now.minute)
+    close = _EARLY_CLOSE if today in nyse_early_closes(today.year) else _REGULAR_CLOSE
+    after_end = _AFTER_CLOSE_EARLY if close == _EARLY_CLOSE else _AFTER_CLOSE
+    if _REGULAR_OPEN <= hm < close:
+        return 'open', '정규장 진행 중'
+    if _PRE_OPEN <= hm < _REGULAR_OPEN:
+        return 'pre', '프리마켓'
+    if close <= hm < after_end:
+        return 'after', '애프터마켓'
+    return 'closed', '장 마감'
+
 
 TICKER_CONFIGS = {
     '^GSPC': 'S&P500',

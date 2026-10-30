@@ -216,6 +216,12 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 .tj-hero h1 a {{ color: inherit !important; text-decoration: none !important; }}
 .tj-dot {{ width: 8px; height: 8px; border-radius: 999px; flex: 0 0 auto; background: rgba(255,255,255,0.32); }}
 .tj-dot.open, .tj-dot.live {{ background: {TEXT}; }}
+.tj-dot.pre, .tj-dot.after {{ background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.7); }}
+.tj-dot.holiday {{ background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.32); }}
+.tj-badge {{ display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.16); color: rgba(255,255,255,0.62); font-size: 0.74rem; font-weight: 550; }}
+.tj-badge.open {{ color: {TEXT}; border-color: rgba(255,255,255,0.42); background: rgba(255,255,255,0.07); }}
+.tj-badge.pre, .tj-badge.after {{ color: rgba(255,255,255,0.86); border-color: rgba(255,255,255,0.3); }}
 .tj-meta {{ margin-top: 0.42rem; color: rgba(255,255,255,0.52); font-size: 0.78rem; font-weight: 500; }}
 .tj-hero.compact {{ margin: -0.4rem 0 1.9rem; }}
 .tj-hero.compact .tj-meta {{ margin-top: 0; display: flex; align-items: center; flex-wrap: wrap; }}
@@ -225,6 +231,10 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 .tj-hero-right {{ display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.52); font-size: 0.78rem; white-space: nowrap; }}
 .tj-hero-right strong {{ color: {TEXT}; font-weight: 650; }}
 .tj-hero-right .tj-dot {{ width: 6px; height: 6px; background: rgba(255,255,255,0.5); }}
+.tj-hero .tj-badge .tj-dot {{ width: 6px; height: 6px; margin: 0; background: rgba(255,255,255,0.32); box-shadow: none; }}
+.tj-hero .tj-badge .tj-dot.open {{ background: {TEXT}; }}
+.tj-hero .tj-badge .tj-dot.pre, .tj-hero .tj-badge .tj-dot.after {{ background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.75); }}
+.tj-hero .tj-badge .tj-dot.holiday {{ background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.32); }}
 
 /* focus title: eyebrow + big name */
 .tj-focus {{ margin: 2.05rem 0 0.95rem; }}
@@ -302,6 +312,19 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
     touch-action: pan-y !important;
 }}
 
+/* Installed to the Home Screen (black-translucent status bar + viewport-fit=cover):
+   keep content clear of the notch / Dynamic Island and the home indicator. */
+@media (display-mode: standalone) {{
+    .stApp .block-container {{
+        padding-top: calc(0.9rem + env(safe-area-inset-top)) !important;
+        padding-bottom: calc(2.5rem + env(safe-area-inset-bottom)) !important;
+    }}
+}}
+/* The zero-height iframe that injects the PWA tags must not add a layout gap. */
+.element-container:has(> iframe[height="0"]), [data-testid="stElementContainer"]:has(> iframe[height="0"]) {{
+    position: absolute; width: 0; height: 0; margin: 0; overflow: hidden;
+}}
+
 @media (max-width: 900px) {{ .tj-stats {{ grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }} }}
 @media (max-width: 640px) {{
     .block-container {{ padding-top: 1.3rem !important; padding-left: 0.85rem !important; padding-right: 0.85rem !important; }}
@@ -369,6 +392,23 @@ def hero_html(title: str, updated: str | None = None, dot: str = "live", right: 
     """)
 
 
+MARKET_BADGE_LABELS = {
+    "open": "정규장 진행 중",
+    "pre": "프리마켓",
+    "after": "애프터마켓",
+    "closed": "장 마감",
+    "holiday": "휴장",
+}
+
+
+def market_badge_html(state: str) -> str:
+    """Small pill for the US session. `state` is the key from
+    stock_analyzer.us_market_state(); unknown keys fall back to closed."""
+    state = state if state in MARKET_BADGE_LABELS else "closed"
+    return (f'<span class="tj-badge {state}"><span class="tj-dot {state}"></span>'
+            f'{MARKET_BADGE_LABELS[state]}</span>')
+
+
 def viewers_html(count: int) -> str:
     return f'<span class="tj-dot"></span><span>지금 보는 중 <strong>{count:,}</strong></span>'
 
@@ -381,9 +421,47 @@ def footer_html() -> str:
             f'by <a href="{THREADS_URL}" target="_blank" rel="noopener noreferrer">30s_tech_j</a></div>')
 
 
+PWA_APP_TITLE = "Tech-J"
+PWA_ICON_PATH = "/app/static/apple-touch-icon.png"   # served via server.enableStaticServing
+PWA_THEME_COLOR = "#061323"
+
+
+def inject_pwa() -> None:
+    """Make 'Add to Home Screen' open the dashboard full-screen on iOS.
+
+    Streamlit renders pages inside its own document, so st.markdown can't put
+    tags in <head>. A zero-height component iframe (same origin) adds them to the
+    parent document instead. Safe to call on every rerun: tags are updated in
+    place, never duplicated. Failures are silent — the page works without it."""
+    import streamlit.components.v1 as components
+    components.html(f"""<script>
+    (function () {{
+      try {{
+        var d = window.parent.document, h = d.head;
+        function meta(name, content) {{
+          var m = h.querySelector('meta[name="' + name + '"]');
+          if (!m) {{ m = d.createElement('meta'); m.setAttribute('name', name); h.appendChild(m); }}
+          m.setAttribute('content', content);
+        }}
+        meta('apple-mobile-web-app-capable', 'yes');
+        meta('mobile-web-app-capable', 'yes');
+        meta('apple-mobile-web-app-status-bar-style', 'black-translucent');
+        meta('apple-mobile-web-app-title', '{PWA_APP_TITLE}');
+        meta('theme-color', '{PWA_THEME_COLOR}');
+        var vp = h.querySelector('meta[name="viewport"]');
+        if (vp && vp.content.indexOf('viewport-fit') < 0) vp.content += ', viewport-fit=cover';
+        var l = h.querySelector('link[rel="apple-touch-icon"]');
+        if (!l) {{ l = d.createElement('link'); l.setAttribute('rel', 'apple-touch-icon'); h.appendChild(l); }}
+        l.setAttribute('href', window.parent.location.origin + '{PWA_ICON_PATH}');
+      }} catch (e) {{}}
+    }})();
+    </script>""", height=0)
+
+
 def header(st, active: str, title: str, **hero_kwargs) -> None:
     """Base CSS + navigation + page header, for pages that render them once."""
     st.markdown(BASE_CSS, unsafe_allow_html=True)
+    inject_pwa()
     st.markdown(nav_html(active), unsafe_allow_html=True)
     st.markdown(hero_html(title, self_key=active, **hero_kwargs), unsafe_allow_html=True)
 

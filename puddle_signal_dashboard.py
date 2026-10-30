@@ -631,6 +631,7 @@ def chip_filter(label: str, options: list[str], key: str, labels: dict | None = 
 
 def main() -> None:
     st.markdown(ui.BASE_CSS, unsafe_allow_html=True)
+    ui.inject_pwa()
     st.markdown(CSS, unsafe_allow_html=True)
     st.markdown(ui.nav_html("puddle"), unsafe_allow_html=True)
     file_df = list_scan_files()

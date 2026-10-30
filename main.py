@@ -29,6 +29,7 @@ from stock_analyzer import (
     fetch_ticker_display_name,
     parse_puddle_label,
     puddle_label_ko,
+    us_market_state,
 )
 
 CENTRAL_TZ = ZoneInfo("America/Chicago")
@@ -71,6 +72,7 @@ if dashboard_param == "korea":
 # ── 스타일 ─────────────────────────────────────────────────────────────────────
 # Shared app look first; the US stylesheet below refines it for this page.
 st.markdown(ui.BASE_CSS, unsafe_allow_html=True)
+ui.inject_pwa()
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
@@ -2024,15 +2026,7 @@ def get_view_stats():
     return state['total_views'], len(state['sessions'])
 
 def is_us_market_open(now: datetime | None = None) -> bool:
-    if now is None:
-        eastern_now = datetime.now(EASTERN_TZ)
-    elif now.tzinfo is None:
-        eastern_now = now.replace(tzinfo=CENTRAL_TZ).astimezone(EASTERN_TZ)
-    else:
-        eastern_now = now.astimezone(EASTERN_TZ)
-    market_open = eastern_now.replace(hour=9, minute=30, second=0, microsecond=0)
-    market_close = eastern_now.replace(hour=16, minute=0, second=0, microsecond=0)
-    return eastern_now.weekday() < 5 and market_open <= eastern_now <= market_close
+    return us_market_state(now)[0] == 'open'
 
 # ── 캐싱 ───────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -2890,6 +2884,7 @@ def treasury_status(value):
 
 def render_hero(container, total_views: int, active_viewers: int, market_dot_class: str, updated_at: str,
                 data_date=None):
+    # market_dot_class is the session key from us_market_state(): open / pre / after / closed / holiday
     """Header. updated_at is 'YYYY-MM-DD HH:MM:SS CT' (Chicago); shown in Korean time."""
     if len(updated_at) >= 19:
         fetched = ui.kst_time(updated_at[:19], tz=CENTRAL_TZ)
@@ -2904,8 +2899,8 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
         ui.hero_html(
             "US Market Signals",
             updated_short,
-            dot="open" if market_dot_class == "open" else "closed",
-            right="",
+            dot=market_dot_class,
+            right=ui.market_badge_html(market_dot_class),
             self_key="us",
         ),
         unsafe_allow_html=True,
@@ -2918,8 +2913,7 @@ def render_hero(container, total_views: int, active_viewers: int, market_dot_cla
 base_tickers = list(TICKER_CONFIGS.keys())
 ticker_options = base_tickers
 total_views, active_viewers = get_view_stats()
-market_open = is_us_market_open()
-market_dot_class = "open" if market_open else "closed"
+market_dot_class = us_market_state()[0]
 st.markdown(ui.nav_html("us"), unsafe_allow_html=True)
 hero_slot = st.empty()
 render_hero(hero_slot, total_views, active_viewers, market_dot_class, "loading")

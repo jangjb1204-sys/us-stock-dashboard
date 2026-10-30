@@ -754,6 +754,7 @@ def main() -> None:
     day_key = today.isoformat()
 
     st.markdown(ui.BASE_CSS, unsafe_allow_html=True)
+    ui.inject_pwa()
     st.markdown(PAGE_CSS, unsafe_allow_html=True)
     st.markdown(ui.nav_html("korea"), unsafe_allow_html=True)
     hero_slot = st.empty()
