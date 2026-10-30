@@ -409,7 +409,10 @@ def footer_html() -> str:
 
 
 PWA_APP_TITLE = "Tech-J"
-PWA_ICON_PATH = "/app/static/apple-touch-icon.png"   # served via server.enableStaticServing
+# Absolute GitHub URL, not a Streamlit /app/static path: on Community Cloud the app sits under /~/+/,
+# so /app/static/... answers with the host page HTML instead of the PNG, and unauthenticated
+# requests to *.streamlit.app paths get bounced to a login redirect.
+PWA_ICON_URL = "https://raw.githubusercontent.com/jangjb1204-sys/us-stock-dashboard/main/static/apple-touch-icon.png"
 PWA_THEME_COLOR = "#061323"
 
 
@@ -442,7 +445,7 @@ def inject_pwa() -> None:
         meta('theme-color', '{PWA_THEME_COLOR}');
         var l = h.querySelector('link[rel="apple-touch-icon"]');
         if (!l) {{ l = d.createElement('link'); l.setAttribute('rel', 'apple-touch-icon'); h.appendChild(l); }}
-        l.setAttribute('href', d.location.origin + '{PWA_ICON_PATH}');
+        l.setAttribute('href', '{PWA_ICON_URL}');
       }}
       var docs = [];
       try {{ docs.push(window.parent.document); }} catch (e) {{}}

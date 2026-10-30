@@ -33,7 +33,6 @@ from stock_analyzer import (
 )
 
 CENTRAL_TZ = ZoneInfo("America/Chicago")
-EASTERN_TZ = ZoneInfo("America/New_York")
 
 
 def central_now() -> datetime:
@@ -2024,9 +2023,6 @@ def get_view_stats():
         if ts >= active_cutoff
     }
     return state['total_views'], len(state['sessions'])
-
-def is_us_market_open(now: datetime | None = None) -> bool:
-    return us_market_state(now)[0] == 'open'
 
 # ── 캐싱 ───────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
