@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from html import escape
 from io import StringIO
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -148,7 +149,7 @@ def load_backtests(symbol: str, start_year: int, day_key: str) -> dict:
 
 kr_list_component = components.declare_component(
     "kr_list", path=str(Path(__file__).resolve().parent / "kr_list_component"))
-SCAN_BASE = "https://raw.githubusercontent.com/jangjb1204-sys/us-stock-dashboard/kr-scans/"
+SCAN_BASE = os.environ.get("KR_SCAN_BASE") or "https://raw.githubusercontent.com/jangjb1204-sys/us-stock-dashboard/kr-scans/"
 SCAN_FILES = {"stock": "kr_top100_latest.csv", "etf": "kr_etf30_latest.csv"}
 ETF_KIND_LABEL = {"index": "지수형", "leverage": "레버리지", "inverse": "인버스", "own": "섹터·해외"}
 
@@ -160,6 +161,7 @@ def load_top100(kind: str = "stock") -> pd.DataFrame:
     try:
         resp = requests.get(SCAN_BASE + SCAN_FILES[kind], headers={"User-Agent": "30s-tech-j-streamlit"}, timeout=12)
         resp.raise_for_status()
+        resp.encoding = "utf-8"
         return pd.read_csv(StringIO(resp.text), dtype={"code": str})
     except Exception:
         return pd.DataFrame()
@@ -201,15 +203,6 @@ def month_label(period: pd.Period) -> str:
     return f"{period.month}월"
 
 
-def is_last_weekday_of_month(day: date) -> bool:
-    if day.weekday() >= 5:
-        return False
-    nxt = day + timedelta(days=1)
-    while nxt.weekday() >= 5:
-        nxt += timedelta(days=1)
-    return nxt.month != day.month
-
-
 def closed_weekdays_text(last_date, today: date) -> str:
     """Weekdays between the last close and today with no data — market
     holidays (e.g. Chuseok) — as '9/24~9/25 휴장', or ''."""
@@ -225,16 +218,6 @@ def closed_weekdays_text(last_date, today: date) -> str:
     return f"{span} 휴장"
 
 
-def weekdays_left_in_month(day: date) -> int:
-    count, cur = 0, day
-    while cur.month == day.month:
-        if cur.weekday() < 5:
-            count += 1
-        cur += timedelta(days=1)
-    return count
-
-
-# ── Charts ─────────────────────────────────────────────────────────────────────
 def _style(fig: go.Figure, height: int) -> go.Figure:
     fig.update_layout(
         height=height,
@@ -397,7 +380,7 @@ def render_banners(statuses: list[engine.IndexStatus], monthly_by_key: dict, tod
             md(f"<div class='tj-note warn'>{month_label(confirmed[0].confirmed_month)} 신호 변경 · {escape(', '.join(changes))}</div>")
         if same:
             md(f"<div class='tj-note ok'>{month_label(confirmed[0].confirmed_month)} 신호 확정 · {escape(', '.join(same))} 유지</div>")
-    if is_last_weekday_of_month(today):
+    if engine.is_last_trading_day_of_month(today):
         md("<div class='tj-note warn'>오늘 종가로 다음 달 비중 확정</div>")
 
 
@@ -418,7 +401,7 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
     """This month at a glance: one bar showing which signal the latest close
     would give at month-end, with the two prices that separate the zones."""
     d = price_digits(status.key)
-    left = weekdays_left_in_month(today)
+    left = engine.trading_days_left_in_month(today)
     red, green, close = status.red_below, status.green_above, status.last_close
     pos = zone_position(close, red, green)
     live = status.live_signal
@@ -478,7 +461,10 @@ def render_rule() -> None:
             『돈을 불러오는 TIP』의 비중 규칙(이격도 130, 5개월선, 주봉 RSI 70)을 코스피 2004~·코스닥 2001~ 일봉으로 검증.
             5개월선이 뼈대, 이격도는 120에서 수익률·낙폭 모두 개선(코스닥은 130 도달 이력 없음). RSI 70은 과다 발동으로 제외.<br><br>
             <b>개별 종목</b><br>
-            같은 계산 적용. 규칙은 지수 기준 검증이므로 과거 성과 함께 확인. 종목은 KRX(KIND), ETF는 네이버 금융 목록(매일 갱신).<br><br>
+            같은 계산 적용. 규칙은 지수 기준으로 검증됐습니다. 현재 상장된 종목 무작위 99개(2008~, 거래비용 0.3%)로 확인하니
+            낙폭이 줄어든 종목은 89%였지만 수익이 그냥 보유보다 높았던 종목은 34%였습니다. 즉 개별 종목에서는 수익을 늘리기보다
+            하락폭을 줄이는 도구에 가깝습니다(상장폐지 종목이 빠진 표본이라 실제는 이보다 나쁠 수 있음). 종목 아래 '과거 성과'를 함께 확인하세요.
+            종목은 KRX(KIND), ETF는 네이버 금융 목록(매일 갱신).<br><br>
             <b>한계</b><br>
             월중 급락은 피할 수 없음 · 헛신호 있음 · 투자 권유 아님.
             </div>
@@ -537,6 +523,22 @@ def fmt_value_mil(value) -> str:
     return f"{v / 1_000_000:.2f}조" if v >= 1_000_000 else f"{v / 100:,.0f}억"
 
 
+def bt_lines(r) -> list[str]:
+    """Rule vs buy-and-hold on this name's own history, as two short lines.
+    Empty when the scan has no figures (older scan files) or under 3 years of history."""
+    vals = [getattr(r, k, None) for k in ("bt_years", "bt_rule_cagr", "bt_hold_cagr", "bt_rule_mdd", "bt_hold_mdd")]
+    if any(v is None or pd.isna(v) for v in vals) or float(vals[0]) < 3:
+        return []
+    _, rc, hc, rm, hm = (float(v) for v in vals)
+    return [f"규칙 연 {rc * 100:+.1f}% · 낙폭 {rm * 100:.0f}%",
+            f"보유 연 {hc * 100:+.1f}% · 낙폭 {hm * 100:.0f}%"]
+
+
+def bt_years_note(r) -> str:
+    years = getattr(r, "bt_years", None)
+    return f" · {float(years):.0f}년" if years is not None and pd.notna(years) and float(years) >= 3 else ""
+
+
 def top100_row(r, sectors: dict | None = None) -> dict:
     """One list row as plain values for kr_list_component."""
     ok = r.status == "ok"
@@ -547,6 +549,8 @@ def top100_row(r, sectors: dict | None = None) -> dict:
     meta = f"{r.code} · {engine.MARKET_LABEL.get(r.market, r.market)}"
     if isinstance(kind, str):
         meta = f"{r.code} · {ETF_KIND_LABEL.get(kind, kind)} · {getattr(r, 'basis', '') or ''} 기준"
+    if ok and bt_lines(r):
+        meta += bt_years_note(r)
     color = lambda v: SIGNAL_COLOR[{1.0: "green", 0.5: "yellow", 0.0: "red"}[float(v)]] if ok and pd.notna(v) else ""
     chg = float(r.change_pct) if pd.notna(r.change_pct) else None
     note = getattr(r, "note", None)
@@ -568,6 +572,7 @@ def top100_row(r, sectors: dict | None = None) -> dict:
         "hot": bool(ok and str(r.overheated).lower() == "true"),
         "note": str(note) if isinstance(note, str) and note else "",
         "sector": sector,
+        "bt": bt_lines(r) if ok else [],
         **line_fields(r, ok),
     }
 
@@ -588,7 +593,7 @@ def line_fields(r, ok: bool) -> dict:
 
 
 def render_top100() -> None:
-    md("<div class='kr-section'>매수 후보</div>")
+    md("<div class='kr-section'>신호 100% 종목</div>")
     kind = st.radio("종류", ["stock", "etf"], format_func={"stock": "주식", "etf": "ETF"}.get,
                     horizontal=True, key="kr_top_kind", label_visibility="collapsed")
     data = load_top100(kind)
@@ -601,16 +606,22 @@ def render_top100() -> None:
     universe = "거래대금 상위 100 주식" if kind == "stock" else "거래대금 상위 30 ETF"
     md(f"<div class='tj-caption' style='margin:-.1rem 0 .9rem'>{ui.kdate(day)} 종가 · {universe} 중 {next_m.month}월 예상 100% · 과열 아님 · "
        f"상승 전환 먼저 · 누르면 상세{scope}</div>")
+    md("<div class='tj-caption' style='margin:-.5rem 0 .9rem'>이 규칙은 지수에서 검증됐습니다. 개별 종목은 수익을 늘리기보다 하락폭을 줄이는 쪽이라, "
+       "종목 아래의 <b>과거 성과</b>(규칙 vs 그냥 보유)를 함께 보세요. 매수 추천이 아닙니다.</div>")
     ok = data[data["status"] == "ok"].copy()
     hot_mask = ok["overheated"].astype(str).str.lower().eq("true") if "overheated" in ok else pd.Series(False, index=ok.index)
-    # 매수 후보: projected 100% next month and not overheated; upgrades first,
+    # Candidates: projected 100% next month and not overheated; upgrades first,
     # then the ones that crossed the 100% line most recently (closest above it).
     cand = ok[(ok["next_weight"] == 1.0) & ~hot_mask].copy()
     cand["_up"] = (cand["next_weight"] > cand["weight"]).astype(int)
-    sort_cols = ["_up", "to_full_pct"] if "to_full_pct" in cand else ["_up"]
-    cand = cand.sort_values(sort_cols, ascending=[False, False][:len(sort_cols)])
+    sort_cols, ascending = ["_up", "to_full_pct"] if "to_full_pct" in cand else ["_up"], [False, False]
+    if kind == "etf" and "kind" in cand:
+        cand["_k"] = cand["kind"].map({"index": 0, "own": 1, "leverage": 2}).fillna(3)
+        sort_cols, ascending = ["_k"] + sort_cols, [True] + ascending
+    cand = cand.sort_values(sort_cols, ascending=ascending[:len(sort_cols)])
     if cand.empty:
-        md("<div class='tj-caption'>오늘 매수 후보 없음</div>")
+        md("<div class='tj-caption'>오늘 신호 100% 종목 없음</div>")
+        render_unrated(data)
         return
     sectors = {}
     if kind == "stock":
@@ -632,6 +643,24 @@ def render_top100() -> None:
     if isinstance(picked, dict) and picked.get("nonce") != st.session_state.get("_kr_pick_nonce"):
         st.session_state["_kr_pick_nonce"] = picked.get("nonce")
         st.session_state["kr_query"] = str(picked.get("code") or "")
+    render_unrated(data)
+
+
+def render_unrated(data: pd.DataFrame) -> None:
+    """Names in today's top list the rule cannot be applied to (newly listed:
+    fewer than 10 month-end closes), so they don't silently vanish from the list."""
+    status = data["status"].astype(str)
+    # "ref" (inverse ETFs) is reference-only by design, not a failure: leave those out.
+    skipped = data[(status == "short") | status.str.startswith("error")]
+    if skipped.empty:
+        return
+    with st.expander(f"규칙 적용 불가 {len(skipped)}개 · 신규 상장 등 데이터 부족"):
+        rows = []
+        for r in skipped.itertuples():
+            why = "상장 1년 미만" if r.status == "short" else "데이터 오류"
+            rows.append(f"<div class='tj-caption' style='margin:.25rem 0'>{int(r.rank)}위 · {escape(str(r.name))} "
+                        f"<span style='opacity:.6'>{escape(str(r.code))}</span> · {fmt_value_mil(r.value_mil)} · {why}</div>")
+        md("".join(rows))
 
 
 # ── Search ─────────────────────────────────────────────────────────────────────

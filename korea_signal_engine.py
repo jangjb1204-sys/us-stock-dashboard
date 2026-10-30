@@ -66,6 +66,43 @@ def kst_today() -> date:
     return datetime.now(KST).date()
 
 
+# ── KRX trading calendar (month-end banner) ─────────────────────────────────────
+# Weekends plus the fixed-date closures. Lunar holidays (설날, 부처님오신날, 추석) and
+# substitute holidays move every year and are NOT modelled; none of them has fallen
+# on a month-end trading day in recent years, but one that does would still read as
+# a trading day. The one that matters every year is 12/31: KRX is closed, so the
+# last close of the year is 12/30 (or earlier).
+KRX_FIXED_CLOSURES = {
+    (1, 1), (3, 1), (5, 1), (5, 5), (6, 6), (8, 15), (10, 3), (10, 9), (12, 25), (12, 31),
+}
+
+
+def is_krx_trading_day(day: date) -> bool:
+    return day.weekday() < 5 and (day.month, day.day) not in KRX_FIXED_CLOSURES
+
+
+def is_last_trading_day_of_month(day: date) -> bool:
+    """True when `day` trades and no later day in the same month does."""
+    if not is_krx_trading_day(day):
+        return False
+    cur = day + timedelta(days=1)
+    while cur.month == day.month:
+        if is_krx_trading_day(cur):
+            return False
+        cur += timedelta(days=1)
+    return True
+
+
+def trading_days_left_in_month(day: date) -> int:
+    """Trading days from `day` (inclusive) to the end of its month."""
+    count, cur = 0, day
+    while cur.month == day.month:
+        if is_krx_trading_day(cur):
+            count += 1
+        cur += timedelta(days=1)
+    return count
+
+
 def _fetch_chunk(symbol: str, start: datetime, end: datetime, session: requests.Session | None = None) -> tuple[pd.DataFrame, dict]:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(symbol, safe='')}"
     params = {

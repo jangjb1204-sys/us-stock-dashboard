@@ -20,6 +20,7 @@
     .nm { min-width: 0; display: flex; flex-direction: column; }
     .nm b { color: #F2F5F8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     small { color: rgba(255,255,255,.4); font-size: .74rem; margin-top: 1px; }
+    .bt { color: rgba(255,255,255,.62); font-size: .68rem; letter-spacing: -.012em; white-space: nowrap; } .bt.dim { color: rgba(255,255,255,.4); margin-top: 0; }
     .val { display: flex; flex-direction: column; }
     .line { color: rgba(255,255,255,.46); }
     .line.near { color: #F2F5F8; font-weight: 600; }
@@ -67,6 +68,7 @@
       if (r.sector) items.push(`<span class="chip">${esc(r.sector)}</span>`);
       return items.length ? `<span class="chips">${items.join("")}</span>` : "";
     }
+    function bt(r) { return (r.bt && r.bt.length) ? `<small class="bt">${esc(r.bt[0])}</small><small class="bt dim">${esc(r.bt[1])}</small>` : ""; }
     function level(color) { return color ? `<i style="background:${esc(color)}"></i>` : ""; }
     let lastArgs = {};
     function render(args) {
@@ -81,7 +83,7 @@
       const html = rows.map((r) => `
         <div class="row${r.code === args.selected ? " active" : ""}" role="button" tabindex="0" data-code="${esc(r.code)}">
           <span class="rk">${esc(r.rank)}</span>
-          <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small>${chips(r)}</span>
+          <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small>${bt(r)}${chips(r)}</span>
           <span class="val">${esc(r.price)}<small><span class="${esc(r.tone)}">${esc(r.chg)}</span> · ${esc(r.value)}</small>${r.line ? `<small class="line${r.near ? " near" : ""}">${esc(r.line)}</small>` : ""}</span>
           <span class="w"><em class="lab">이번 달</em>${level(r.w_color)}${esc(r.w)}${r.note ? `<span class="na">${esc(r.note)}</span>` : ""}</span>
           <span class="w dim"><em class="lab">다음 달</em>${level(r.n_color)}${esc(r.n)}${r.up ? ' <span class="tag">상승 전환</span>' : ""}</span>

@@ -24,6 +24,10 @@ import korea_signal_engine as engine  # noqa: E402
 
 TOP_N = 100
 ETF_TOP_N = 30
+# Past performance of the rule on each name needs a long history (the signal itself needs ~2 years).
+BT_START_YEAR = 2008
+STOCK_COST = 0.003   # one-way cost per unit of weight traded: stocks pay the sell tax, ETFs do not
+ETF_COST = 0.001
 PAGE_SIZE = 100
 NAVER_URL = "https://m.stock.naver.com/api/stocks/marketValue/{market}"
 HEADERS = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
@@ -174,11 +178,12 @@ def etf_rows(df: pd.DataFrame, today) -> pd.DataFrame:
     etfs = etfs[etfs["kind"] != "cash"].sort_values("value_mil", ascending=False).head(ETF_TOP_N).reset_index(drop=True)
     etfs.insert(0, "rank", range(1, len(etfs) + 1))
 
-    index_status = {}
+    index_status, index_bt = {}, {}
     for key, cfg in engine.INDEXES.items():
         try:
-            daily, _ = engine.fetch_history(cfg["symbol"], today.year - 2)
+            daily, _ = engine.fetch_history(cfg["symbol"], max(cfg["start_year"], BT_START_YEAR))
             index_status[key] = engine.current_status(key, daily, today)
+            index_bt[key] = bt_fields(daily, ETF_COST)
         except Exception as exc:
             debug["errors"].append(f"index {key}: {type(exc).__name__}")
 
@@ -192,6 +197,7 @@ def etf_rows(df: pd.DataFrame, today) -> pd.DataFrame:
             rec.update({"basis": f"{engine.INDEXES[und]['label']} 지수",
                         "disparity": round(base.disparity, 1) if base.disparity is not None else None,
                         "overheated": bool(base.overlay_active), "last_date": base.last_date.date().isoformat()})
+            rec.update(index_bt.get(und, {}))
             if kind == "index":
                 rec.update({"weight": w, "next_weight": nxt, "status": "ok"})
             elif kind == "leverage":
@@ -201,7 +207,7 @@ def etf_rows(df: pd.DataFrame, today) -> pd.DataFrame:
                 rec.update({"weight": None, "next_weight": None, "status": "ref",
                             "note": f"기초지수 {int(round(w * 100))}%"})
         else:
-            r = signal_row(row, today)
+            r = signal_row(row, today, ETF_COST)
             r["basis"] = "자체 가격"
             if kind == "leverage" and r.get("status") == "ok":
                 r["weight"], r["next_weight"] = one_step_down(r["weight"]), one_step_down(r["next_weight"])
@@ -214,11 +220,26 @@ def etf_rows(df: pd.DataFrame, today) -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
-def signal_row(row: dict, today) -> dict:
+def bt_fields(daily: pd.DataFrame, cost: float) -> dict:
+    """Rule vs buy-and-hold over this name's own history (empty when too short)."""
+    try:
+        bt = engine.run_backtest(daily, engine.DEV_THRESHOLD, trade_cost=cost)
+    except Exception:
+        return {}
+    return {
+        "bt_years": round(float(bt["years"]), 1),
+        "bt_rule_cagr": round(float(bt["system"]["cagr"]), 4),
+        "bt_hold_cagr": round(float(bt["hold"]["cagr"]), 4),
+        "bt_rule_mdd": round(float(bt["system"]["mdd"]), 4),
+        "bt_hold_mdd": round(float(bt["hold"]["mdd"]), 4),
+    }
+
+
+def signal_row(row: dict, today, cost: float = STOCK_COST) -> dict:
     out = dict(row)
     suffix = engine.MARKET_SUFFIX.get(row["market"], ".KS")
     try:
-        daily, _ = engine.fetch_history(row["code"] + suffix, today.year - 2)
+        daily, _ = engine.fetch_history(row["code"] + suffix, BT_START_YEAR)
         yahoo_last = daily["Date"].iloc[-1].date().isoformat() if not daily.empty else None
         # Naver's close is the price shown everywhere; make it the latest bar so
         # the signal never runs on a stale Yahoo close.
@@ -238,6 +259,7 @@ def signal_row(row: dict, today) -> dict:
             "last_date": status.last_date.date().isoformat(),
             "yahoo_last": yahoo_last,
             "status": "ok",
+            **bt_fields(daily, cost),
         })
     except engine.HistoryTooShort:
         out["status"] = "short"
