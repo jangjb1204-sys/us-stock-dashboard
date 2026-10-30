@@ -1,0 +1,3552 @@
+[
+  {
+    "Date":"2024-01-01",
+    "FG index":80,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-01-02",
+    "FG index":77,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-01-03",
+    "FG index":79,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-01-04",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-01-07",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-01-08",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-01-09",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-01-10",
+    "FG index":75,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-11",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-15",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-16",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-17",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-18",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-21",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-22",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-23",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-24",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-25",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-28",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-29",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-30",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-01-31",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-01",
+    "FG index":75,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-04",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-05",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-06",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-07",
+    "FG index":75,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-08",
+    "FG index":75,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-02-11",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-02-12",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-13",
+    "FG index":68,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-14",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-15",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-19",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-20",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-21",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-22",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-25",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-02-26",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-02-27",
+    "FG index":77,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-02-28",
+    "FG index":77,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-02-29",
+    "FG index":77,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-03-03",
+    "FG index":79,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-03-04",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2024-03-05",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-06",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-07",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-10",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-11",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-12",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-13",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-14",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-17",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-18",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-19",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-20",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-21",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-24",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-25",
+    "FG index":68,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-26",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-27",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-03-31",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-04-01",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-04-02",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-04-03",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-04-04",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-04-07",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-04-08",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-04-09",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-04-10",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-04-11",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-04-14",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-15",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-16",
+    "FG index":31,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-17",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-18",
+    "FG index":28,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-21",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-22",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-23",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-24",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-25",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-28",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-29",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-04-30",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-05-01",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-05-02",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-05-05",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-05-06",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-05-07",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-05-08",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-05-09",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-05-12",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-05-13",
+    "FG index":55,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-05-14",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-05-15",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-05-16",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-05-19",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-05-20",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-05-21",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-05-22",
+    "FG index":52,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-05-23",
+    "FG index":52,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-05-27",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-05-28",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-05-29",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-05-30",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-06-02",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-06-03",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-06-04",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-06-05",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-06-06",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-09",
+    "FG index":45,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-10",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-11",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-06-12",
+    "FG index":45,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-13",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-16",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-17",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-19",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-20",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-23",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-24",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-25",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-26",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-06-27",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-06-30",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-01",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-02",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-04",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-07",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-08",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-09",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-10",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-11",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-14",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-07-15",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-07-16",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-17",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-18",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-07-21",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-22",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-23",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-07-24",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-07-25",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-07-28",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-07-29",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-07-30",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-07-31",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-01",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-04",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-05",
+    "FG index":19,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2024-08-06",
+    "FG index":17,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2024-08-07",
+    "FG index":18,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2024-08-08",
+    "FG index":24,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2024-08-11",
+    "FG index":24,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2024-08-12",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-13",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-14",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-15",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-18",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-19",
+    "FG index":45,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-08-20",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-08-21",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-08-22",
+    "FG index":52,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-08-25",
+    "FG index":53,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-08-26",
+    "FG index":52,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-08-27",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-08-28",
+    "FG index":56,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-08-29",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-02",
+    "FG index":56,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-03",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-04",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-09-05",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-09-08",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-09-09",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-09-10",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-09-11",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-09-12",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-09-15",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-09-16",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-09-17",
+    "FG index":55,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-18",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-19",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-22",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-23",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-24",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-25",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-26",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-29",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-09-30",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-01",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-02",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-03",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-06",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-07",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-08",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-09",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-10",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-13",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-14",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-15",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-16",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-17",
+    "FG index":72,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-20",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-21",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-22",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-23",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-24",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-27",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-28",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-29",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-10-30",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-10-31",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-11-03",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-11-04",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-11-05",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-11-06",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-07",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-10",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-11",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-12",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-13",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-14",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-11-17",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-11-18",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-11-19",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-11-20",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-21",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-24",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-25",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-26",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-11-28",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-12-01",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-12-02",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-12-03",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-12-04",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-05",
+    "FG index":52,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-08",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-09",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-10",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-11",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-12",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-15",
+    "FG index":56,
+    "rating":"greed"
+  },
+  {
+    "Date":"2024-12-16",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2024-12-17",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-12-18",
+    "FG index":20,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2024-12-19",
+    "FG index":28,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-12-22",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-12-23",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-12-25",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-12-26",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-12-29",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2024-12-30",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-01",
+    "FG index":24,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-01-02",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-05",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-06",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-07",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-09",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-12",
+    "FG index":25,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-13",
+    "FG index":25,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-14",
+    "FG index":27,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-15",
+    "FG index":27,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-16",
+    "FG index":36,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-20",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-21",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-22",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-23",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-01-26",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-27",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-28",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-01-29",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-01-30",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-02",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-03",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-04",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-05",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-06",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-09",
+    "FG index":45,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-10",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-02-11",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-12",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-02-13",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-17",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-02-18",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-02-19",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-20",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-23",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-02-24",
+    "FG index":24,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-02-25",
+    "FG index":21,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-02-26",
+    "FG index":13,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-02-27",
+    "FG index":21,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-02",
+    "FG index":12,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-03",
+    "FG index":11,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-04",
+    "FG index":12,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-05",
+    "FG index":17,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-06",
+    "FG index":18,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-09",
+    "FG index":17,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-10",
+    "FG index":15,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-11",
+    "FG index":16,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-12",
+    "FG index":15,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-13",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-16",
+    "FG index":23,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-17",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-18",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-19",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-20",
+    "FG index":23,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-23",
+    "FG index":25,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-03-24",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-03-25",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-03-26",
+    "FG index":28,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-03-27",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-03-30",
+    "FG index":21,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-03-31",
+    "FG index":20,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-01",
+    "FG index":23,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-02",
+    "FG index":12,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-03",
+    "FG index":5,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-06",
+    "FG index":4,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-07",
+    "FG index":3,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-08",
+    "FG index":10,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-09",
+    "FG index":6,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-10",
+    "FG index":8,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-13",
+    "FG index":12,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-14",
+    "FG index":13,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-15",
+    "FG index":11,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-16",
+    "FG index":16,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-20",
+    "FG index":12,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-21",
+    "FG index":14,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-22",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-23",
+    "FG index":24,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-04-24",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-04-27",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-04-28",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-04-29",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-04-30",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-05-01",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-05-04",
+    "FG index":53,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-05-05",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-05-06",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-05-07",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-08",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-11",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-12",
+    "FG index":68,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-13",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-14",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-15",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-18",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-19",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-20",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-21",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-22",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-26",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-27",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-28",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-05-29",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-01",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-02",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-06-03",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-06-04",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-05",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-08",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-09",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-10",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-11",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-12",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-15",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-16",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-17",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-06-19",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-06-22",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-23",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-24",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-25",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-26",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-29",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-06-30",
+    "FG index":68,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-01",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-02",
+    "FG index":78,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-06",
+    "FG index":75,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-07",
+    "FG index":75,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-08",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-09",
+    "FG index":77,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-10",
+    "FG index":75,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-13",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-14",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-15",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-16",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-17",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-20",
+    "FG index":73,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-21",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-22",
+    "FG index":76,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-23",
+    "FG index":75,
+    "rating":"extreme greed"
+  },
+  {
+    "Date":"2025-07-24",
+    "FG index":75,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-27",
+    "FG index":74,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-28",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-29",
+    "FG index":68,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-30",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-07-31",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-08-03",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-04",
+    "FG index":55,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-05",
+    "FG index":55,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-06",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-08-07",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-10",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-11",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-12",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-13",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-14",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-17",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-18",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-19",
+    "FG index":56,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-20",
+    "FG index":53,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-08-21",
+    "FG index":56,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-24",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-08-25",
+    "FG index":55,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-26",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-27",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-08-28",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-01",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-02",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-03",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-04",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-07",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-08",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-09",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-10",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-11",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-14",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-15",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-16",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-17",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-18",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-21",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-22",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-09-23",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-09-24",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-09-25",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-09-28",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-09-29",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-09-30",
+    "FG index":52,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-10-01",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-10-02",
+    "FG index":53,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-10-05",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-10-06",
+    "FG index":52,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-10-07",
+    "FG index":53,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-10-08",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-10-09",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-12",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-13",
+    "FG index":28,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-14",
+    "FG index":27,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-15",
+    "FG index":23,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-10-16",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-10-19",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-20",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-21",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-22",
+    "FG index":28,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-23",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-26",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-27",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-28",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-29",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-10-30",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-11-02",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-11-03",
+    "FG index":21,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-04",
+    "FG index":23,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-05",
+    "FG index":24,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-06",
+    "FG index":20,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-09",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-11-10",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-11-11",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-11-12",
+    "FG index":25,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-13",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-16",
+    "FG index":12,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-17",
+    "FG index":9,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-18",
+    "FG index":8,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-19",
+    "FG index":5,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-20",
+    "FG index":6,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-23",
+    "FG index":14,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-24",
+    "FG index":15,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-25",
+    "FG index":18,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-27",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-11-30",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-12-01",
+    "FG index":23,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-12-02",
+    "FG index":25,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2025-12-03",
+    "FG index":36,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-04",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-07",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-08",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-09",
+    "FG index":36,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-10",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-11",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-14",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-12-15",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-12-16",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-17",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-18",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2025-12-21",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-12-22",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-12-23",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2025-12-25",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-12-28",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-12-29",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2025-12-30",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-01-01",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-04",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-05",
+    "FG index":53,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-06",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-07",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-08",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-11",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-12",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-13",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-14",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-15",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-19",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-20",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-21",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-22",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-01-25",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-26",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-27",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-28",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-01-29",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-02-01",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-02-02",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-03",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-02-04",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-05",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-02-08",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-02-09",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-02-10",
+    "FG index":50,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-02-11",
+    "FG index":36,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-12",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-16",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-17",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-18",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-19",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-22",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-23",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-24",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-25",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-02-26",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-03-01",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-03-02",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-03-03",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-03-04",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-03-05",
+    "FG index":25,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-03-08",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-09",
+    "FG index":20,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-10",
+    "FG index":18,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-12",
+    "FG index":17,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-15",
+    "FG index":24,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-16",
+    "FG index":23,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-17",
+    "FG index":14,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-18",
+    "FG index":18,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-19",
+    "FG index":8,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-22",
+    "FG index":12,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-23",
+    "FG index":10,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-24",
+    "FG index":17,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-25",
+    "FG index":10,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-26",
+    "FG index":8,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-29",
+    "FG index":6,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-30",
+    "FG index":15,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-03-31",
+    "FG index":16,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-04-01",
+    "FG index":18,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-04-05",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-04-06",
+    "FG index":22,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-04-07",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-04-08",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-04-09",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-04-12",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-04-13",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-04-14",
+    "FG index":56,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-15",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-16",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-19",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-20",
+    "FG index":68,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-21",
+    "FG index":68,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-22",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-23",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-26",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-27",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-28",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-29",
+    "FG index":70,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-04-30",
+    "FG index":71,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-03",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-04",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-05",
+    "FG index":69,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-06",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-07",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-10",
+    "FG index":67,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-11",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-12",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-13",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-14",
+    "FG index":63,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-17",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-18",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-19",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-20",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-21",
+    "FG index":58,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-25",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-26",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-27",
+    "FG index":61,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-28",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-05-31",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-06-01",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-06-02",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-06-03",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-06-04",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-07",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-08",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-09",
+    "FG index":27,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-10",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-11",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-14",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-15",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-16",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-17",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-21",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-22",
+    "FG index":28,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-23",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-24",
+    "FG index":25,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-25",
+    "FG index":25,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-06-28",
+    "FG index":27,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-29",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-06-30",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-01",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-05",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-06",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-07",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-08",
+    "FG index":45,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-09",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-07-12",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-13",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-14",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-15",
+    "FG index":42,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-16",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-19",
+    "FG index":36,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-20",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-21",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-22",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-23",
+    "FG index":41,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-26",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-27",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-28",
+    "FG index":26,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-29",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-07-30",
+    "FG index":40,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-08-02",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-03",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-04",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-05",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-06",
+    "FG index":65,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-09",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-10",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-11",
+    "FG index":62,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-12",
+    "FG index":66,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-13",
+    "FG index":64,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-16",
+    "FG index":59,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-17",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-18",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-19",
+    "FG index":51,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-20",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-23",
+    "FG index":55,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-24",
+    "FG index":60,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-25",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-26",
+    "FG index":57,
+    "rating":"greed"
+  },
+  {
+    "Date":"2026-08-27",
+    "FG index":54,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-30",
+    "FG index":49,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-08-31",
+    "FG index":45,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-01",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-09-02",
+    "FG index":48,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-09-03",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-09-07",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-08",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-09",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-10",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-13",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-14",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-15",
+    "FG index":27,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-16",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-17",
+    "FG index":28,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-20",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-21",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-22",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-23",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-24",
+    "FG index":37,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-27",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-28",
+    "FG index":31,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-29",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-09-30",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-01",
+    "FG index":38,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-04",
+    "FG index":43,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-05",
+    "FG index":47,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-10-06",
+    "FG index":45,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-07",
+    "FG index":39,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-08",
+    "FG index":44,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-11",
+    "FG index":45,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-10-12",
+    "FG index":46,
+    "rating":"neutral"
+  },
+  {
+    "Date":"2026-10-13",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-14",
+    "FG index":32,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-15",
+    "FG index":18,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-10-18",
+    "FG index":20,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-10-19",
+    "FG index":29,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-20",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-21",
+    "FG index":20,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-10-22",
+    "FG index":17,
+    "rating":"extreme fear"
+  },
+  {
+    "Date":"2026-10-25",
+    "FG index":30,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-26",
+    "FG index":33,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-27",
+    "FG index":34,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-28",
+    "FG index":35,
+    "rating":"fear"
+  },
+  {
+    "Date":"2026-10-29",
+    "FG index":35,
+    "rating":"fear"
+  }
+]

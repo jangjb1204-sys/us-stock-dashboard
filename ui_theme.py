@@ -294,10 +294,46 @@ div[data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
 .tj-footer a {{ color: rgba(255,255,255,0.48) !important; text-decoration: none !important; }}
 .tj-footer a:hover {{ color: rgba(255,255,255,0.72) !important; }}
 
+/* Plotly mobile touch scroll lock prevention */
+.stPlotlyChart,
+.stPlotlyChart svg,
+.stPlotlyChart .draglayer,
+.stPlotlyChart .nsewdrag {{
+    touch-action: pan-y !important;
+}}
+
 @media (max-width: 900px) {{ .tj-stats {{ grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }} }}
 @media (max-width: 640px) {{
     .block-container {{ padding-top: 1.3rem !important; padding-left: 0.85rem !important; padding-right: 0.85rem !important; }}
-    .tj-nav {{ margin-bottom: 1.2rem; }}
+    .tj-nav {{
+        margin-bottom: 1.2rem;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 4px !important;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }}
+    .tj-nav::-webkit-scrollbar {{ display: none; }}
+    div[data-testid="stRadio"] div[role="radiogroup"] {{
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-bottom: 6px !important;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }}
+    div[data-testid="stRadio"] div[role="radiogroup"]::-webkit-scrollbar {{ display: none; }}
+    .stTabs [data-baseweb="tab-list"] {{
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 18px !important;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }}
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {{ display: none; }}
     .tj-hero {{ flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 1.6rem; }}
     .tj-hero h1 {{ font-size: 29px !important; line-height: 1.05 !important; }}
     .tj-focus .name {{ font-size: 30px; }}

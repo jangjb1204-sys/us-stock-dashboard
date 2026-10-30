@@ -6,6 +6,9 @@ import logging
 import requests
 import re
 import json
+import time
+from pathlib import Path
+import urllib.parse
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from zoneinfo import ZoneInfo
@@ -31,9 +34,10 @@ VOLATILITY_WINDOW = 20
 RSI_PUDDLE_LOOKBACK_DAYS = 10
 CENTRAL_TZ = ZoneInfo('America/Chicago')
 USER_AGENT = (
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-    '(KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
+    '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 )
+FEAR_GREED_CACHE_PATH = Path(__file__).resolve().parent / 'data' / 'fear_and_greed_cache.json'
 
 
 def central_now() -> datetime:
@@ -56,31 +60,69 @@ TICKER_CONFIGS = {
     'TSLA': 'TESLA',
 }
 
+def _load_fear_and_greed_cache() -> pd.DataFrame | None:
+    try:
+        if FEAR_GREED_CACHE_PATH.exists():
+            df = pd.read_json(FEAR_GREED_CACHE_PATH, orient='records')
+            if not df.empty and 'Date' in df.columns:
+                df['Date'] = pd.to_datetime(df['Date'])
+                return df.sort_values('Date').drop_duplicates('Date', keep='first')
+    except Exception:
+        logger.warning('Failed to load Fear & Greed cache fallback', exc_info=True)
+    return None
+
+
+def _save_fear_and_greed_cache(df: pd.DataFrame) -> None:
+    try:
+        FEAR_GREED_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        cache_df = df.copy()
+        if 'Date' in cache_df.columns:
+            cache_df['Date'] = cache_df['Date'].dt.strftime(DATE_FORMAT)
+        cache_df.to_json(FEAR_GREED_CACHE_PATH, orient='records', indent=2)
+    except Exception:
+        logger.warning('Failed to write Fear & Greed cache', exc_info=True)
+
+
 # --- 데이터 수집 ---
 def fetch_fear_and_greed_index(start_date: str) -> pd.DataFrame | None:
     url = f'https://production.dataviz.cnn.io/index/fearandgreed/graphdata/{start_date}'
-    headers = {'User-Agent': USER_AGENT}
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code != 200:
-            logger.warning('Fear & Greed fetch returned HTTP %s', response.status_code)
-            return None
-        data = json.loads(response.text)
-        data_list = data['fear_and_greed_historical']['data']
-        df = pd.DataFrame([
-            {
-                'Date': datetime.fromtimestamp(item['x'] / 1000, CENTRAL_TZ).strftime(DATE_FORMAT),
-                'FG index': round(item['y']),
-                'rating': item.get('rating', 'N/A')
-            }
-            for item in data_list
-        ])
-        df['Date'] = pd.to_datetime(df['Date'])
-        df = df.sort_values('Date').drop_duplicates('Date', keep='first')
-        return df
-    except Exception:
-        logger.exception('Fear & Greed fetch failed')
-        return None
+    headers = {
+        'User-Agent': USER_AGENT,
+        'Referer': 'https://www.cnn.com/markets/fear-and-greed',
+        'Accept': 'application/json, text/plain, */*',
+    }
+    for attempt in range(2):
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200:
+                data = json.loads(response.text)
+                data_list = data.get('fear_and_greed_historical', {}).get('data', [])
+                if data_list:
+                    df = pd.DataFrame([
+                        {
+                            'Date': datetime.fromtimestamp(item['x'] / 1000, CENTRAL_TZ).strftime(DATE_FORMAT),
+                            'FG index': round(item['y']),
+                            'rating': item.get('rating', 'N/A')
+                        }
+                        for item in data_list
+                    ])
+                    df['Date'] = pd.to_datetime(df['Date'])
+                    df = df.sort_values('Date').drop_duplicates('Date', keep='first')
+                    _save_fear_and_greed_cache(df)
+                    return df
+            logger.warning('Fear & Greed fetch attempt %d returned HTTP %s', attempt + 1, response.status_code)
+        except Exception:
+            logger.warning('Fear & Greed fetch attempt %d failed', attempt + 1, exc_info=True)
+        if attempt == 0:
+            time.sleep(1)
+
+    cached = _load_fear_and_greed_cache()
+    if cached is not None and not cached.empty:
+        logger.warning('Fear & Greed fetch failed; using cached data fallback (records: %d, latest: %s)',
+                       len(cached), cached['Date'].iloc[-1].strftime(DATE_FORMAT))
+        return cached
+
+    return None
 
 
 def fetch_common_market_data(period: str = '2y') -> dict:
@@ -131,10 +173,17 @@ def fetch_common_market_data(period: str = '2y') -> dict:
             df = df.reset_index()
             df['Date'] = pd.to_datetime(df['Date'].dt.date)
             df[col_name] = df[col_name].round(2)
-            return key, df
+            if not df.empty:
+                return key, df
         except Exception:
-            logger.exception('Failed to fetch market series %s (%s)', key, ticker_sym)
-            return key, pd.DataFrame()
+            pass
+        direct = _fetch_direct_yahoo_chart(ticker_sym, period)
+        if not direct.empty and 'Close' in direct.columns:
+            direct_df = direct[['Date', 'Close']].rename(columns={'Close': col_name})
+            direct_df[col_name] = direct_df[col_name].round(2)
+            return key, direct_df
+        logger.exception('Failed to fetch market series %s (%s)', key, ticker_sym)
+        return key, pd.DataFrame()
 
     with ThreadPoolExecutor(max_workers=len(market_specs)) as executor:
         for key, df in executor.map(fetch_market_series, market_specs):
@@ -145,21 +194,66 @@ def fetch_common_market_data(period: str = '2y') -> dict:
     return results
 
 
-def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
+def _fetch_direct_yahoo_chart(ticker: str, period: str = '2y') -> pd.DataFrame:
+    """Direct query fallback to Yahoo Chart API without yfinance crumb requirement."""
     try:
-        stock = yf.Ticker(ticker)
-        # auto_adjust is set explicitly to stay consistent with
-        # fetch_batch_stock_data (used for the market summary table). Leaving it
-        # to yfinance's default made the single-ticker view and the summary
-        # table disagree on price for dividend-paying ETFs, and that default has
-        # changed between yfinance releases.
-        data = stock.history(period=period, auto_adjust=False).reset_index()
-        if not data.empty:
-            data['Date'] = pd.to_datetime(data['Date'].dt.date)
-        return data
+        encoded_ticker = urllib.parse.quote(ticker)
+        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{encoded_ticker}?range={period}&interval=1d'
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            return pd.DataFrame()
+        result = response.json().get('chart', {}).get('result', [])
+        if not result:
+            return pd.DataFrame()
+        r0 = result[0]
+        timestamps = r0.get('timestamp', [])
+        quotes = r0.get('indicators', {}).get('quote', [{}])[0]
+        if not timestamps or not quotes:
+            return pd.DataFrame()
+        df = pd.DataFrame({
+            'Date': [pd.to_datetime(datetime.fromtimestamp(ts, CENTRAL_TZ).date()) for ts in timestamps],
+            'Open': quotes.get('open', []),
+            'High': quotes.get('high', []),
+            'Low': quotes.get('low', []),
+            'Close': quotes.get('close', []),
+            'Volume': quotes.get('volume', []),
+        })
+        df = df.dropna(subset=['Open', 'High', 'Low'])
+        df['Close'] = df['Close'].fillna(df['Open'])
+        return df
     except Exception:
-        logger.exception('Price history fetch failed for %s', ticker)
+        logger.warning('Direct Yahoo chart fallback failed for %s', ticker, exc_info=True)
         return pd.DataFrame()
+
+
+def fetch_stock_data(ticker: str, period: str) -> pd.DataFrame:
+    for attempt in range(2):
+        try:
+            stock = yf.Ticker(ticker)
+            # auto_adjust is set explicitly to stay consistent with
+            # fetch_batch_stock_data (used for the market summary table). Leaving it
+            # to yfinance's default made the single-ticker view and the summary
+            # table disagree on price for dividend-paying ETFs, and that default has
+            # changed between yfinance releases.
+            data = stock.history(period=period, auto_adjust=False).reset_index()
+            if not data.empty:
+                data['Date'] = pd.to_datetime(data['Date'].dt.date)
+                return data
+            if attempt == 0:
+                time.sleep(1)
+        except Exception:
+            logger.warning('Price history fetch attempt %d failed for %s', attempt + 1, ticker, exc_info=True)
+            if attempt == 0:
+                time.sleep(1)
+
+    fallback = _fetch_direct_yahoo_chart(ticker, period)
+    if not fallback.empty:
+        logger.warning('Using direct Yahoo Chart fallback for %s (bars: %d)', ticker, len(fallback))
+        return fallback
+
+    logger.exception('Price history fetch failed permanently for %s', ticker)
+    return pd.DataFrame()
 
 
 def fetch_ticker_display_name(ticker: str) -> str:
@@ -173,18 +267,34 @@ def fetch_ticker_display_name(ticker: str) -> str:
 
 
 def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.DataFrame]:
-    try:
-        raw = yf.download(
-            tickers=tickers,
-            period=period,
-            group_by='ticker',
-            auto_adjust=False,
-            progress=False,
-            threads=True,
-        )
-    except Exception:
-        logger.exception('Batch price download failed (%s)', tickers)
-        return {ticker: pd.DataFrame() for ticker in tickers}
+    raw = None
+    for attempt in range(2):
+        try:
+            raw = yf.download(
+                tickers=tickers,
+                period=period,
+                group_by='ticker',
+                auto_adjust=False,
+                progress=False,
+                threads=True,
+            )
+            if raw is not None and not raw.empty:
+                break
+            if attempt == 0:
+                time.sleep(1)
+        except Exception:
+            logger.warning('Batch price download attempt %d failed (%s)', attempt + 1, tickers, exc_info=True)
+            if attempt == 0:
+                time.sleep(1)
+
+    if raw is None or raw.empty:
+        logger.warning('Batch price download failed from yfinance, using direct Yahoo chart fallback for %s', tickers)
+        results = {}
+        with ThreadPoolExecutor(max_workers=min(10, len(tickers))) as executor:
+            futures = {t: executor.submit(_fetch_direct_yahoo_chart, t, period) for t in tickers}
+            for t, f in futures.items():
+                results[t] = f.result()
+        return results
 
     results = {}
     for ticker in tickers:
@@ -194,15 +304,15 @@ def fetch_batch_stock_data(tickers: list[str], period: str) -> dict[str, pd.Data
             else:
                 data = raw.dropna(how='all').reset_index()
             if data.empty:
-                results[ticker] = pd.DataFrame()
+                results[ticker] = _fetch_direct_yahoo_chart(ticker, period)
                 continue
             if 'Date' not in data.columns:
                 data = data.rename(columns={data.columns[0]: 'Date'})
             data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None).dt.normalize()
             results[ticker] = data
         except Exception:
-            logger.exception('Failed to normalize batch data for %s', ticker)
-            results[ticker] = pd.DataFrame()
+            logger.exception('Failed to normalize batch data for %s, trying direct fallback', ticker)
+            results[ticker] = _fetch_direct_yahoo_chart(ticker, period)
     return results
 
 
