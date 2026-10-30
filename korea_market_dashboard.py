@@ -6,7 +6,7 @@ korea_signal_engine.py; this file only fetches (cached) and draws.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from html import escape
 from io import StringIO
@@ -24,6 +24,7 @@ import korea_signal_engine as engine
 import ui_theme as ui
 
 CACHE_TTL_SECONDS = 60 * 60 * 3
+STOCK_COST = 0.003   # stocks pay the sell tax on top of commission; ETFs and indexes use engine.TRADE_COST
 LISTING_PATH = Path(__file__).resolve().parent / "korea_stock_list.csv"
 ETF_LIST_PATH = Path(__file__).resolve().parent / "korea_etf_list.csv"
 
@@ -140,10 +141,12 @@ def load_stock(code: str, market: str, day_key: str) -> dict | None:
 
 
 @st.cache_data(show_spinner=False, ttl=CACHE_TTL_SECONDS)
-def load_backtests(symbol: str, start_year: int, day_key: str) -> dict:
+def load_backtests(symbol: str, start_year: int, day_key: str, gate_key: str | None = None, cost: float = engine.TRADE_COST) -> dict:
     daily = load_history(symbol, start_year, day_key)[0]
+    gate = engine.index_gate_series(load_daily(gate_key, day_key)) if gate_key else None
     return {
-        "overlay": engine.run_backtest(daily, engine.DEV_THRESHOLD),
+        "overlay": engine.run_backtest(daily, engine.DEV_THRESHOLD, trade_cost=cost, market_gate=gate),
+        "filtered": bool(gate_key),
     }
 
 
@@ -354,6 +357,9 @@ def index_panel(status: engine.IndexStatus, tag: str | None = None, selected: bo
     disp = fmt_num(status.disparity, 1)
     heat = f"<b>이격도 {disp} 과열 · 한 단계 낮춤</b>" if status.overlay_active else f"이격도 {disp}"
     meta = f"{signal_chip(status.signal, '5·10개월선 ')}<span style='margin:0 9px;color:rgba(255,255,255,.24)'>·</span>{heat}"
+    if status.uncapped_weight is not None and status.final_weight < status.uncapped_weight:
+        meta += (f"<span style='margin:0 9px;color:rgba(255,255,255,.24)'>·</span>"
+                 f"<b>{escape(status.market_label or '')} {weight_text(status.market_weight)}로 제한</b>")
     cash = 1 - status.final_weight
     name = f"{status.label} {status.key}" + (f" · {tag}" if tag else "")
     return f"""
@@ -413,11 +419,16 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
     if status.disparity_trigger:
         foot.append(f"과열 {fmt_num(status.disparity_trigger, d)} ({fmt_pct((status.disparity_trigger / close - 1) * 100)})")
     if 0 < left <= 5:
-        foot.append(f"<b>월말까지 {left}거래일</b>")
+        foot.append(f"<b style='white-space:nowrap'>월말까지 {left}거래일</b>")
     heat = ""
     if status.overlay_active:
         heat = (f"<div class='tj-note warn' style='margin:.9rem 0 0'>이격도 {fmt_num(status.disparity, 1)} 과열 · "
                 f"주식 {weight_text(status.final_weight)}로 한 단계 낮춤</div>")
+    cap = ""
+    if status.uncapped_weight is not None and status.final_weight < status.uncapped_weight:
+        cap = (f"<div class='tj-note warn' style='margin:.9rem 0 0'>시장 필터 · {escape(status.market_label or '')} 이번 달 비중 "
+               f"{weight_text(status.market_weight)} → 이 종목은 {weight_text(status.final_weight)}까지만 "
+               f"(자체 신호 {weight_text(status.uncapped_weight)})</div>")
     md(f"""
         <div class="kr-zone" id="kr-detail">
           <div class="kr-zone-head"><span>{month_label(status.last_date.to_period("M") + 1)} 비중 예상 · 이달 말 종가 기준</span>
@@ -433,7 +444,7 @@ def render_detail(status: engine.IndexStatus, today: date, eyebrow: str) -> None
             <span style="left:75%">{fmt_num(green, d)}</span>
           </div>
           <div class="kr-zone-foot">{' · '.join(foot)}</div>
-          {heat}
+          {heat}{cap}
         </div>
     """)
 
@@ -443,7 +454,8 @@ def backtest_line(backtests: dict) -> str:
     over = backtests["overlay"]
     rule, hold = over["system"], over["hold"]
     pct = lambda v: fmt_pct(v * 100, 1, sign=False)
-    return (f"<div class='kr-bt'>과거 성과 {over['start']:%Y}~"
+    tail = "<span class='sep'>·</span>시장 필터 적용" if backtests.get("filtered") else ""
+    return (f"<div class='kr-bt'>과거 성과 {over['start']:%Y}~{tail}"
             f"<span class='sep'>·</span>이 규칙 연 <b>{pct(rule['cagr'])}</b> · 최대 낙폭 {pct(rule['mdd'])}"
             f"<span class='sep'>|</span>그냥 보유 연 {pct(hold['cagr'])} · 최대 낙폭 {pct(hold['mdd'])}</div>")
 
@@ -460,6 +472,10 @@ def render_rule() -> None:
             <b>근거</b><br>
             『돈을 불러오는 TIP』의 비중 규칙(이격도 130, 5개월선, 주봉 RSI 70)을 코스피 2004~·코스닥 2001~ 일봉으로 검증.
             5개월선이 뼈대, 이격도는 120에서 수익률·낙폭 모두 개선(코스닥은 130 도달 이력 없음). RSI 70은 과다 발동으로 제외.<br><br>
+            <b>시장 필터 (개별 종목)</b><br>
+            종목의 비중은 그 종목이 속한 시장(코스피 또는 코스닥)의 비중을 넘지 않습니다. 지수가 50%면 종목도 최대 50%,
+            0%면 0%. 현재 상장 종목 무작위 100개씩 두 번 확인했을 때, 규칙을 써도 손해 보는 종목이 약 49% → 38%,
+            최대 낙폭 중앙값이 -70·-73% → -59·-61%로 줄었습니다(수익 중앙값도 연 0.2~0.4% → 1.2~1.8%). 그래도 그냥 보유한 수익률보다는 낮았습니다.<br><br>
             <b>개별 종목</b><br>
             같은 계산 적용. 규칙은 지수 기준으로 검증됐습니다. 현재 상장된 종목 무작위 99개(2008~, 거래비용 0.3%)로 확인하니
             낙폭이 줄어든 종목은 89%였지만 수익이 그냥 보유보다 높았던 종목은 34%였습니다. 즉 개별 종목에서는 수익을 늘리기보다
@@ -606,7 +622,8 @@ def render_top100() -> None:
     universe = "거래대금 상위 100 주식" if kind == "stock" else "거래대금 상위 30 ETF"
     md(f"<div class='tj-caption' style='margin:-.1rem 0 .9rem'>{ui.kdate(day)} 종가 · {universe} 중 {next_m.month}월 예상 100% · 과열 아님 · "
        f"상승 전환 먼저 · 누르면 상세{scope}</div>")
-    md("<div class='tj-caption' style='margin:-.5rem 0 .9rem'>이 규칙은 지수에서 검증됐습니다. 개별 종목은 수익을 늘리기보다 하락폭을 줄이는 쪽이라, "
+    filt = "시장 필터: 종목 비중은 코스피·코스닥 신호를 넘지 않습니다. " if kind == "stock" else ""
+    md("<div class='tj-caption' style='margin:-.5rem 0 .9rem'>" + filt + "이 규칙은 지수에서 검증됐습니다. 개별 종목은 수익을 늘리기보다 하락폭을 줄이는 쪽이라, "
        "종목 아래의 <b>과거 성과</b>(규칙 vs 그냥 보유)를 함께 보세요. 매수 추천이 아닙니다.</div>")
     ok = data[data["status"] == "ok"].copy()
     hot_mask = ok["overheated"].astype(str).str.lower().eq("true") if "overheated" in ok else pd.Series(False, index=ok.index)
@@ -620,7 +637,7 @@ def render_top100() -> None:
         sort_cols, ascending = ["_k"] + sort_cols, [True] + ascending
     cand = cand.sort_values(sort_cols, ascending=ascending[:len(sort_cols)])
     if cand.empty:
-        md("<div class='tj-caption'>오늘 신호 100% 종목 없음</div>")
+        md(f"<div class='tj-caption'>오늘 신호 100% 종목 없음{market_filter_reason(ok, hot_mask)}</div>")
         render_unrated(data)
         return
     sectors = {}
@@ -644,6 +661,20 @@ def render_top100() -> None:
         st.session_state["_kr_pick_nonce"] = picked.get("nonce")
         st.session_state["kr_query"] = str(picked.get("code") or "")
     render_unrated(data)
+
+
+def market_filter_reason(ok: pd.DataFrame, hot_mask: pd.Series) -> str:
+    """Why a list is empty when the market filter is the cause: what it would have shown without it."""
+    if "raw_next_weight" not in ok or "mkt_next" not in ok:
+        return ""
+    stocks = ok[ok["mkt_label"].notna()]
+    before = int(((stocks["raw_next_weight"] == 1.0) & ~hot_mask.reindex(stocks.index, fill_value=False)).sum())
+    if before == 0:
+        return ""
+    state = stocks.drop_duplicates("mkt_label").set_index("mkt_label")["mkt_next"]
+    parts = " · ".join(f"{name} {weight_text(float(w))}" for name, w in state.items())
+    return (f"<br>지수 신호가 100%가 아니라 종목도 100%가 될 수 없습니다 ({parts} 예상). "
+            f"시장 필터를 쓰지 않으면 {before}개입니다.")
 
 
 def render_unrated(data: pd.DataFrame) -> None:
@@ -857,10 +888,14 @@ def render_upper(statuses: dict, dailies: dict, monthly_by_key: dict, keys: list
         target = resolve_search(query, today, day_key)
         if target is None:
             return
+        gate_key = target.market if target.is_stock and target.market in statuses else None
+        if gate_key:   # same market filter as the list, so a name looks the same in both places
+            target = replace(target, status=engine.cap_to_market(target.status, statuses[gate_key]))
         md("<div class='kr-panels single'>" + index_panel(target.status, market_text(target.market), selected=True) + "</div>")
         md("<div class='tj-caption' style='margin:.2rem 0 0'>규칙은 지수 기준으로 검증 · 아래 과거 성과 참고</div>")
         eyebrow = ""
     else:
+        gate_key = None
         selected = st.session_state["kr_index"]
         cfg = engine.INDEXES[selected]
         target = Target(statuses[selected], dailies[selected], monthly_by_key[selected], cfg["symbol"], cfg["start_year"], selected)
@@ -871,7 +906,8 @@ def render_upper(statuses: dict, dailies: dict, monthly_by_key: dict, keys: list
     render_detail(status, today, eyebrow)
 
     try:
-        backtests = load_backtests(target.symbol, target.start_year, day_key)
+        backtests = load_backtests(target.symbol, target.start_year, day_key, gate_key,
+                                   STOCK_COST if target.is_stock and target.market in engine.INDEXES else engine.TRADE_COST)
     except Exception:
         backtests = None
     if backtests:

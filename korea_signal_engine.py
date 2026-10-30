@@ -27,7 +27,7 @@ requests to a coarser interval.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from html import unescape
 from urllib.parse import quote
@@ -509,6 +509,10 @@ class IndexStatus:
     red_below: float
     live_signal: str
     just_confirmed: bool
+    # Market filter (stocks only; see cap_to_market). None = not applied.
+    market_label: str | None = None
+    market_weight: float | None = None       # the index's weight this month
+    uncapped_weight: float | None = None     # the stock's own weight before the cap
 
     @property
     def nearest_boundary(self) -> tuple[str, float, float]:
@@ -583,6 +587,33 @@ def current_status(key: str, daily: pd.DataFrame, today: date | None = None, lab
     )
 
 
+# ── Market filter ──────────────────────────────────────────────────────────────
+# A stock never holds more than its market's (KOSPI / KOSDAQ) base weight. Measured on two
+# independent samples of ~100 current listings (2008~, cost 0.3%): names losing money under
+# the rule fell from ~49% to ~38%, median max drawdown from -70/-73% to -59/-61%, median
+# return rose 0.2-0.4 -> 1.2-1.8 %/yr (still below buy-and-hold). It is a drawdown tool.
+def index_gate_series(index_daily: pd.DataFrame, today: date | None = None) -> pd.Series:
+    """The index's base weight in force on each day (month signal at the latest
+    confirmed month-end, no overheat cut), indexed by Date."""
+    data = add_disparity(index_daily).reset_index(drop=True)
+    horizon = (data["Date"].iloc[-1] + pd.offsets.MonthBegin(1)).date()
+    monthly = monthly_signals(data, today or horizon).dropna(subset=["Signal"])
+    base = daily_base_signal(data, monthly).map(SIGNAL_WEIGHT)
+    return pd.Series(base.to_numpy(dtype="float64"), index=data["Date"])
+
+
+def cap_to_market(status: IndexStatus, market: IndexStatus) -> IndexStatus:
+    """Copy of a stock's status with its weight limited to the market's base weight."""
+    capped = min(status.final_weight, market.base_weight)
+    return replace(status, final_weight=capped, market_label=market.label,
+                   market_weight=market.base_weight, uncapped_weight=status.final_weight)
+
+
+def capped_next_weight(status: IndexStatus, market: IndexStatus) -> float:
+    """Next month's projected weight (if the month ended today) under the same cap."""
+    return min(SIGNAL_WEIGHT[status.live_signal], SIGNAL_WEIGHT[market.live_signal])
+
+
 # ── Backtest ───────────────────────────────────────────────────────────────────
 def daily_base_signal(daily: pd.DataFrame, monthly: pd.DataFrame) -> pd.Series:
     """Signal in force on each day: the latest month-end at or before that day."""
@@ -597,6 +628,7 @@ def run_backtest(
     today: date | None = None,
     min_periods: int | None = None,
     trade_cost: float = TRADE_COST,
+    market_gate: pd.Series | None = None,
 ) -> dict:
     """Close-to-close simulation. The weight decided at day t-1's close
     (month signal in force + that day's disparity) earns day t's return.
@@ -617,12 +649,19 @@ def run_backtest(
     disp = data["Disparity"].to_numpy()
     base_w = base_sig.map(SIGNAL_WEIGHT).to_numpy(dtype="float64")
 
+    gate = None
+    if market_gate is not None:   # the index's weight on each of this name's days (carried over gaps)
+        dates = data["Date"]
+        gate = market_gate.reindex(market_gate.index.union(dates)).ffill().reindex(dates).to_numpy(dtype="float64")
+
     n = len(data)
     weights = np.full(n, np.nan)
     nav_sys = np.full(n, np.nan)
     nav_hold = np.full(n, np.nan)
     nav_sys[start] = nav_hold[start] = 1.0
     prev_w = base_w[start]
+    if gate is not None and not np.isnan(gate[start]):
+        prev_w = min(prev_w, gate[start])
     weights[start] = prev_w
     for t in range(start + 1, n):
         ret = closes[t] / closes[t - 1] - 1
@@ -630,12 +669,16 @@ def run_backtest(
         w = base_w[t - 1]
         if dev_threshold is not None and not np.isnan(d) and d >= dev_threshold:
             w = max(w - 0.5, 0.0)
+        if gate is not None and not np.isnan(gate[t - 1]):
+            w = min(w, gate[t - 1])
         cost = abs(w - prev_w) * trade_cost
         nav_sys[t] = nav_sys[t - 1] * (1 + w * ret - cost)
         nav_hold[t] = nav_hold[t - 1] * (1 + ret)
         weights[t - 1] = w
         prev_w = w
     weights[n - 1] = overlay_weight(base_w[n - 1], disp[n - 1], dev_threshold)
+    if gate is not None and not np.isnan(gate[n - 1]):
+        weights[n - 1] = min(weights[n - 1], gate[n - 1])
 
     curve = pd.DataFrame({
         "Date": data["Date"],

@@ -171,21 +171,30 @@ def one_step_down(weight: float) -> float:
     return 1.0 if weight >= 1.0 else 0.0
 
 
-def etf_rows(df: pd.DataFrame, today) -> pd.DataFrame:
+def market_context(today) -> dict:
+    """KOSPI / KOSDAQ: status, daily gate (base weight in force) and history, fetched once.
+    A stock's weight is capped at its market's base weight (market filter)."""
+    ctx = {}
+    for key, cfg in engine.INDEXES.items():
+        try:
+            # one year before the stocks' history so the 10-month average exists from their start
+            daily, _ = engine.fetch_history(cfg["symbol"], max(cfg["start_year"], BT_START_YEAR - 1))
+            ctx[key] = {"status": engine.current_status(key, daily, today),
+                        "gate": engine.index_gate_series(daily), "daily": daily}
+        except Exception as exc:
+            debug["errors"].append(f"index {key}: {type(exc).__name__}")
+    return ctx
+
+
+def etf_rows(df: pd.DataFrame, today, ctx: dict) -> pd.DataFrame:
     etfs = df[df["end_type"].str.lower().eq("etf")].copy()
     etfs["kind"], etfs["underlying"] = zip(*etfs["name"].map(etf_kind)) if len(etfs) else ([], [])
     debug["etf_kinds_all"] = etfs["kind"].value_counts().to_dict()
     etfs = etfs[etfs["kind"] != "cash"].sort_values("value_mil", ascending=False).head(ETF_TOP_N).reset_index(drop=True)
     etfs.insert(0, "rank", range(1, len(etfs) + 1))
 
-    index_status, index_bt = {}, {}
-    for key, cfg in engine.INDEXES.items():
-        try:
-            daily, _ = engine.fetch_history(cfg["symbol"], max(cfg["start_year"], BT_START_YEAR))
-            index_status[key] = engine.current_status(key, daily, today)
-            index_bt[key] = bt_fields(daily, ETF_COST)
-        except Exception as exc:
-            debug["errors"].append(f"index {key}: {type(exc).__name__}")
+    index_status = {k: v["status"] for k, v in ctx.items()}
+    index_bt = {k: bt_fields(v["daily"], ETF_COST) for k, v in ctx.items()}
 
     out = []
     for row in etfs.to_dict("records"):
@@ -220,10 +229,10 @@ def etf_rows(df: pd.DataFrame, today) -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
-def bt_fields(daily: pd.DataFrame, cost: float) -> dict:
+def bt_fields(daily: pd.DataFrame, cost: float, gate=None) -> dict:
     """Rule vs buy-and-hold over this name's own history (empty when too short)."""
     try:
-        bt = engine.run_backtest(daily, engine.DEV_THRESHOLD, trade_cost=cost)
+        bt = engine.run_backtest(daily, engine.DEV_THRESHOLD, trade_cost=cost, market_gate=gate)
     except Exception:
         return {}
     return {
@@ -235,7 +244,7 @@ def bt_fields(daily: pd.DataFrame, cost: float) -> dict:
     }
 
 
-def signal_row(row: dict, today, cost: float = STOCK_COST) -> dict:
+def signal_row(row: dict, today, cost: float = STOCK_COST, market: dict | None = None) -> dict:
     out = dict(row)
     suffix = engine.MARKET_SUFFIX.get(row["market"], ".KS")
     try:
@@ -246,10 +255,21 @@ def signal_row(row: dict, today, cost: float = STOCK_COST) -> dict:
         if row.get("close") and row.get("trade_date"):
             daily = engine.with_latest_close(daily, row["trade_date"], float(row["close"]))
         status = engine.current_status(row["code"], daily, today, label=row["name"])
+        raw_next = engine.SIGNAL_WEIGHT[status.live_signal]
+        weight, next_weight, gate = status.final_weight, raw_next, None
+        if market is not None:   # market filter: never above the index's own weight
+            weight = engine.cap_to_market(status, market["status"]).final_weight
+            next_weight = engine.capped_next_weight(status, market["status"])
+            gate = market["gate"]
+            out.update({"raw_weight": status.final_weight, "raw_next_weight": raw_next,
+                        "mkt_label": market["status"].label, "mkt_weight": market["status"].base_weight,
+                        "mkt_next": engine.SIGNAL_WEIGHT[market["status"].live_signal]})
+            if weight < status.final_weight:
+                out["note"] = f"{market['status'].label} {int(round(weight * 100))}%로 제한"
         out.update({
-            "weight": status.final_weight,             # this month (confirmed last month-end, after overheat cut)
+            "weight": weight,                          # this month: confirmed last month-end, after overheat cut and market cap
             "base_weight": status.base_weight,
-            "next_weight": engine.SIGNAL_WEIGHT[status.live_signal],  # next month if the month ended today
+            "next_weight": next_weight,                # next month if the month ended today
             "disparity": round(status.disparity, 1) if status.disparity is not None else None,
             "overheated": bool(status.overlay_active),
             "to_full_pct": round((status.green_above / status.last_close - 1) * 100, 1),
@@ -259,7 +279,7 @@ def signal_row(row: dict, today, cost: float = STOCK_COST) -> dict:
             "last_date": status.last_date.date().isoformat(),
             "yahoo_last": yahoo_last,
             "status": "ok",
-            **bt_fields(daily, cost),
+            **bt_fields(daily, cost, gate),
         })
     except engine.HistoryTooShort:
         out["status"] = "short"
@@ -279,8 +299,9 @@ def main() -> None:
             print("No trading value yet; keeping the previous scan.")
             return
         top = ranked_stocks(listed)
+        ctx = market_context(today)
         with ThreadPoolExecutor(max_workers=6) as pool:
-            rows = list(pool.map(lambda r: signal_row(r, today), top.to_dict("records")))
+            rows = list(pool.map(lambda r: signal_row(r, today, STOCK_COST, ctx.get(r["market"])), top.to_dict("records")))
         result = pd.DataFrame(rows).sort_values("rank")
         try:
             themes = fetch_themes()
@@ -298,7 +319,7 @@ def main() -> None:
         result.to_csv(OUT / f"kr_top100_{day:%Y%m%d}.csv", index=False, encoding="utf-8")
         result.to_csv(OUT / "kr_top100_latest.csv", index=False, encoding="utf-8")
         debug["rows"] = int(len(result))
-        etf = etf_rows(listed, today)
+        etf = etf_rows(listed, today, ctx)
         if not etf.empty:
             etf.insert(0, "date", day.isoformat())
             etf["scanned_at"] = result["scanned_at"].iloc[0]
