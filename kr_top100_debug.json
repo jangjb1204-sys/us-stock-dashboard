@@ -1,5 +1,5 @@
 {
- "started": "2026-11-26T17:53:08.139193+00:00",
+ "started": "2026-11-27T17:38:22.577565+00:00",
  "pages": {
   "KOSPI": {
    "keys": [
@@ -21,20 +21,20 @@
      "reutersCode": "005930",
      "stockName": "삼성전자",
      "sosok": "0",
-     "closePrice": "171,500",
-     "compareToPreviousClosePrice": "800",
+     "closePrice": "179,500",
+     "compareToPreviousClosePrice": "8,200",
      "compareToPreviousPrice": {
       "code": "2",
       "text": "상승",
       "name": "RISING"
      },
-     "fluctuationsRatio": "0.47",
-     "accumulatedTradingVolume": "13,629,385",
-     "accumulatedTradingValue": "2,364,690",
-     "accumulatedTradingValueKrwHangeul": "2조 3,647억원",
-     "localTradedAt": "2026-11-26T20:20:22+09:00",
-     "marketValue": "10,026,368",
-     "marketValueHangeul": "1,002조 6,368억원",
+     "fluctuationsRatio": "4.79",
+     "accumulatedTradingVolume": "14,293,472",
+     "accumulatedTradingValue": "2,518,101",
+     "accumulatedTradingValueKrwHangeul": "2조 5,181억원",
+     "localTradedAt": "2026-11-27T20:20:22+09:00",
+     "marketValue": "10,494,070",
+     "marketValueHangeul": "1,049조 4,070억원",
      "nav": "N/A",
      "threeMonthEarningRate": "N/A",
      "marketStatus": "CLOSE",
@@ -45,7 +45,7 @@
      },
      "tradableStatus": "tradable",
      "tradableStatusCode": "ok",
-     "tradableStatusUpdatedAt": "2026-11-26T08:01:47.85+09:00",
+     "tradableStatusUpdatedAt": "2026-11-27T08:01:45.3+09:00",
      "stockExchangeType": {
       "code": "KS",
       "zoneId": "Asia/Seoul",
@@ -66,31 +66,31 @@
      "overMarketPriceInfo": {
       "tradingSessionType": "AFTER_MARKET",
       "overMarketStatus": "CLOSE",
-      "overPrice": "171,500",
+      "overPrice": "179,400",
       "compareToPreviousPrice": {
        "code": "2",
        "text": "상승",
        "name": "RISING"
       },
-      "compareToPreviousClosePrice": "800",
-      "fluctuationsRatio": "0.47",
-      "localTradedAt": "2026-11-26T20:00:00+09:00",
+      "compareToPreviousClosePrice": "8,100",
+      "fluctuationsRatio": "4.73",
+      "localTradedAt": "2026-11-27T20:00:00+09:00",
       "tradeStopType": {
        "code": "1",
        "text": "운영.Trading",
        "name": "TRADING"
       },
-      "overPriceRaw": "171500",
-      "compareToPreviousClosePriceRaw": "800"
+      "overPriceRaw": "179400",
+      "compareToPreviousClosePriceRaw": "8100"
      },
      "stockMiniImageChart": "https://financial-vn.pstatic.net/chart/mobile/mini/krx/005930_interest.png",
      "itemLogoUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock005930.svg",
      "itemLogoPngUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/png/stock/Stock005930.png",
-     "closePriceRaw": "171500",
-     "compareToPreviousClosePriceRaw": "800",
-     "accumulatedTradingVolumeRaw": "13629385",
-     "accumulatedTradingValueRaw": "2364690000000",
-     "marketValueRaw": "1002636781272000"
+     "closePriceRaw": "179500",
+     "compareToPreviousClosePriceRaw": "8200",
+     "accumulatedTradingVolumeRaw": "14293472",
+     "accumulatedTradingValueRaw": "2518101000000",
+     "marketValueRaw": "1049407010136000"
     },
     {
      "stockType": "domestic",
@@ -99,20 +99,20 @@
      "reutersCode": "000660",
      "stockName": "SK하이닉스",
      "sosok": "0",
-     "closePrice": "1,055,000",
-     "compareToPreviousClosePrice": "25,000",
+     "closePrice": "1,111,000",
+     "compareToPreviousClosePrice": "58,000",
      "compareToPreviousPrice": {
       "code": "2",
       "text": "상승",
       "name": "RISING"
      },
-     "fluctuationsRatio": "2.43",
-     "accumulatedTradingVolume": "3,417,741",
-     "accumulatedTradingValue": "3,650,749",
-     "accumulatedTradingValueKrwHangeul": "3조 6,507억원",
-     "localTradedAt": "2026-11-26T20:20:22+09:00",
-     "marketValue": "7,456,730",
-     "marketValueHangeul": "745조 6,730억원",
+     "fluctuationsRatio": "5.51",
+     "accumulatedTradingVolume": "3,023,956",
+     "accumulatedTradingValue": "3,266,758",
+     "accumulatedTradingValueKrwHangeul": "3조 2,668억원",
+     "localTradedAt": "2026-11-27T20:20:25+09:00",
+     "marketValue": "7,852,538",
+     "marketValueHangeul": "785조 2,538억원",
      "nav": "N/A",
      "threeMonthEarningRate": "N/A",
      "marketStatus": "CLOSE",
@@ -123,7 +123,7 @@
      },
      "tradableStatus": "tradable",
      "tradableStatusCode": "ok",
-     "tradableStatusUpdatedAt": "2026-11-26T08:01:39.704+09:00",
+     "tradableStatusUpdatedAt": "2026-11-27T08:01:36.361+09:00",
      "stockExchangeType": {
       "code": "KS",
       "zoneId": "Asia/Seoul",
@@ -144,31 +144,31 @@
      "overMarketPriceInfo": {
       "tradingSessionType": "AFTER_MARKET",
       "overMarketStatus": "CLOSE",
-      "overPrice": "1,054,000",
+      "overPrice": "1,110,000",
       "compareToPreviousPrice": {
        "code": "2",
        "text": "상승",
        "name": "RISING"
       },
-      "compareToPreviousClosePrice": "24,000",
-      "fluctuationsRatio": "2.33",
-      "localTradedAt": "2026-11-26T20:00:00+09:00",
+      "compareToPreviousClosePrice": "57,000",
+      "fluctuationsRatio": "5.41",
+      "localTradedAt": "2026-11-27T20:00:00+09:00",
       "tradeStopType": {
        "code": "1",
        "text": "운영.Trading",
        "name": "TRADING"
       },
-      "overPriceRaw": "1054000",
-      "compareToPreviousClosePriceRaw": "24000"
+      "overPriceRaw": "1110000",
+      "compareToPreviousClosePriceRaw": "57000"
      },
      "stockMiniImageChart": "https://financial-vn.pstatic.net/chart/mobile/mini/krx/000660_interest.png",
      "itemLogoUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock000660.svg",
      "itemLogoPngUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/png/stock/Stock000660.png",
-     "closePriceRaw": "1055000",
-     "compareToPreviousClosePriceRaw": "25000",
-     "accumulatedTradingVolumeRaw": "3417741",
-     "accumulatedTradingValueRaw": "3650749000000",
-     "marketValueRaw": "745673043115000"
+     "closePriceRaw": "1111000",
+     "compareToPreviousClosePriceRaw": "58000",
+     "accumulatedTradingVolumeRaw": "3023956",
+     "accumulatedTradingValueRaw": "3266758000000",
+     "marketValueRaw": "785253792323000"
     }
    ]
   },
@@ -183,7 +183,7 @@
     "stocks",
     "totalCount"
    ],
-   "total": 1837,
+   "total": 1836,
    "sample": [
     {
      "stockType": "domestic",
@@ -192,20 +192,20 @@
      "reutersCode": "196170",
      "stockName": "알테오젠",
      "sosok": "1",
-     "closePrice": "171,400",
-     "compareToPreviousClosePrice": "1,800",
+     "closePrice": "188,100",
+     "compareToPreviousClosePrice": "17,800",
      "compareToPreviousPrice": {
       "code": "2",
       "text": "상승",
       "name": "RISING"
      },
-     "fluctuationsRatio": "1.06",
-     "accumulatedTradingVolume": "493,665",
-     "accumulatedTradingValue": "85,425",
-     "accumulatedTradingValueKrwHangeul": "854억원",
-     "localTradedAt": "2026-11-26T20:20:17+09:00",
-     "marketValue": "119,415",
-     "marketValueHangeul": "11조 9,415억원",
+     "fluctuationsRatio": "10.45",
+     "accumulatedTradingVolume": "718,243",
+     "accumulatedTradingValue": "131,142",
+     "accumulatedTradingValueKrwHangeul": "1,311억원",
+     "localTradedAt": "2026-11-27T20:20:20+09:00",
+     "marketValue": "131,049",
+     "marketValueHangeul": "13조 1,049억원",
      "nav": "N/A",
      "threeMonthEarningRate": "N/A",
      "marketStatus": "CLOSE",
@@ -216,7 +216,7 @@
      },
      "tradableStatus": "tradable",
      "tradableStatusCode": "ok",
-     "tradableStatusUpdatedAt": "2026-11-26T08:02:33.803+09:00",
+     "tradableStatusUpdatedAt": "2026-11-27T08:02:37.651+09:00",
      "stockExchangeType": {
       "code": "KQ",
       "zoneId": "Asia/Seoul",
@@ -237,31 +237,31 @@
      "overMarketPriceInfo": {
       "tradingSessionType": "AFTER_MARKET",
       "overMarketStatus": "CLOSE",
-      "overPrice": "171,400",
+      "overPrice": "188,000",
       "compareToPreviousPrice": {
        "code": "2",
        "text": "상승",
        "name": "RISING"
       },
-      "compareToPreviousClosePrice": "1,800",
-      "fluctuationsRatio": "1.06",
-      "localTradedAt": "2026-11-26T20:00:00+09:00",
+      "compareToPreviousClosePrice": "17,700",
+      "fluctuationsRatio": "10.39",
+      "localTradedAt": "2026-11-27T20:00:00+09:00",
       "tradeStopType": {
        "code": "1",
        "text": "운영.Trading",
        "name": "TRADING"
       },
-      "overPriceRaw": "171400",
-      "compareToPreviousClosePriceRaw": "1800"
+      "overPriceRaw": "188000",
+      "compareToPreviousClosePriceRaw": "17700"
      },
      "stockMiniImageChart": "https://financial-vn.pstatic.net/chart/mobile/mini/krx/196170_interest.png",
      "itemLogoUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock196170.svg",
      "itemLogoPngUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/png/stock/Stock196170.png",
-     "closePriceRaw": "171400",
-     "compareToPreviousClosePriceRaw": "1800",
-     "accumulatedTradingVolumeRaw": "493665",
-     "accumulatedTradingValueRaw": "85425000000",
-     "marketValueRaw": "11941452226200"
+     "closePriceRaw": "188100",
+     "compareToPreviousClosePriceRaw": "17800",
+     "accumulatedTradingVolumeRaw": "718243",
+     "accumulatedTradingValueRaw": "131142000000",
+     "marketValueRaw": "13104942612300"
     },
     {
      "stockType": "domestic",
@@ -270,20 +270,20 @@
      "reutersCode": "277810",
      "stockName": "레인보우로보틱스",
      "sosok": "1",
-     "closePrice": "481,000",
-     "compareToPreviousClosePrice": "17,500",
+     "closePrice": "532,000",
+     "compareToPreviousClosePrice": "65,000",
      "compareToPreviousPrice": {
       "code": "2",
       "text": "상승",
       "name": "RISING"
      },
-     "fluctuationsRatio": "3.78",
-     "accumulatedTradingVolume": "220,667",
-     "accumulatedTradingValue": "106,281",
-     "accumulatedTradingValueKrwHangeul": "1,063억원",
-     "localTradedAt": "2026-11-26T20:20:20+09:00",
-     "marketValue": "93,313",
-     "marketValueHangeul": "9조 3,313억원",
+     "fluctuationsRatio": "13.92",
+     "accumulatedTradingVolume": "429,143",
+     "accumulatedTradingValue": "221,298",
+     "accumulatedTradingValueKrwHangeul": "2,213억원",
+     "localTradedAt": "2026-11-27T20:20:24+09:00",
+     "marketValue": "103,207",
+     "marketValueHangeul": "10조 3,207억원",
      "nav": "N/A",
      "threeMonthEarningRate": "N/A",
      "marketStatus": "CLOSE",
@@ -294,7 +294,7 @@
      },
      "tradableStatus": "tradable",
      "tradableStatusCode": "ok",
-     "tradableStatusUpdatedAt": "2026-11-26T08:02:44.525+09:00",
+     "tradableStatusUpdatedAt": "2026-11-27T08:02:50.001+09:00",
      "stockExchangeType": {
       "code": "KQ",
       "zoneId": "Asia/Seoul",
@@ -315,61 +315,61 @@
      "overMarketPriceInfo": {
       "tradingSessionType": "AFTER_MARKET",
       "overMarketStatus": "CLOSE",
-      "overPrice": "481,000",
+      "overPrice": "532,000",
       "compareToPreviousPrice": {
        "code": "2",
        "text": "상승",
        "name": "RISING"
       },
-      "compareToPreviousClosePrice": "17,500",
-      "fluctuationsRatio": "3.78",
-      "localTradedAt": "2026-11-26T20:00:00+09:00",
+      "compareToPreviousClosePrice": "65,000",
+      "fluctuationsRatio": "13.92",
+      "localTradedAt": "2026-11-27T20:00:00+09:00",
       "tradeStopType": {
        "code": "1",
        "text": "운영.Trading",
        "name": "TRADING"
       },
-      "overPriceRaw": "481000",
-      "compareToPreviousClosePriceRaw": "17500"
+      "overPriceRaw": "532000",
+      "compareToPreviousClosePriceRaw": "65000"
      },
      "stockMiniImageChart": "https://financial-vn.pstatic.net/chart/mobile/mini/krx/277810_interest.png",
      "itemLogoUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock277810.svg",
      "itemLogoPngUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/png/stock/Stock277810.png",
-     "closePriceRaw": "481000",
-     "compareToPreviousClosePriceRaw": "17500",
-     "accumulatedTradingVolumeRaw": "220667",
-     "accumulatedTradingValueRaw": "106281000000",
-     "marketValueRaw": "9331331698000"
+     "closePriceRaw": "532000",
+     "compareToPreviousClosePriceRaw": "65000",
+     "accumulatedTradingVolumeRaw": "429143",
+     "accumulatedTradingValueRaw": "221298000000",
+     "marketValueRaw": "10320724456000"
     }
    ]
   }
  },
  "errors": [],
- "listed": 3962,
+ "listed": 3967,
  "end_types": {
-  "stock": 2641,
-  "etf": 1135,
-  "etn": 186
+  "stock": 2642,
+  "etf": 1127,
+  "etn": 198
  },
  "themes_found": 252,
- "theme_codes": 2268,
+ "theme_codes": 2257,
  "rows": 100,
  "etf_kinds_all": {
-  "own": 714,
-  "cash": 223,
+  "own": 713,
+  "cash": 216,
   "index": 109,
   "leverage": 57,
   "inverse": 32
  },
  "etf_rows": 30,
  "etf_kinds": {
-  "own": 13,
-  "index": 7,
+  "own": 12,
+  "index": 8,
   "leverage": 6,
   "inverse": 4
  },
  "status_counts": {
-  "ok": 99,
-  "short": 1
+  "ok": 97,
+  "short": 3
  }
 }
